@@ -21,6 +21,8 @@ import {
   campaignTaskPriorities,
   campaignTaskStatuses,
   campaignTypes,
+  contentTemplateCategories,
+  contentTemplateStatuses,
   connectorEventSeverities,
   invitationStatuses,
   listeningAlertSeverities,
@@ -42,6 +44,8 @@ import {
   reportShareLinkStatuses,
   reportTypes,
   roles,
+  scheduleRuleStatuses,
+  scheduleSlotStatuses,
   safetyPolicyStatuses,
   safetySeverities,
   sentimentLabels,
@@ -57,6 +61,14 @@ export const roleEnum = pgEnum("role", roles);
 export const planEnum = pgEnum("plan", plans);
 export const platformEnum = pgEnum("platform", platforms);
 export const postStatusEnum = pgEnum("post_status", postStatuses);
+export const contentTemplateCategoryEnum = pgEnum(
+  "content_template_category",
+  contentTemplateCategories
+);
+export const contentTemplateStatusEnum = pgEnum(
+  "content_template_status",
+  contentTemplateStatuses
+);
 export const accountStatusEnum = pgEnum("account_status", accountStatuses);
 export const invitationStatusEnum = pgEnum("invitation_status", invitationStatuses);
 export const apiKeyStatusEnum = pgEnum("api_key_status", apiKeyStatuses);
@@ -124,6 +136,8 @@ export const notificationDigestFrequencyEnum = pgEnum(
 export const webhookStatusEnum = pgEnum("webhook_status", ["pending", "delivered", "failed"]);
 export const webhookEndpointStatusEnum = pgEnum("webhook_endpoint_status", webhookEndpointStatuses);
 export const publishingJobStatusEnum = pgEnum("publishing_job_status", publishingJobStatuses);
+export const scheduleRuleStatusEnum = pgEnum("schedule_rule_status", scheduleRuleStatuses);
+export const scheduleSlotStatusEnum = pgEnum("schedule_slot_status", scheduleSlotStatuses);
 export const workflowEventActionEnum = pgEnum("workflow_event_action", [
   "created",
   "submitted_for_review",
@@ -858,6 +872,44 @@ export const posts = pgTable(
   })
 );
 
+export const contentTemplates = pgTable(
+  "content_templates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    category: contentTemplateCategoryEnum("category").notNull(),
+    status: contentTemplateStatusEnum("status").default("active").notNull(),
+    platforms: platformEnum("platforms").array().notNull(),
+    bodyTemplate: text("body_template").notNull(),
+    variables: text("variables").array().default(sql`ARRAY[]::text[]`).notNull(),
+    defaultHashtags: text("default_hashtags").array().default(sql`ARRAY[]::text[]`).notNull(),
+    guidance: jsonb("guidance").$type<Record<string, unknown>>().default({}).notNull(),
+    usageCount: integer("usage_count").default(0).notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceStatusIdx: index("content_templates_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    ),
+    workspaceCategoryIdx: index("content_templates_workspace_category_idx").on(
+      table.workspaceId,
+      table.category
+    ),
+    workspaceNameUnique: uniqueIndex("content_templates_workspace_name_unique").on(
+      table.workspaceId,
+      sql`lower(${table.name})`
+    )
+  })
+);
+
 export const postPlatforms = pgTable(
   "post_platforms",
   {
@@ -1329,6 +1381,68 @@ export const publishingJobs = pgTable(
   })
 );
 
+export const scheduleRules = pgTable(
+  "schedule_rules",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    platforms: platformEnum("platforms").array().notNull(),
+    timezone: text("timezone").notNull(),
+    windows: jsonb("windows").$type<Array<Record<string, unknown>>>().notNull(),
+    minGapMinutes: integer("min_gap_minutes").default(120).notNull(),
+    maxPostsPerDay: integer("max_posts_per_day").default(3).notNull(),
+    status: scheduleRuleStatusEnum("status").default("active").notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceStatusIdx: index("schedule_rules_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    ),
+    workspaceNameUnique: uniqueIndex("schedule_rules_workspace_name_unique").on(
+      table.workspaceId,
+      sql`lower(${table.name})`
+    )
+  })
+);
+
+export const scheduleSlots = pgTable(
+  "schedule_slots",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    ruleId: uuid("rule_id").references(() => scheduleRules.id, { onDelete: "set null" }),
+    campaignId: uuid("campaign_id").references(() => campaigns.id, { onDelete: "set null" }),
+    platform: platformEnum("platform").notNull(),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    score: integer("score").notNull(),
+    status: scheduleSlotStatusEnum("status").default("recommended").notNull(),
+    reason: text("reason").notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+    reservedBy: uuid("reserved_by").references(() => users.id, { onDelete: "set null" }),
+    reservedAt: timestamp("reserved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    workspaceStatusStartsIdx: index("schedule_slots_workspace_status_starts_idx").on(
+      table.workspaceId,
+      table.status,
+      table.startsAt
+    ),
+    ruleIdx: index("schedule_slots_rule_idx").on(table.ruleId),
+    campaignIdx: index("schedule_slots_campaign_idx").on(table.campaignId)
+  })
+);
+
 export const postComments = pgTable(
   "post_comments",
   {
@@ -1401,6 +1515,7 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   campaignTasks: many(campaignTasks),
   campaignBudgetLines: many(campaignBudgetLines),
   campaignReports: many(campaignReports),
+  contentTemplates: many(contentTemplates),
   reportTemplates: many(reportTemplates),
   scheduledReports: many(scheduledReports),
   reportExports: many(reportExports),
@@ -1411,7 +1526,9 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   listeningMonitors: many(listeningMonitors),
   socialMentions: many(socialMentions),
   listeningAlerts: many(listeningAlerts),
-  posts: many(posts)
+  posts: many(posts),
+  scheduleRules: many(scheduleRules),
+  scheduleSlots: many(scheduleSlots)
 }));
 
 export const ssoConnectionsRelations = relations(ssoConnections, ({ one }) => ({
@@ -1517,6 +1634,17 @@ export const campaignReportsRelations = relations(campaignReports, ({ one }) => 
   campaign: one(campaigns, {
     fields: [campaignReports.campaignId],
     references: [campaigns.id]
+  })
+}));
+
+export const contentTemplatesRelations = relations(contentTemplates, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [contentTemplates.workspaceId],
+    references: [workspaces.id]
+  }),
+  creator: one(users, {
+    fields: [contentTemplates.createdBy],
+    references: [users.id]
   })
 }));
 
@@ -1677,5 +1805,36 @@ export const publishingJobsRelations = relations(publishingJobs, ({ one }) => ({
   socialAccount: one(socialAccounts, {
     fields: [publishingJobs.socialAccountId],
     references: [socialAccounts.id]
+  })
+}));
+
+export const scheduleRulesRelations = relations(scheduleRules, ({ one, many }) => ({
+  workspace: one(workspaces, {
+    fields: [scheduleRules.workspaceId],
+    references: [workspaces.id]
+  }),
+  creator: one(users, {
+    fields: [scheduleRules.createdBy],
+    references: [users.id]
+  }),
+  slots: many(scheduleSlots)
+}));
+
+export const scheduleSlotsRelations = relations(scheduleSlots, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [scheduleSlots.workspaceId],
+    references: [workspaces.id]
+  }),
+  rule: one(scheduleRules, {
+    fields: [scheduleSlots.ruleId],
+    references: [scheduleRules.id]
+  }),
+  campaign: one(campaigns, {
+    fields: [scheduleSlots.campaignId],
+    references: [campaigns.id]
+  }),
+  reserver: one(users, {
+    fields: [scheduleSlots.reservedBy],
+    references: [users.id]
   })
 }));

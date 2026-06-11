@@ -212,6 +212,40 @@ Actions:
 5. Generate a fresh campaign report after task, budget, publishing, or analytics changes.
 6. Preserve audit records for task status, budget, milestone, and report changes tied to launch decisions.
 
+## Content Template Rollout Issue
+
+Signals:
+
+- New posts created from a template include unresolved placeholders like `[product]`.
+- A template uses the wrong platform set, hashtag defaults, or compliance guidance.
+- Reviewers see repeated copy defects from the same template.
+
+Actions:
+
+1. Open Calendar > Content templates and identify the affected template, category, platforms, and usage count.
+2. Archive or replace the template if it is creating unsafe or off-brand drafts.
+3. Confirm required variables, default hashtags, and guidance before using the template again.
+4. Review `content.template_created` and `content.template_used` audit events to find impacted posts.
+5. Route created drafts back through approval workflow before scheduling.
+6. Add a brand voice or safety policy update if the template issue reflects stale governance.
+
+## Smart Scheduling Recommendation Issue
+
+Signals:
+
+- `/api/scheduling/recommendations` returns no slots for active campaigns.
+- Recommended slots conflict with recent posts, account rate limits, or campaign blackout windows.
+- Reserving a slot fails to schedule a post or enqueue publishing jobs.
+
+Actions:
+
+1. Check `/api/scheduling/rules` for active rules matching the requested platforms and timezone.
+2. Confirm each rule has valid windows, minimum gap, and daily post cap.
+3. Inspect `/api/scheduling/slots?status=recommended` for duplicate or stale recommendations.
+4. Verify the target post contains content for the slot platform before reserving.
+5. If enqueue fails, inspect connected social accounts and publishing job idempotency keys.
+6. Review `scheduling.rule_created`, `scheduling.slots_recommended`, and `scheduling.slot_reserved` audit events.
+
 ## Reporting Export Or Share-Link Issue
 
 Signals:

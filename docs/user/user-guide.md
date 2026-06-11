@@ -23,6 +23,7 @@ The approvals page now shows a timeline combining workflow events and comments f
 ## Campaign Calendar
 
 The Calendar page combines scheduled content with campaign operations. Managers can review milestones, create and complete tasks, update budget lines, and generate campaign reports for launch readouts.
+Calendar also includes content templates for reusable post structures and Smart scheduling for best-time recommendations. Templates can create draft posts with approved variables and hashtags; recommended schedule slots can be reserved for posts when the target platform matches.
 
 ## Social Accounts
 

@@ -7,6 +7,8 @@ import {
   campaignTaskStatuses,
   apiKeyStatuses,
   campaignTypes,
+  contentTemplateCategories,
+  contentTemplateStatuses,
   connectorEventSeverities,
   invitationStatuses,
   listeningAlertSeverities,
@@ -27,6 +29,8 @@ import {
   reportShareLinkStatuses,
   reportTypes,
   roles,
+  scheduleRuleStatuses,
+  scheduleSlotStatuses,
   contentSafetyStatuses,
   moderationStatuses,
   safetyPolicyStatuses,
@@ -245,6 +249,24 @@ export const postSchema = z.object({
   brandVoiceId: idSchema.optional(),
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema
+});
+
+export const contentTemplateSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  name: z.string().min(1).max(180),
+  category: z.enum(contentTemplateCategories),
+  status: z.enum(contentTemplateStatuses),
+  platforms: z.array(z.enum(platforms)).min(1),
+  bodyTemplate: z.string().min(1).max(10000),
+  variables: z.array(z.string().min(1).max(80)).default([]),
+  defaultHashtags: z.array(z.string().min(1).max(80)).default([]),
+  guidance: z.record(z.string(), z.unknown()).default({}),
+  usageCount: z.number().int().nonnegative(),
+  createdBy: idSchema,
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema,
+  lastUsedAt: isoDateTimeSchema.optional()
 });
 
 export const campaignSchema = z.object({
@@ -683,6 +705,46 @@ export const publishingJobSchema = z.object({
   updatedAt: isoDateTimeSchema
 });
 
+export const scheduleRuleSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  name: z.string().min(1).max(180),
+  platforms: z.array(z.enum(platforms)).min(1),
+  timezone: z.string().min(1).max(80),
+  windows: z
+    .array(
+      z.object({
+        dayOfWeek: z.number().int().min(0).max(6),
+        startTime: z.string().regex(/^\d{2}:\d{2}$/),
+        endTime: z.string().regex(/^\d{2}:\d{2}$/)
+      })
+    )
+    .min(1),
+  minGapMinutes: z.number().int().positive(),
+  maxPostsPerDay: z.number().int().positive(),
+  status: z.enum(scheduleRuleStatuses),
+  createdBy: idSchema,
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
+export const scheduleSlotSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  ruleId: idSchema.optional(),
+  campaignId: idSchema.optional(),
+  platform: z.enum(platforms),
+  startsAt: isoDateTimeSchema,
+  endsAt: isoDateTimeSchema,
+  score: z.number().min(0).max(100),
+  status: z.enum(scheduleSlotStatuses),
+  reason: z.string().min(1).max(1000),
+  metadata: z.record(z.string(), z.unknown()).default({}),
+  reservedBy: idSchema.optional(),
+  reservedAt: isoDateTimeSchema.optional(),
+  createdAt: isoDateTimeSchema
+});
+
 export const postCommentSchema = z.object({
   id: idSchema,
   postId: idSchema,
@@ -746,6 +808,7 @@ export type SocialOAuthState = z.infer<typeof socialOAuthStateSchema>;
 export type SocialRateLimitBucket = z.infer<typeof socialRateLimitBucketSchema>;
 export type SocialConnectorEvent = z.infer<typeof socialConnectorEventSchema>;
 export type Post = z.infer<typeof postSchema>;
+export type ContentTemplate = z.infer<typeof contentTemplateSchema>;
 export type Campaign = z.infer<typeof campaignSchema>;
 export type CampaignMilestone = z.infer<typeof campaignMilestoneSchema>;
 export type CampaignTask = z.infer<typeof campaignTaskSchema>;
@@ -773,6 +836,8 @@ export type AuditLog = z.infer<typeof auditLogSchema>;
 export type WebhookDelivery = z.infer<typeof webhookDeliverySchema>;
 export type WebhookEndpoint = z.infer<typeof webhookEndpointSchema>;
 export type PublishingJob = z.infer<typeof publishingJobSchema>;
+export type ScheduleRule = z.infer<typeof scheduleRuleSchema>;
+export type ScheduleSlot = z.infer<typeof scheduleSlotSchema>;
 export type PostComment = z.infer<typeof postCommentSchema>;
 export type WorkflowEvent = z.infer<typeof workflowEventSchema>;
 export type AiGenerationRequest = z.infer<typeof aiGenerationRequestSchema>;

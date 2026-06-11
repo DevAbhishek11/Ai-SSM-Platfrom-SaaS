@@ -397,6 +397,56 @@ paths:
           description: Created post
         "400":
           description: Invalid platform content
+  /content/templates:
+    get:
+      tags: [content]
+      summary: List reusable content templates
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [draft, active, archived]
+      responses:
+        "200":
+          description: Content templates
+    post:
+      tags: [content]
+      summary: Create a reusable content template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateContentTemplate"
+      responses:
+        "201":
+          description: Created content template
+  /content/templates/{id}/use:
+    post:
+      tags: [content]
+      summary: Create a draft or scheduled post from a content template
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UseContentTemplate"
+      responses:
+        "201":
+          description: Rendered template and created post
   /campaigns:
     get:
       tags: [campaigns]
@@ -1047,6 +1097,87 @@ paths:
       responses:
         "200":
           description: Publishing job scheduled for retry
+  /scheduling/rules:
+    get:
+      tags: [scheduling]
+      summary: List smart scheduling rules
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, paused, archived]
+      responses:
+        "200":
+          description: Schedule rules
+    post:
+      tags: [scheduling]
+      summary: Create a smart scheduling rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScheduleRule"
+      responses:
+        "201":
+          description: Created schedule rule
+  /scheduling/slots:
+    get:
+      tags: [scheduling]
+      summary: List recommended and reserved schedule slots
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [recommended, reserved, used, skipped]
+      responses:
+        "200":
+          description: Schedule slots
+  /scheduling/recommendations:
+    post:
+      tags: [scheduling]
+      summary: Generate smart schedule slot recommendations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendScheduleSlots"
+      responses:
+        "201":
+          description: Generated slot recommendations
+  /scheduling/slots/{id}/reserve:
+    post:
+      tags: [scheduling]
+      summary: Reserve a schedule slot and optionally schedule a post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReserveScheduleSlot"
+      responses:
+        "201":
+          description: Reserved schedule slot
   /workflow/posts/{postId}/timeline:
     get:
       tags: [workflow]
@@ -1774,6 +1905,59 @@ components:
         link:
           type: string
           format: uri
+    CreateContentTemplate:
+      type: object
+      required: [workspaceId, name, category, platforms, bodyTemplate]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 180
+        category:
+          type: string
+          enum: [product_launch, announcement, educational, promotional, crisis_response, ugc, evergreen]
+        status:
+          type: string
+          enum: [draft, active, archived]
+        platforms:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum: [x, instagram, facebook, linkedin, youtube, tiktok, reddit, pinterest, threads, mastodon, bluesky]
+        bodyTemplate:
+          type: string
+          maxLength: 10000
+          example: "{{product}} helps {{audience}} with {{proofPoint}}."
+        variables:
+          type: array
+          items:
+            type: string
+        defaultHashtags:
+          type: array
+          items:
+            type: string
+        guidance:
+          type: object
+          additionalProperties: true
+    UseContentTemplate:
+      type: object
+      properties:
+        campaignId:
+          type: string
+          format: uuid
+        variables:
+          type: object
+          additionalProperties:
+            type: string
+        status:
+          type: string
+          enum: [draft, in_review, revisions_needed, approved, scheduled, publishing, published, failed, archived]
+        scheduledAt:
+          type: string
+          format: date-time
     InviteMember:
       type: object
       required: [workspaceId, email, role]
@@ -1899,6 +2083,87 @@ components:
         periodEnd:
           type: string
           format: date
+    ScheduleWindow:
+      type: object
+      required: [dayOfWeek, startTime, endTime]
+      properties:
+        dayOfWeek:
+          type: integer
+          minimum: 0
+          maximum: 6
+        startTime:
+          type: string
+          example: "10:00"
+        endTime:
+          type: string
+          example: "12:00"
+    CreateScheduleRule:
+      type: object
+      required: [workspaceId, name, platforms, timezone, windows]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 180
+        platforms:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum: [x, instagram, facebook, linkedin, youtube, tiktok, reddit, pinterest, threads, mastodon, bluesky]
+        timezone:
+          type: string
+        windows:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ScheduleWindow"
+        minGapMinutes:
+          type: integer
+          minimum: 15
+        maxPostsPerDay:
+          type: integer
+          minimum: 1
+          maximum: 24
+        status:
+          type: string
+          enum: [active, paused, archived]
+    RecommendScheduleSlots:
+      type: object
+      required: [workspaceId]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        platforms:
+          type: array
+          items:
+            type: string
+            enum: [x, instagram, facebook, linkedin, youtube, tiktok, reddit, pinterest, threads, mastodon, bluesky]
+        campaignId:
+          type: string
+          format: uuid
+        count:
+          type: integer
+          minimum: 1
+          maximum: 10
+        earliestAt:
+          type: string
+          format: date-time
+    ReserveScheduleSlot:
+      type: object
+      properties:
+        postId:
+          type: string
+          format: uuid
+        campaignId:
+          type: string
+          format: uuid
+        metadata:
+          type: object
+          additionalProperties: true
     CreateReportTemplate:
       type: object
       required: [workspaceId, name, type, format]

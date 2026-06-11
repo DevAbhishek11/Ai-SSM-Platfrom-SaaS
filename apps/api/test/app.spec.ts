@@ -104,6 +104,9 @@ describe("API application", () => {
     await request(app.getHttpServer()).get("/api/identity/sso-connections").expect(200);
     await request(app.getHttpServer()).get("/api/identity/sessions").expect(200);
     await request(app.getHttpServer()).get("/api/identity/devices").expect(200);
+    await request(app.getHttpServer()).get("/api/content/templates").expect(200);
+    await request(app.getHttpServer()).get("/api/scheduling/rules").expect(200);
+    await request(app.getHttpServer()).get("/api/scheduling/slots").expect(200);
     await request(app.getHttpServer())
       .get("/api/billing/entitlements/check?capability=unknown")
       .expect(400);
@@ -252,6 +255,116 @@ describe("API application", () => {
       status: "active"
     });
     expect(shareLink.body.token).toContain("rpt_");
+  });
+
+  it("creates content templates and turns them into draft posts", async () => {
+    const template = await request(app.getHttpServer())
+      .post("/api/content/templates")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        name: "Test launch proof template",
+        category: "product_launch",
+        platforms: ["linkedin", "instagram"],
+        bodyTemplate: "{{product}} helps {{audience}} with {{proofPoint}}.",
+        defaultHashtags: ["LaunchOps"],
+        guidance: { reviewRequired: true }
+      })
+      .expect(201);
+
+    expect(template.body).toMatchObject({
+      name: "Test launch proof template",
+      status: "active",
+      variables: ["product", "audience", "proofPoint"]
+    });
+
+    const used = await request(app.getHttpServer())
+      .post(`/api/content/templates/${template.body.id}/use`)
+      .send({
+        campaignId: "66666666-6666-4666-8666-666666666666",
+        variables: {
+          product: "Acme Planner",
+          audience: "launch teams",
+          proofPoint: "one approval workflow"
+        }
+      })
+      .expect(201);
+
+    expect(used.body.template.usageCount).toBe(1);
+    expect(used.body.post).toMatchObject({
+      status: "draft",
+      campaignId: "66666666-6666-4666-8666-666666666666"
+    });
+    expect(used.body.post.content[0].text).toContain("Acme Planner helps launch teams");
+  });
+
+  it("recommends smart schedule slots and reserves one for a post", async () => {
+    const rule = await request(app.getHttpServer())
+      .post("/api/scheduling/rules")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        name: "Test LinkedIn launch window",
+        platforms: ["linkedin"],
+        timezone: "Asia/Calcutta",
+        windows: [{ dayOfWeek: 2, startTime: "10:00", endTime: "12:00" }],
+        minGapMinutes: 120,
+        maxPostsPerDay: 2
+      })
+      .expect(201);
+
+    expect(rule.body).toMatchObject({
+      name: "Test LinkedIn launch window",
+      status: "active"
+    });
+
+    const recommendations = await request(app.getHttpServer())
+      .post("/api/scheduling/recommendations")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        campaignId: "66666666-6666-4666-8666-666666666666",
+        platforms: ["linkedin"],
+        count: 1,
+        earliestAt: "2026-06-16T04:00:00.000Z"
+      })
+      .expect(201);
+
+    expect(recommendations.body.generated).toHaveLength(1);
+    expect(recommendations.body.generated[0]).toMatchObject({
+      platform: "linkedin",
+      status: "recommended"
+    });
+
+    const post = await request(app.getHttpServer())
+      .post("/api/posts")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        campaignId: "66666666-6666-4666-8666-666666666666",
+        content: [
+          {
+            platform: "linkedin",
+            text: "Smart scheduled launch proof for operations teams.",
+            hashtags: ["LaunchOps"]
+          }
+        ]
+      })
+      .expect(201);
+
+    const reserved = await request(app.getHttpServer())
+      .post(`/api/scheduling/slots/${recommendations.body.generated[0].id}/reserve`)
+      .send({
+        postId: post.body.id,
+        campaignId: "66666666-6666-4666-8666-666666666666"
+      })
+      .expect(201);
+
+    expect(reserved.body.slot).toMatchObject({
+      status: "reserved",
+      reservedAt: expect.any(String)
+    });
+    expect(reserved.body.enqueueResult.jobs[0]).toMatchObject({
+      postId: post.body.id,
+      platform: "linkedin",
+      scheduledFor: recommendations.body.generated[0].startsAt
+    });
   });
 
   it("manages enterprise identity controls", async () => {

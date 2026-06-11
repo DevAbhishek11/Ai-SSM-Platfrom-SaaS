@@ -44,6 +44,26 @@ export const postStatuses = [
 
 export type PostStatus = (typeof postStatuses)[number];
 
+export const contentTemplateCategories = [
+  "product_launch",
+  "announcement",
+  "educational",
+  "promotional",
+  "crisis_response",
+  "ugc",
+  "evergreen"
+] as const;
+export type ContentTemplateCategory = (typeof contentTemplateCategories)[number];
+
+export const contentTemplateStatuses = ["draft", "active", "archived"] as const;
+export type ContentTemplateStatus = (typeof contentTemplateStatuses)[number];
+
+export const scheduleRuleStatuses = ["active", "paused", "archived"] as const;
+export type ScheduleRuleStatus = (typeof scheduleRuleStatuses)[number];
+
+export const scheduleSlotStatuses = ["recommended", "reserved", "used", "skipped"] as const;
+export type ScheduleSlotStatus = (typeof scheduleSlotStatuses)[number];
+
 export const campaignTypes = [
   "product_launch",
   "seasonal",

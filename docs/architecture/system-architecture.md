@@ -37,6 +37,7 @@ flowchart TB
   workspace --> postgres
   auth --> postgres
   reports --> postgres
+  scheduler --> postgres
   analytics --> timescale[(TimescaleDB)]
   scheduler --> redis[(Redis)]
   scheduler --> queue[(BullMQ/RabbitMQ)]
@@ -98,6 +99,41 @@ flowchart LR
   posts --> analytics[Analytics Snapshots]
   budget --> reports
   analytics --> reports
+```
+
+## Content Templates
+
+Content templates make approved campaign structures reusable. Each template stores category, target platforms, body placeholders, default hashtags, governance guidance, usage count, and last-used metadata. The Content module renders variables into platform-specific post variants and creates the resulting draft or scheduled post through the existing Posts service so plan limits and platform character validation still apply.
+
+```mermaid
+sequenceDiagram
+  participant Manager
+  participant Web as Calendar UI
+  participant Content as Content Module
+  participant Posts as Posts Service
+  participant Audit as Audit Service
+
+  Manager->>Web: Use launch template
+  Web->>Content: POST /api/content/templates/{id}/use
+  Content->>Content: Replace variables and hashtags
+  Content->>Posts: Create draft or scheduled post
+  Content->>Audit: content.template_used
+  Content-->>Web: Template usage and created post
+```
+
+## Smart Scheduling
+
+Smart scheduling rules describe platform windows, timezone, minimum gap, and daily post caps. Recommendation requests score future slots using the rule window plus recent platform analytics. Reserving a slot can update a post to `scheduled`, set its scheduled timestamp, and enqueue publishing jobs through the existing idempotent publishing service.
+
+```mermaid
+flowchart LR
+  rules[Schedule Rules] --> recommend[Recommendation Engine]
+  analytics[Analytics History] --> recommend
+  campaign[Campaign Context] --> recommend
+  recommend --> slots[Recommended Slots]
+  slots --> reserve[Reserve Slot]
+  reserve --> post[Scheduled Post]
+  reserve --> jobs[Publishing Jobs]
 ```
 
 ## Reporting, Exports, And Share Links
@@ -182,7 +218,7 @@ Listening monitors define brand, keyword, hashtag, competitor, or influencer que
 
 ## Audit Event Backbone
 
-Sensitive modules emit audit records through a shared audit service before the storage layer is swapped to Drizzle repositories. Covered actions include authentication success/failure, SSO connection changes, session and device revocation, report template/schedule/export/share-link operations, campaign task/budget/report operations, AI safety policy/check/moderation operations, workflow transitions, social connector lifecycle operations, listening monitor and alert operations, media upload/processing changes, publishing job state changes, and webhook replay. Records include actor, workspace, action, entity, old/new values, IP, user agent, and timestamp where available.
+Sensitive modules emit audit records through a shared audit service before the storage layer is swapped to Drizzle repositories. Covered actions include authentication success/failure, SSO connection changes, session and device revocation, content template creation/use, schedule rule and slot operations, report template/schedule/export/share-link operations, campaign task/budget/report operations, AI safety policy/check/moderation operations, workflow transitions, social connector lifecycle operations, listening monitor and alert operations, media upload/processing changes, publishing job state changes, and webhook replay. Records include actor, workspace, action, entity, old/new values, IP, user agent, and timestamp where available.
 
 ## Team Access And Service Credentials
 
@@ -252,7 +288,7 @@ flowchart LR
 ## Tenancy Model
 
 - Organization owns billing and one or more workspaces.
-- Workspace is the primary tenant boundary for content, accounts, media, analytics, reports, identity controls, trends, listening monitors, social mentions, alerts, notifications, AI generations, webhooks, and audit logs.
+- Workspace is the primary tenant boundary for content, templates, schedule rules, schedule slots, accounts, media, analytics, reports, identity controls, trends, listening monitors, social mentions, alerts, notifications, AI generations, webhooks, and audit logs.
 - API authorizes every request against role permissions.
 - PostgreSQL RLS uses `app.workspace_id` for database-layer isolation in production.
 

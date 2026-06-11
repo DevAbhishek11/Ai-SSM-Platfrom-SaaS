@@ -8,6 +8,7 @@ import type {
   CampaignMilestone,
   CampaignReport,
   CampaignTask,
+  ContentTemplate,
   ListeningAlert,
   ListeningMonitor,
   MediaAsset,
@@ -23,6 +24,8 @@ import type {
   ReportExport,
   ReportShareLink,
   ReportTemplate,
+  ScheduleRule,
+  ScheduleSlot,
   ScheduledReport,
   AuthSession,
   SocialConnectorEvent,
@@ -629,6 +632,50 @@ export const demoBrandVoices: BrandVoice[] = [
   }
 ];
 
+export const demoContentTemplates: ContentTemplate[] = [
+  {
+    id: "80808080-8080-4808-8808-808080808080",
+    workspaceId: demoWorkspace.id,
+    name: "Launch proof point post",
+    category: "product_launch",
+    status: "active",
+    platforms: ["linkedin", "instagram"],
+    bodyTemplate:
+      "{{product}} helps {{audience}} move faster with {{proofPoint}}. Start with one launch workflow, then scale what works.",
+    variables: ["product", "audience", "proofPoint"],
+    defaultHashtags: ["LaunchOps", "SocialMedia"],
+    guidance: {
+      tone: "confident and practical",
+      bestFor: "primary launch announcement"
+    },
+    usageCount: 4,
+    createdBy: demoUser.id,
+    createdAt: now,
+    updatedAt: now,
+    lastUsedAt: "2026-06-10T09:15:00.000Z"
+  },
+  {
+    id: "81818181-8181-4818-8818-818181818181",
+    workspaceId: demoWorkspace.id,
+    name: "Account issue response",
+    category: "crisis_response",
+    status: "active",
+    platforms: ["x", "linkedin"],
+    bodyTemplate:
+      "We are aware of {{issue}} and the team is working on it now. Updates will be shared by {{updateTime}}.",
+    variables: ["issue", "updateTime"],
+    defaultHashtags: ["StatusUpdate"],
+    guidance: {
+      tone: "calm, specific, no speculation",
+      requiresReview: true
+    },
+    usageCount: 1,
+    createdBy: demoUser.id,
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
 export const demoPosts: Post[] = [
   {
     id: "88888888-8888-4888-8888-888888888888",
@@ -1164,6 +1211,80 @@ export const demoPublishingJobs: PublishingJob[] = [
     nextRetryAt: "2026-06-11T06:30:00.000Z",
     createdAt: now,
     updatedAt: now
+  }
+];
+
+export const demoScheduleRules: ScheduleRule[] = [
+  {
+    id: "82828282-8282-4828-8828-828282828282",
+    workspaceId: demoWorkspace.id,
+    name: "Launch audience peak windows",
+    platforms: ["linkedin", "instagram"],
+    timezone: "Asia/Calcutta",
+    windows: [
+      { dayOfWeek: 2, startTime: "10:00", endTime: "12:00" },
+      { dayOfWeek: 4, startTime: "15:00", endTime: "17:00" }
+    ],
+    minGapMinutes: 180,
+    maxPostsPerDay: 3,
+    status: "active",
+    createdBy: demoUser.id,
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "83838383-8383-4838-8838-838383838383",
+    workspaceId: demoWorkspace.id,
+    name: "Fast-response social ops queue",
+    platforms: ["x", "threads"],
+    timezone: "Asia/Calcutta",
+    windows: [
+      { dayOfWeek: 1, startTime: "09:00", endTime: "10:30" },
+      { dayOfWeek: 3, startTime: "16:00", endTime: "18:00" }
+    ],
+    minGapMinutes: 90,
+    maxPostsPerDay: 5,
+    status: "active",
+    createdBy: demoUser.id,
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+export const demoScheduleSlots: ScheduleSlot[] = [
+  {
+    id: "84848484-8484-4848-8848-848484848484",
+    workspaceId: demoWorkspace.id,
+    ruleId: "82828282-8282-4828-8828-828282828282",
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    platform: "linkedin",
+    startsAt: "2026-06-16T04:30:00.000Z",
+    endsAt: "2026-06-16T05:00:00.000Z",
+    score: 91,
+    status: "recommended",
+    reason: "LinkedIn engagement is strongest in the late-morning launch planning window.",
+    metadata: {
+      basis: "analytics_history",
+      expectedReach: 78000
+    },
+    createdAt: now
+  },
+  {
+    id: "85858585-8585-4858-8858-858585858585",
+    workspaceId: demoWorkspace.id,
+    ruleId: "82828282-8282-4828-8828-828282828282",
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    platform: "instagram",
+    startsAt: "2026-06-18T09:45:00.000Z",
+    endsAt: "2026-06-18T10:15:00.000Z",
+    score: 87,
+    status: "recommended",
+    reason: "Instagram launch content has higher saves near the afternoon review handoff.",
+    metadata: {
+      basis: "campaign_window",
+      expectedReach: 94000
+    },
+    createdAt: now
   }
 ];
 

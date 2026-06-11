@@ -10,6 +10,8 @@
 - Connect social accounts through OAuth and confirm publish, insights, and comment scopes.
 - Review connector events and rate-limit buckets before major campaign launch windows.
 - Configure social listening monitors for brand, campaign, competitor, and crisis keywords.
+- Define reusable content templates for approved launch, announcement, educational, promotional, crisis, UGC, and evergreen patterns.
+- Create smart scheduling rules for platform windows, timezone, minimum post gaps, and campaign capacity.
 - Define campaign milestones, task owners, and budget categories before publishing begins.
 - Configure and version brand voice profiles before allowing AI-generated publishing.
 - Configure AI safety policies with blocked terms, required disclosures, and maximum risk score.
@@ -27,6 +29,7 @@
 - Review notification routing preferences and delivery attempts for urgent operational alerts.
 - Review social listening thresholds before launches and resolve alerts only after response ownership is recorded.
 - Generate campaign reports after major launch moments and before stakeholder readouts.
+- Review content template usage and smart scheduling reservations before high-stakes launches.
 - Use Analytics > Reports and exports to create branded templates, schedule stakeholder delivery, generate exports, and issue time-bound share links.
 - Review AI moderation queue items before approving blocked drafts for regulated campaigns.
 - Monitor webhook retries and account-health alerts before campaign launch windows.

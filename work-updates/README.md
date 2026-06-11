@@ -23,6 +23,8 @@ This folder tracks implementation phases, sessions, decisions, validation result
 | 2026-06-11 | `phase-14-session-2026-06-11.md` | AI safety policies, checks, moderation queue, and guardrails | Complete |
 | 2026-06-11 | `phase-15-session-2026-06-11.md` | Reporting templates, scheduled exports, and share links | Complete |
 | 2026-06-11 | `phase-16-session-2026-06-11.md` | Enterprise SSO, auth sessions, and trusted devices | Complete |
+| 2026-06-11 | `phase-17-session-2026-06-11.md` | Reusable content templates and template-created drafts | Complete |
+| 2026-06-11 | `phase-18-session-2026-06-11.md` | Smart scheduling rules, recommendations, and slot reservations | Complete |
 
 ## Operating Rules
 

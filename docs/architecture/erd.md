@@ -22,6 +22,7 @@ erDiagram
   CAMPAIGNS ||--o{ CAMPAIGN_TASKS : assigns
   CAMPAIGNS ||--o{ CAMPAIGN_BUDGET_LINES : funds
   CAMPAIGNS ||--o{ CAMPAIGN_REPORTS : summarizes
+  CAMPAIGNS ||--o{ SCHEDULE_SLOTS : reserves
   WORKSPACES ||--o{ REPORT_TEMPLATES : defines
   WORKSPACES ||--o{ SCHEDULED_REPORTS : schedules
   WORKSPACES ||--o{ REPORT_EXPORTS : exports
@@ -30,6 +31,10 @@ erDiagram
   REPORT_TEMPLATES ||--o{ REPORT_EXPORTS : renders
   REPORT_EXPORTS ||--o{ REPORT_SHARE_LINKS : exposes
   WORKSPACES ||--o{ POSTS : owns
+  WORKSPACES ||--o{ CONTENT_TEMPLATES : reuses
+  WORKSPACES ||--o{ SCHEDULE_RULES : optimizes
+  WORKSPACES ||--o{ SCHEDULE_SLOTS : recommends
+  SCHEDULE_RULES ||--o{ SCHEDULE_SLOTS : generates
   WORKSPACES ||--o{ MEDIA_ASSETS : stores
   WORKSPACES ||--o{ BRAND_VOICES : defines
   WORKSPACES ||--o{ SAFETY_POLICIES : governs
@@ -49,6 +54,7 @@ erDiagram
   USERS ||--o{ AUTH_SESSIONS : signs_in
   USERS ||--o{ TRUSTED_DEVICES : owns
   POSTS ||--o{ POST_PLATFORMS : targets
+  POSTS ||--o{ PUBLISHING_JOBS : queues
   SOCIAL_ACCOUNTS ||--o{ POST_PLATFORMS : publishes
   SOCIAL_ACCOUNTS ||--o{ ANALYTICS_SNAPSHOTS : reports
   POSTS ||--o{ ANALYTICS_SNAPSHOTS : attributes
@@ -159,6 +165,24 @@ erDiagram
     jsonb metrics
     jsonb insights
     timestamptz generated_at
+  }
+
+  CONTENT_TEMPLATES {
+    uuid id PK
+    uuid workspace_id FK
+    text name
+    content_template_category category
+    content_template_status status
+    platform[] platforms
+    text body_template
+    text[] variables
+    text[] default_hashtags
+    jsonb guidance
+    integer usage_count
+    uuid created_by FK
+    timestamptz last_used_at
+    timestamptz created_at
+    timestamptz updated_at
   }
 
   REPORT_TEMPLATES {
@@ -343,6 +367,38 @@ erDiagram
     timestamptz revoked_at
   }
 
+  SCHEDULE_RULES {
+    uuid id PK
+    uuid workspace_id FK
+    text name
+    platform[] platforms
+    text timezone
+    jsonb windows
+    integer min_gap_minutes
+    integer max_posts_per_day
+    schedule_rule_status status
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  SCHEDULE_SLOTS {
+    uuid id PK
+    uuid workspace_id FK
+    uuid rule_id FK
+    uuid campaign_id FK
+    platform platform
+    timestamptz starts_at
+    timestamptz ends_at
+    integer score
+    schedule_slot_status status
+    text reason
+    jsonb metadata
+    uuid reserved_by FK
+    timestamptz reserved_at
+    timestamptz created_at
+  }
+
   SSO_CONNECTIONS {
     uuid id PK
     uuid workspace_id FK
@@ -462,6 +518,7 @@ erDiagram
 - Composite account/status index on platform targets.
 - Unique brand voice name per workspace.
 - Campaign operations indexes by campaign due date, campaign/status, workspace/priority, workspace/status, and campaign/generated report time.
+- Content template indexes by workspace/status, workspace/category, and unique workspace/name.
 - Reporting indexes by workspace/type, schedule next run, export status, export expiry, share token hash, and share expiry.
 - Safety indexes by workspace/status, workspace/created time, and safety check id for moderation review.
 - GIN indexes for post content and analytics metrics.
@@ -469,6 +526,7 @@ erDiagram
 - Social connector indexes by workspace, account, OAuth state, rate-limit reset, and event timestamp.
 - Invitation indexes by workspace/email/status and token hash; API key indexes by workspace/status and prefix.
 - Enterprise identity indexes by workspace/domain, session status, session expiry, device fingerprint, and device status.
+- Smart scheduling indexes by workspace/rule status and workspace/slot status/start time.
 - Notification preference unique index by user/workspace; delivery indexes by notification, workspace/status, and user/channel.
 - Listening monitor indexes by workspace/status and workspace/query; mention indexes by workspace/detected time, monitor/detected time, and sentiment; alert indexes by workspace/resolved and monitor/created time.
 
@@ -480,6 +538,8 @@ erDiagram
 - Analytics snapshots: 2 years hot query storage, then warehouse/archive.
 - Social mentions and listening alerts: 2 years hot storage, then warehouse/archive unless incident policy requires longer retention.
 - Campaign reports: 2 years hot storage, then archive with analytics snapshots.
+- Content templates and schedule rules: retained until archived/deleted by workspace admins.
+- Schedule slots: 1 year hot storage for planning analytics, then archive with publishing jobs.
 - Report exports and share links: expire by policy, retain metadata and audit records for 2 years.
 - Auth sessions and trusted device events: 1 year hot storage, then security archive; SSO connection history follows audit retention.
 - Media assets: until workspace deletion or explicit user deletion.

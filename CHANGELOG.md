@@ -27,3 +27,5 @@
 - Added AI safety policy, content check, and moderation queue contracts, database migration, safety API, AI generation integration, AI Studio safety review UI, runbook, docs, and tests.
 - Added reporting templates, scheduled reports, export generation, share-link contracts, database migration, Reports API, Analytics reporting UI, runbook, docs, and tests.
 - Added enterprise identity controls for SSO connections, auth sessions, trusted devices, database migration, Identity API, Settings security UI, runbook, docs, and tests.
+- Added reusable content template contracts, database migration, Content API, Calendar template UI, runbook, docs, and tests.
+- Added smart scheduling rule/slot contracts, database migration, Scheduling API, Calendar recommendation UI, runbook, docs, and tests.
