@@ -1,13 +1,29 @@
 import type {
   AnalyticsSnapshot,
   Campaign,
+  MediaAsset,
+  Notification,
   Post,
   SocialAccount,
   Trend,
+  User,
+  WebhookDelivery,
   Workspace
 } from "./schemas.js";
 
 const now = "2026-06-11T05:45:00.000Z";
+
+export const demoUser: User = {
+  id: "77777777-7777-4777-8777-777777777777",
+  email: "owner@acmegrowth.test",
+  name: "Mira Shah",
+  avatarUrl: undefined,
+  timezone: "Asia/Calcutta",
+  language: "en",
+  status: "active",
+  createdAt: now,
+  updatedAt: now
+};
 
 export const demoWorkspace: Workspace = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -190,5 +206,86 @@ export const demoTrends: Trend[] = [
     sentiment: "mixed",
     detectedAt: now,
     expiresAt: "2026-06-13T05:45:00.000Z"
+  }
+];
+
+export const demoMediaAssets: MediaAsset[] = [
+  {
+    id: "12121212-1212-4121-8121-121212121212",
+    workspaceId: demoWorkspace.id,
+    fileName: "launch-hero-4x5.webp",
+    assetType: "image",
+    fileType: "image/webp",
+    fileSize: 842114,
+    storageKey: "workspaces/acme-growth-lab/media/launch-hero-4x5.webp",
+    cdnUrl: "https://cdn.example.com/workspaces/acme-growth-lab/media/launch-hero-4x5.webp",
+    thumbnailUrl: "https://cdn.example.com/workspaces/acme-growth-lab/media/thumbs/launch-hero-4x5.webp",
+    tags: ["launch", "hero", "instagram"],
+    metadata: { width: 1080, height: 1350, copyright: "Acme Growth" },
+    aiTags: { objects: ["dashboard", "calendar"], colors: ["teal", "white"] },
+    createdBy: demoUser.id,
+    createdAt: now
+  },
+  {
+    id: "13131313-1313-4131-8131-131313131313",
+    workspaceId: demoWorkspace.id,
+    fileName: "product-demo-short.mp4",
+    assetType: "video",
+    fileType: "video/mp4",
+    fileSize: 18421140,
+    storageKey: "workspaces/acme-growth-lab/media/product-demo-short.mp4",
+    cdnUrl: "https://cdn.example.com/workspaces/acme-growth-lab/media/product-demo-short.mp4",
+    thumbnailUrl: "https://cdn.example.com/workspaces/acme-growth-lab/media/thumbs/product-demo-short.webp",
+    tags: ["demo", "short-form", "launch"],
+    metadata: { durationSeconds: 28, aspectRatio: "9:16" },
+    aiTags: { scenes: ["workflow", "analytics"] },
+    createdBy: demoUser.id,
+    createdAt: now
+  }
+];
+
+export const demoNotifications: Notification[] = [
+  {
+    id: "14141414-1414-4141-8141-141414141414",
+    userId: demoUser.id,
+    type: "approval_request",
+    title: "Post ready for review",
+    body: "A LinkedIn launch post is waiting in the approval queue.",
+    metadata: { postId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" },
+    read: false,
+    createdAt: now
+  },
+  {
+    id: "15151515-1515-4151-8151-151515151515",
+    userId: demoUser.id,
+    type: "account_issue",
+    title: "Reconnect X account",
+    body: "The token for @acmegrowth expired and publishing is paused for that account.",
+    metadata: { accountId: "55555555-5555-4555-8555-555555555555" },
+    read: false,
+    createdAt: "2026-06-10T04:45:00.000Z"
+  }
+];
+
+export const demoWebhookDeliveries: WebhookDelivery[] = [
+  {
+    id: "16161616-1616-4161-8161-161616161616",
+    workspaceId: demoWorkspace.id,
+    eventType: "post.scheduled",
+    payload: { postId: "88888888-8888-4888-8888-888888888888" },
+    status: "delivered",
+    attempts: 1,
+    responseCode: 200,
+    createdAt: now
+  },
+  {
+    id: "17171717-1717-4171-8171-171717171717",
+    workspaceId: demoWorkspace.id,
+    eventType: "social_account.expired",
+    payload: { accountId: "55555555-5555-4555-8555-555555555555" },
+    status: "pending",
+    attempts: 2,
+    nextRetryAt: "2026-06-11T06:15:00.000Z",
+    createdAt: now
   }
 ];

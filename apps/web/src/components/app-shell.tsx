@@ -13,20 +13,21 @@ import type { ReactNode } from "react";
 import type { Workspace } from "@ssm/domain";
 
 const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard, active: true },
-  { label: "Calendar", icon: CalendarDays },
-  { label: "AI Studio", icon: Sparkles },
-  { label: "Approvals", icon: CheckCircle2 },
-  { label: "Analytics", icon: BarChart3 },
-  { label: "Listening", icon: Megaphone },
-  { label: "Assets", icon: Library },
-  { label: "Team", icon: Users }
+  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Calendar", href: "/calendar", icon: CalendarDays },
+  { label: "AI Studio", href: "/ai-studio", icon: Sparkles },
+  { label: "Approvals", href: "/approvals", icon: CheckCircle2 },
+  { label: "Analytics", href: "/analytics", icon: BarChart3 },
+  { label: "Accounts", href: "/accounts", icon: Megaphone },
+  { label: "Assets", href: "/media", icon: Library },
+  { label: "Settings", href: "/settings", icon: Users }
 ];
 
 export function AppShell({
   workspace,
-  children
-}: Readonly<{ workspace: Workspace; children: ReactNode }>) {
+  children,
+  activeItem = "Dashboard"
+}: Readonly<{ workspace: Workspace; children: ReactNode; activeItem?: string }>) {
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
       <aside className="border-b border-[var(--border)] bg-[var(--panel)] lg:min-h-screen lg:border-b-0 lg:border-r">
@@ -46,13 +47,13 @@ export function AppShell({
           {navItems.map((item) => (
             <a
               key={item.label}
-              href="#"
+              href={item.href}
               className={`flex min-w-fit items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
-                item.active
+                item.label === activeItem
                   ? "bg-[var(--accent)] text-white"
                   : "text-[var(--muted)] hover:bg-[var(--panel-soft)] hover:text-[var(--foreground)]"
               }`}
-              aria-current={item.active ? "page" : undefined}
+              aria-current={item.label === activeItem ? "page" : undefined}
             >
               <item.icon size={18} aria-hidden="true" />
               {item.label}

@@ -13,7 +13,9 @@ const statusLabels: Record<string, string> = {
   connected: "Connected",
   expired: "Expired",
   revoked: "Revoked",
-  error: "Error"
+  error: "Error",
+  pending: "Pending",
+  delivered: "Delivered"
 };
 
 const toneClasses: Record<string, string> = {
@@ -29,7 +31,9 @@ const toneClasses: Record<string, string> = {
   connected: "bg-emerald-50 text-emerald-800 border-emerald-200",
   expired: "bg-amber-50 text-amber-800 border-amber-200",
   revoked: "bg-red-50 text-red-800 border-red-200",
-  error: "bg-red-50 text-red-800 border-red-200"
+  error: "bg-red-50 text-red-800 border-red-200",
+  pending: "bg-amber-50 text-amber-800 border-amber-200",
+  delivered: "bg-emerald-50 text-emerald-800 border-emerald-200"
 };
 
 export function StatusBadge({ status }: { status: PostStatus | string }) {

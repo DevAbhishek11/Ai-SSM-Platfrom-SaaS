@@ -8,6 +8,39 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Issue a short-lived access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        "201":
+          description: Token response
+        "401":
+          description: Invalid credentials
+  /auth/session:
+    get:
+      tags: [auth]
+      summary: Validate bearer token and return principal
+      responses:
+        "200":
+          description: Caller principal
+        "401":
+          description: Missing or invalid bearer token
   /health:
     get:
       tags: [health]
@@ -87,6 +120,146 @@ paths:
           description: Created post
         "400":
           description: Invalid platform content
+  /campaigns:
+    get:
+      tags: [campaigns]
+      summary: List workspace campaigns
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Campaign list with operational summaries
+  /campaigns/{id}:
+    get:
+      tags: [campaigns]
+      summary: Get campaign details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Campaign details
+        "404":
+          description: Campaign not found
+  /media/assets:
+    get:
+      tags: [media]
+      summary: List workspace media assets
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Media assets
+  /media/upload-intents:
+    post:
+      tags: [media]
+      summary: Create an upload intent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workspaceId, fileName, fileType, fileSize]
+              properties:
+                workspaceId:
+                  type: string
+                  format: uuid
+                fileName:
+                  type: string
+                fileType:
+                  type: string
+                fileSize:
+                  type: integer
+      responses:
+        "201":
+          description: Constrained upload URL and required headers
+  /notifications:
+    get:
+      tags: [notifications]
+      summary: List user notifications
+      parameters:
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Notifications
+  /notifications/{id}/read:
+    patch:
+      tags: [notifications]
+      summary: Mark notification as read
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Updated notification
+  /billing/plans:
+    get:
+      tags: [billing]
+      summary: Plan limits and capabilities
+      responses:
+        "200":
+          description: Pricing plan matrix
+  /billing/usage:
+    get:
+      tags: [billing]
+      summary: Workspace usage against plan limits
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Workspace usage
+  /webhooks/deliveries:
+    get:
+      tags: [webhooks]
+      summary: List webhook deliveries
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Webhook deliveries
+  /webhooks/deliveries/{id}/replay:
+    post:
+      tags: [webhooks]
+      summary: Replay a pending or failed webhook delivery
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Delivery queued for replay
   /ai/generate:
     post:
       tags: [ai]

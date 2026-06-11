@@ -63,6 +63,97 @@ export type AccountStatus = (typeof accountStatuses)[number];
 export const sentimentLabels = ["negative", "neutral", "positive", "mixed"] as const;
 export type SentimentLabel = (typeof sentimentLabels)[number];
 
+export const mediaAssetTypes = ["image", "video", "audio", "document", "design", "three_d"] as const;
+export type MediaAssetType = (typeof mediaAssetTypes)[number];
+
+export const notificationTypes = [
+  "publishing_failure",
+  "approval_request",
+  "trend_alert",
+  "performance_milestone",
+  "account_issue",
+  "system_alert",
+  "billing_alert",
+  "security_alert",
+  "mention",
+  "scheduled_reminder"
+] as const;
+export type NotificationType = (typeof notificationTypes)[number];
+
+export const webhookStatuses = ["pending", "delivered", "failed"] as const;
+export type WebhookStatus = (typeof webhookStatuses)[number];
+
+export const planLimits: Record<
+  Plan,
+  {
+    workspaces: number | "unlimited";
+    socialAccounts: number | "unlimited";
+    postsPerMonth: number | "unlimited";
+    aiGenerations: number | "custom";
+    teamMembers: number | "unlimited";
+    mediaStorageGb: number | "custom";
+    apiAccess: "none" | "read" | "full" | "full_with_webhooks";
+    sso: boolean;
+    whiteLabel: boolean;
+  }
+> = {
+  free: {
+    workspaces: 1,
+    socialAccounts: 3,
+    postsPerMonth: 30,
+    aiGenerations: 10,
+    teamMembers: 1,
+    mediaStorageGb: 1,
+    apiAccess: "none",
+    sso: false,
+    whiteLabel: false
+  },
+  starter: {
+    workspaces: 1,
+    socialAccounts: 5,
+    postsPerMonth: 100,
+    aiGenerations: 50,
+    teamMembers: 3,
+    mediaStorageGb: 10,
+    apiAccess: "none",
+    sso: false,
+    whiteLabel: false
+  },
+  pro: {
+    workspaces: 3,
+    socialAccounts: 15,
+    postsPerMonth: 500,
+    aiGenerations: 200,
+    teamMembers: 10,
+    mediaStorageGb: 50,
+    apiAccess: "read",
+    sso: false,
+    whiteLabel: false
+  },
+  business: {
+    workspaces: 10,
+    socialAccounts: 50,
+    postsPerMonth: 2000,
+    aiGenerations: 1000,
+    teamMembers: 25,
+    mediaStorageGb: 200,
+    apiAccess: "full",
+    sso: true,
+    whiteLabel: false
+  },
+  enterprise: {
+    workspaces: "unlimited",
+    socialAccounts: "unlimited",
+    postsPerMonth: "unlimited",
+    aiGenerations: "custom",
+    teamMembers: "unlimited",
+    mediaStorageGb: "custom",
+    apiAccess: "full_with_webhooks",
+    sso: true,
+    whiteLabel: true
+  }
+};
+
 export const supportedPlatformCapabilities: Record<
   Platform,
   {

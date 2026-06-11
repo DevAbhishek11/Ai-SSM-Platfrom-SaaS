@@ -38,4 +38,31 @@ describe("API application", () => {
     expect(response.body.metrics.connectedAccounts).toBe(2);
     expect(response.body.trends).toHaveLength(2);
   });
+
+  it("issues and validates a demo access token", async () => {
+    const login = await request(app.getHttpServer())
+      .post("/api/auth/login")
+      .send({ email: "owner@acmegrowth.test", password: "demo-password-change-me" })
+      .expect(201);
+
+    expect(login.body.accessToken).toEqual(expect.any(String));
+
+    const session = await request(app.getHttpServer())
+      .get("/api/auth/session")
+      .set("authorization", `Bearer ${login.body.accessToken}`)
+      .expect(200);
+
+    expect(session.body).toMatchObject({
+      email: "owner@acmegrowth.test",
+      role: "owner"
+    });
+  });
+
+  it("exposes core SaaS operational modules", async () => {
+    await request(app.getHttpServer()).get("/api/campaigns").expect(200);
+    await request(app.getHttpServer()).get("/api/media/assets").expect(200);
+    await request(app.getHttpServer()).get("/api/notifications").expect(200);
+    await request(app.getHttpServer()).get("/api/billing/plans").expect(200);
+    await request(app.getHttpServer()).get("/api/webhooks/deliveries").expect(200);
+  });
 });

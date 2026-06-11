@@ -34,6 +34,22 @@ Default local URLs:
 - API: `http://localhost:4000/api`
 - OpenAPI docs: `http://localhost:4000/docs`
 
+Demo auth:
+
+- Email: `owner@acmegrowth.test`
+- Password: `demo-password-change-me`
+
+Implemented dashboard routes:
+
+- `/` - command dashboard
+- `/calendar` - calendar and campaign portfolio
+- `/ai-studio` - AI generation workflow
+- `/approvals` - review queue and notifications
+- `/analytics` - performance dashboard
+- `/accounts` - social account health
+- `/media` - media library
+- `/settings` - billing limits and webhook delivery status
+
 ## Environment
 
 Copy `.env.example` to `.env` and update values for your local services.

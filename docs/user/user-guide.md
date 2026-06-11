@@ -24,3 +24,7 @@ Admins connect accounts through OAuth. Expired or revoked accounts appear in acc
 ## Analytics
 
 Managers can view reach, impressions, engagement, clicks, conversions, and AI recommendations. Exports are plan-gated.
+
+## Media And Settings
+
+The media page tracks reusable campaign assets, tags, and upload readiness. Settings groups billing limits, webhook delivery status, and operational controls that admins use before launch.

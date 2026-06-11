@@ -6,7 +6,8 @@ This folder tracks implementation phases, sessions, decisions, validation result
 
 | Date | Session | Focus | Status |
 | ---- | ------- | ----- | ------ |
-| 2026-06-11 | `phase-00-session-2026-06-11.md` | Repository foundation and first production slice | In progress |
+| 2026-06-11 | `phase-00-session-2026-06-11.md` | Repository foundation and first production slice | Complete |
+| 2026-06-11 | `phase-01-session-2026-06-11.md` | Core SaaS workflows, auth/RBAC, database wiring, API/UI expansion | In progress |
 
 ## Operating Rules
 

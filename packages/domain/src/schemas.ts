@@ -2,11 +2,14 @@ import { z } from "zod";
 import {
   accountStatuses,
   campaignTypes,
+  mediaAssetTypes,
+  notificationTypes,
   platforms,
   plans,
   postStatuses,
   roles,
-  sentimentLabels
+  sentimentLabels,
+  webhookStatuses
 } from "./constants.js";
 
 export const idSchema = z.uuid();
@@ -146,6 +149,48 @@ export const trendSchema = z.object({
   expiresAt: isoDateTimeSchema
 });
 
+export const mediaAssetSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  fileName: z.string().min(1).max(255),
+  assetType: z.enum(mediaAssetTypes),
+  fileType: z.string().min(1),
+  fileSize: z.number().int().nonnegative(),
+  storageKey: z.string().min(1),
+  cdnUrl: z.url().optional(),
+  thumbnailUrl: z.url().optional(),
+  tags: z.array(z.string()).default([]),
+  folderId: idSchema.optional(),
+  metadata: z.record(z.string(), z.unknown()).default({}),
+  aiTags: z.record(z.string(), z.unknown()).default({}),
+  createdBy: idSchema,
+  createdAt: isoDateTimeSchema
+});
+
+export const notificationSchema = z.object({
+  id: idSchema,
+  userId: idSchema,
+  type: z.enum(notificationTypes),
+  title: z.string().min(1).max(180),
+  body: z.string().min(1).max(2000),
+  metadata: z.record(z.string(), z.unknown()).default({}),
+  read: z.boolean(),
+  createdAt: isoDateTimeSchema
+});
+
+export const webhookDeliverySchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  eventType: z.string().min(1),
+  payload: z.record(z.string(), z.unknown()),
+  status: z.enum(webhookStatuses),
+  attempts: z.number().int().nonnegative(),
+  nextRetryAt: isoDateTimeSchema.optional(),
+  responseCode: z.number().int().optional(),
+  responseBody: z.string().optional(),
+  createdAt: isoDateTimeSchema
+});
+
 export const aiGenerationRequestSchema = z.object({
   workspaceId: idSchema,
   brief: z.string().min(10).max(5000),
@@ -177,5 +222,8 @@ export type Post = z.infer<typeof postSchema>;
 export type Campaign = z.infer<typeof campaignSchema>;
 export type AnalyticsSnapshot = z.infer<typeof analyticsSnapshotSchema>;
 export type Trend = z.infer<typeof trendSchema>;
+export type MediaAsset = z.infer<typeof mediaAssetSchema>;
+export type Notification = z.infer<typeof notificationSchema>;
+export type WebhookDelivery = z.infer<typeof webhookDeliverySchema>;
 export type AiGenerationRequest = z.infer<typeof aiGenerationRequestSchema>;
 export type AiGenerationResponse = z.infer<typeof aiGenerationResponseSchema>;

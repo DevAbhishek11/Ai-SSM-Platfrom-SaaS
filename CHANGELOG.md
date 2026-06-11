@@ -9,3 +9,6 @@
 - Added Next.js dashboard with metrics, calendar, AI studio panel, account health, approvals, trends, and analytics chart.
 - Added Phase 1 product, architecture, API, security, and operations docs.
 - Added Docker, Kubernetes, Terraform, monitoring, and CI scaffolding.
+- Added Argon2/JWT auth endpoints, global RBAC permission guard, and database health wiring.
+- Added campaigns, media, notifications, billing, and webhooks API modules.
+- Added workflow routes for calendar, AI studio, approvals, analytics, accounts, media, and settings.

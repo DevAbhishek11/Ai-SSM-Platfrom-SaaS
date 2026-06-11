@@ -21,7 +21,7 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <AppShell workspace={overview.workspace}>
+    <AppShell workspace={overview.workspace} activeItem="Dashboard">
       <div className="grid gap-5">
         <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4">
