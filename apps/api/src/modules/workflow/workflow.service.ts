@@ -10,6 +10,7 @@ import {
   type WorkflowEventAction
 } from "@ssm/domain";
 import type { Principal } from "../../common/principal.js";
+import { AuditService } from "../audit/audit.service.js";
 import { PostsRepository } from "../repositories/posts.repository.js";
 
 const allowedTransitions: Record<PostStatus, PostStatus[]> = {
@@ -29,7 +30,10 @@ export class WorkflowService {
   private readonly comments: PostComment[] = [...demoPostComments];
   private readonly events: WorkflowEvent[] = [...demoWorkflowEvents];
 
-  constructor(private readonly postsRepository: PostsRepository) {}
+  constructor(
+    private readonly postsRepository: PostsRepository,
+    private readonly auditService: AuditService
+  ) {}
 
   timeline(postId: string) {
     const post = this.getPost(postId);
@@ -76,6 +80,16 @@ export class WorkflowService {
       this.addComment(post, user.userId, comment);
     }
 
+    this.auditService.record({
+      workspaceId: post.workspaceId,
+      userId: user.userId,
+      action: `workflow.${action}`,
+      entityType: "post",
+      entityId: post.id,
+      oldValues: { status: fromStatus },
+      newValues: { status: toStatus, comment }
+    });
+
     return {
       post,
       event,
@@ -110,6 +124,16 @@ export class WorkflowService {
     if (comment) {
       this.addComment(post, user.userId, comment);
     }
+
+    this.auditService.record({
+      workspaceId: post.workspaceId,
+      userId: user.userId,
+      action: "workflow.scheduled",
+      entityType: "post",
+      entityId: post.id,
+      oldValues: { status: fromStatus, scheduledAt: undefined },
+      newValues: { status: "scheduled", scheduledAt, comment }
+    });
 
     return {
       post,

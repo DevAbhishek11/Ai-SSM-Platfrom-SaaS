@@ -15,7 +15,10 @@ import {
 } from "drizzle-orm/pg-core";
 import {
   accountStatuses,
+  apiKeyStatuses,
   campaignTypes,
+  connectorEventSeverities,
+  invitationStatuses,
   mediaProcessingJobStatuses,
   platforms,
   plans,
@@ -23,6 +26,7 @@ import {
   publishingJobStatuses,
   roles,
   sentimentLabels,
+  socialOAuthStateStatuses,
   webhookEndpointStatuses
 } from "@ssm/domain";
 
@@ -31,6 +35,16 @@ export const planEnum = pgEnum("plan", plans);
 export const platformEnum = pgEnum("platform", platforms);
 export const postStatusEnum = pgEnum("post_status", postStatuses);
 export const accountStatusEnum = pgEnum("account_status", accountStatuses);
+export const invitationStatusEnum = pgEnum("invitation_status", invitationStatuses);
+export const apiKeyStatusEnum = pgEnum("api_key_status", apiKeyStatuses);
+export const socialOAuthStateStatusEnum = pgEnum(
+  "social_oauth_state_status",
+  socialOAuthStateStatuses
+);
+export const connectorEventSeverityEnum = pgEnum(
+  "connector_event_severity",
+  connectorEventSeverities
+);
 export const mediaProcessingJobStatusEnum = pgEnum(
   "media_processing_job_status",
   mediaProcessingJobStatuses
@@ -153,6 +167,61 @@ export const teamMembers = pgTable(
   })
 );
 
+export const workspaceInvitations = pgTable(
+  "workspace_invitations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: roleEnum("role").notNull(),
+    status: invitationStatusEnum("status").default("pending").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    invitedBy: uuid("invited_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    invitedAt: timestamp("invited_at", { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true })
+  },
+  (table) => ({
+    workspaceEmailStatusIdx: index("workspace_invitations_email_status_idx").on(
+      table.workspaceId,
+      table.email,
+      table.status
+    ),
+    tokenHashUnique: uniqueIndex("workspace_invitations_token_hash_unique").on(table.tokenHash)
+  })
+);
+
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    keyPrefix: text("key_prefix").notNull(),
+    secretHash: text("secret_hash").notNull(),
+    scopes: text("scopes").array().default(sql`ARRAY[]::text[]`).notNull(),
+    status: apiKeyStatusEnum("status").default("active").notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true })
+  },
+  (table) => ({
+    workspaceStatusIdx: index("api_keys_workspace_status_idx").on(table.workspaceId, table.status),
+    keyPrefixUnique: uniqueIndex("api_keys_key_prefix_unique").on(table.keyPrefix)
+  })
+);
+
 export const socialAccounts = pgTable(
   "social_accounts",
   {
@@ -182,6 +251,92 @@ export const socialAccounts = pgTable(
     workspaceStatusIdx: index("social_accounts_workspace_status_idx").on(
       table.workspaceId,
       table.status
+    )
+  })
+);
+
+export const socialOAuthStates = pgTable(
+  "social_oauth_states",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    platform: platformEnum("platform").notNull(),
+    state: text("state").notNull(),
+    authorizationUrl: text("authorization_url").notNull(),
+    redirectUri: text("redirect_uri").notNull(),
+    scopes: text("scopes").array().default(sql`ARRAY[]::text[]`).notNull(),
+    status: socialOAuthStateStatusEnum("status").default("pending").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    stateUnique: uniqueIndex("social_oauth_states_state_unique").on(table.state),
+    workspaceStatusIdx: index("social_oauth_states_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    )
+  })
+);
+
+export const socialRateLimitBuckets = pgTable(
+  "social_rate_limit_buckets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    socialAccountId: uuid("social_account_id")
+      .notNull()
+      .references(() => socialAccounts.id, { onDelete: "cascade" }),
+    platform: platformEnum("platform").notNull(),
+    bucketKey: text("bucket_key").notNull(),
+    limit: integer("limit").notNull(),
+    remaining: integer("remaining").notNull(),
+    windowSeconds: integer("window_seconds").notNull(),
+    resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    accountBucketUnique: uniqueIndex("social_rate_limit_buckets_account_bucket_unique").on(
+      table.socialAccountId,
+      table.bucketKey
+    ),
+    workspacePlatformIdx: index("social_rate_limit_buckets_workspace_platform_idx").on(
+      table.workspaceId,
+      table.platform
+    )
+  })
+);
+
+export const socialConnectorEvents = pgTable(
+  "social_connector_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    socialAccountId: uuid("social_account_id").references(() => socialAccounts.id, {
+      onDelete: "set null"
+    }),
+    platform: platformEnum("platform").notNull(),
+    type: text("type").notNull(),
+    severity: connectorEventSeverityEnum("severity").default("info").notNull(),
+    message: text("message").notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    workspaceCreatedIdx: index("social_connector_events_workspace_created_idx").on(
+      table.workspaceId,
+      table.createdAt
+    ),
+    accountCreatedIdx: index("social_connector_events_account_created_idx").on(
+      table.socialAccountId,
+      table.createdAt
     )
   })
 );
@@ -630,6 +785,8 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
     references: [organizations.id]
   }),
   members: many(teamMembers),
+  invitations: many(workspaceInvitations),
+  apiKeys: many(apiKeys),
   socialAccounts: many(socialAccounts),
   campaigns: many(campaigns),
   posts: many(posts)

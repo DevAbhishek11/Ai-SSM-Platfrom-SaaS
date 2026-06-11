@@ -69,6 +69,7 @@ Signals:
 
 - Multiple accounts move to expired/revoked.
 - Refresh failures increase.
+- Connector events show repeated `token_expired`, `oauth_expired`, or `scopes_missing`.
 
 Actions:
 
@@ -76,6 +77,88 @@ Actions:
 2. Check redirect URI and scope changes.
 3. Trigger re-auth notifications.
 4. Pause scheduled posts for affected accounts.
+5. Use `/api/social/accounts/{accountId}/refresh-token` after provider recovery.
+6. Validate required publishing scopes before resuming affected queues.
+
+## Social Rate Limit Exhaustion
+
+Signals:
+
+- Rate-limit bucket remaining count reaches zero.
+- Publishing jobs retry with provider throttle errors.
+- Connector events show platform-specific throttling warnings.
+
+Actions:
+
+1. Identify the workspace, platform, account, and bucket key.
+2. Pause only the affected platform/account worker lane.
+3. Confirm `resetAt` before requeueing failed or delayed jobs.
+4. Keep idempotency keys unchanged when retrying jobs.
+5. Notify workspace admins when campaign windows may miss SLA.
+
+## Audit Log Gap Or Suspicious Event
+
+Signals:
+
+- Expected privileged actions do not appear in `/api/audit/logs`.
+- Audit summary risk signals increase.
+- Login failures, missing scopes, replay actions, or publish failures spike for one workspace.
+
+Actions:
+
+1. Filter audit logs by workspace, action prefix, entity type, and user.
+2. Compare audit timestamps with API logs and request ids.
+3. Disable affected API keys or user sessions if account compromise is suspected.
+4. Export `/api/audit/export` for incident evidence.
+5. Preserve related connector, publishing, webhook, and workflow records.
+6. File follow-up work for any module that performed a privileged action without an audit record.
+
+## API Key Compromise
+
+Signals:
+
+- Unexpected API key activity or webhook/publishing actions.
+- Audit logs show unusual `api_keys`, `publishing`, or `webhooks` events.
+- External monitoring flags leaked `ssm_live_` credentials.
+
+Actions:
+
+1. Revoke the affected key with `/api/api-keys/{id}/revoke`.
+2. Export audit logs filtered by the key creation time and workspace.
+3. Rotate any downstream worker or integration secrets using the compromised key.
+4. Create a new scoped key with the minimum required permissions.
+5. Review publishing jobs, webhooks, and API-side effects in the incident window.
+
+## Stale Or Incorrect Invitation
+
+Signals:
+
+- A pending invitation is sent to the wrong email.
+- An invited user no longer needs access.
+- Invitation expiry has passed before onboarding completes.
+
+Actions:
+
+1. Revoke incorrect or no-longer-needed invitations.
+2. Resend only after confirming the recipient, role, and workspace.
+3. Use the least-privileged role for the initial invite.
+4. Confirm audit records for create, resend, and revoke actions.
+
+## Plan Limit Block
+
+Signals:
+
+- A mutation returns `Plan limit exceeded`.
+- `/api/billing/entitlements/check` reports `allowed: false`.
+- Admins cannot invite members, create API keys, connect accounts, upload media, generate AI content, or create posts.
+
+Actions:
+
+1. Identify the blocked capability and projected usage.
+2. Review current usage in Settings > Billing and limits.
+3. Remove unused API keys, pending invitations, social accounts, media, or scheduled content where appropriate.
+4. Upgrade the workspace plan or request an enterprise override.
+5. Retry the blocked operation after usage or plan changes are reflected.
 
 ## Media Processing Failure
 

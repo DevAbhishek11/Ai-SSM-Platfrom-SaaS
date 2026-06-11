@@ -4,20 +4,46 @@ import { jwtVerify, SignJWT } from "jose";
 import { demoUser, demoWorkspace, rolePermissions } from "@ssm/domain";
 import type { Principal } from "../../common/principal.js";
 import { getEnv } from "../../common/env.js";
+import { AuditService } from "../audit/audit.service.js";
+
+type AuthEventContext = {
+  ipAddress?: string;
+  userAgent?: string;
+};
 
 @Injectable()
 export class AuthService {
   private demoPasswordHash: string | undefined;
 
-  async login(email: string, password: string) {
+  constructor(private readonly auditService: AuditService) {}
+
+  async login(email: string, password: string, context: AuthEventContext = {}) {
     const normalizedEmail = email.trim().toLowerCase();
     if (normalizedEmail !== demoUser.email) {
+      this.auditService.record({
+        workspaceId: demoWorkspace.id,
+        action: "auth.login_failed",
+        entityType: "user",
+        newValues: { email: normalizedEmail, reason: "unknown_email" },
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent
+      });
       throw new UnauthorizedException("Invalid credentials");
     }
 
     const passwordHash = await this.getDemoPasswordHash();
     const validPassword = await verify(passwordHash, password);
     if (!validPassword) {
+      this.auditService.record({
+        workspaceId: demoWorkspace.id,
+        userId: demoUser.id,
+        action: "auth.login_failed",
+        entityType: "user",
+        entityId: demoUser.id,
+        newValues: { email: normalizedEmail, reason: "bad_password" },
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent
+      });
       throw new UnauthorizedException("Invalid credentials");
     }
 
@@ -28,6 +54,16 @@ export class AuthService {
       workspaceId: demoWorkspace.id,
       permissions: rolePermissions.owner
     };
+
+    this.auditService.record({
+      workspaceId: demoWorkspace.id,
+      userId: demoUser.id,
+      action: "auth.login_succeeded",
+      entityType: "session",
+      newValues: { role: principal.role, email: principal.email },
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent
+    });
 
     return {
       accessToken: await this.signAccessToken(principal),

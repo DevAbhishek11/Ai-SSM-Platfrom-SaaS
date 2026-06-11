@@ -63,8 +63,21 @@ describe("API application", () => {
     await request(app.getHttpServer()).get("/api/media/assets").expect(200);
     await request(app.getHttpServer()).get("/api/notifications").expect(200);
     await request(app.getHttpServer()).get("/api/billing/plans").expect(200);
+    await request(app.getHttpServer())
+      .get("/api/billing/entitlements/check?capability=apiAccess")
+      .expect(200);
     await request(app.getHttpServer()).get("/api/webhooks/deliveries").expect(200);
     await request(app.getHttpServer()).get("/api/publishing/jobs").expect(200);
+    await request(app.getHttpServer()).get("/api/social/rate-limits").expect(200);
+    await request(app.getHttpServer()).get("/api/social/connector-events").expect(200);
+    await request(app.getHttpServer()).get("/api/audit/logs").expect(200);
+    await request(app.getHttpServer()).get("/api/audit/summary").expect(200);
+    await request(app.getHttpServer()).get("/api/members").expect(200);
+    await request(app.getHttpServer()).get("/api/members/invitations").expect(200);
+    await request(app.getHttpServer()).get("/api/api-keys").expect(200);
+    await request(app.getHttpServer())
+      .get("/api/billing/entitlements/check?capability=unknown")
+      .expect(400);
   });
 
   it("processes and retries publishing jobs", async () => {
@@ -136,5 +149,122 @@ describe("API application", () => {
 
     expect(processed.body.status).toBe("virus_scanning");
     expect(processed.body.virusScan.status).toBe("clean");
+  });
+
+  it("runs the social connector OAuth lifecycle", async () => {
+    const authorization = await request(app.getHttpServer())
+      .post("/api/social/oauth/authorize")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        platform: "threads",
+        scopes: ["publish", "insights"]
+      })
+      .expect(201);
+
+    expect(authorization.body.state).toEqual(expect.stringContaining("state-threads"));
+    expect(authorization.body.authorizationUrl).toContain("social.example.com/threads");
+
+    const connected = await request(app.getHttpServer())
+      .post("/api/social/oauth/callback")
+      .send({
+        state: authorization.body.state,
+        code: "demo-oauth-code",
+        username: "threads-growth",
+        displayName: "Threads Growth"
+      })
+      .expect(201);
+
+    expect(connected.body.account).toMatchObject({
+      platform: "threads",
+      username: "threads-growth",
+      status: "connected"
+    });
+    expect(connected.body.oauthState.status).toBe("consumed");
+
+    const validation = await request(app.getHttpServer())
+      .post(`/api/social/accounts/${connected.body.account.id}/validate-scopes`)
+      .send({ requiredScopes: ["publish"] })
+      .expect(201);
+
+    expect(validation.body.valid).toBe(true);
+
+    const refreshed = await request(app.getHttpServer())
+      .post("/api/social/accounts/55555555-5555-4555-8555-555555555555/refresh-token")
+      .expect(201);
+
+    expect(refreshed.body.status).toBe("connected");
+
+    const audit = await request(app.getHttpServer())
+      .get("/api/audit/logs?action=social.oauth_completed")
+      .expect(200);
+
+    expect(audit.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "social.oauth_completed",
+          entityId: connected.body.account.id
+        })
+      ])
+    );
+  });
+
+  it("manages member invitations and scoped API keys", async () => {
+    const invite = await request(app.getHttpServer())
+      .post("/api/members/invitations")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        email: "strategist@acmegrowth.test",
+        role: "manager"
+      })
+      .expect(201);
+
+    expect(invite.body.invitation).toMatchObject({
+      email: "strategist@acmegrowth.test",
+      role: "manager",
+      status: "pending"
+    });
+    expect(invite.body.acceptUrl).toContain("token=");
+
+    const revokedInvite = await request(app.getHttpServer())
+      .post(`/api/members/invitations/${invite.body.invitation.id}/revoke`)
+      .expect(201);
+
+    expect(revokedInvite.body.status).toBe("revoked");
+
+    const createdKey = await request(app.getHttpServer())
+      .post("/api/api-keys")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        name: "Analytics export test",
+        scopes: ["analytics.view", "analytics.export"]
+      })
+      .expect(201);
+
+    expect(createdKey.body.secret).toEqual(expect.stringContaining("ssm_live_"));
+    expect(createdKey.body.apiKey.secretHash).toBeUndefined();
+
+    await request(app.getHttpServer())
+      .get("/api/analytics/summary")
+      .set("x-api-key", createdKey.body.secret)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get("/api/posts")
+      .set("x-api-key", createdKey.body.secret)
+      .expect(403);
+
+    const keys = await request(app.getHttpServer()).get("/api/api-keys").expect(200);
+    expect(keys.body[0].secretHash).toBeUndefined();
+
+    const revokedKey = await request(app.getHttpServer())
+      .post(`/api/api-keys/${createdKey.body.apiKey.id}/revoke`)
+      .expect(201);
+
+    expect(revokedKey.body.status).toBe("revoked");
+
+    await request(app.getHttpServer())
+      .get("/api/analytics/summary")
+      .set("x-api-key", createdKey.body.secret)
+      .expect(401);
   });
 });

@@ -6,6 +6,9 @@ import {
   type MediaProcessingJob,
   type MediaProcessingJobStatus
 } from "@ssm/domain";
+import type { Principal } from "../../common/principal.js";
+import { AuditService } from "../audit/audit.service.js";
+import { BillingService } from "../billing/billing.service.js";
 import type { CompleteUploadDto, CreateUploadIntentDto } from "./dto.js";
 
 type UploadIntent = {
@@ -41,11 +44,17 @@ export class MediaService {
   private readonly uploadIntents = new Map<string, UploadIntent>();
   private readonly processingJobs: MediaProcessingJob[] = [...demoMediaProcessingJobs];
 
+  constructor(
+    private readonly auditService: AuditService,
+    private readonly billingService: BillingService
+  ) {}
+
   listAssets(workspaceId: string) {
     return demoMediaAssets.filter((asset) => asset.workspaceId === workspaceId);
   }
 
-  createUploadIntent(input: CreateUploadIntentDto) {
+  createUploadIntent(input: CreateUploadIntentDto, user?: Principal) {
+    this.billingService.assertAllowed(input.workspaceId, "mediaStorageGb", input.fileSize / 1024 / 1024 / 1024);
     const normalizedName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").toLowerCase();
     const storageKey = `workspaces/${input.workspaceId}/media/${randomUUID()}-${normalizedName}`;
 
@@ -65,6 +74,19 @@ export class MediaService {
       }
     };
     this.uploadIntents.set(intent.id, intent);
+    this.auditService.record({
+      workspaceId: input.workspaceId,
+      userId: user?.userId,
+      action: "media.upload_intent_created",
+      entityType: "media_upload_intent",
+      entityId: intent.id,
+      newValues: {
+        fileName: input.fileName,
+        fileType: input.fileType,
+        fileSize: input.fileSize,
+        expiresAt: intent.expiresAt
+      }
+    });
     return intent;
   }
 
@@ -74,7 +96,7 @@ export class MediaService {
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
-  completeUpload(input: CompleteUploadDto) {
+  completeUpload(input: CompleteUploadDto, user?: Principal) {
     const intent = this.uploadIntents.get(input.uploadIntentId);
     if (!intent) {
       throw new NotFoundException("Upload intent not found or expired");
@@ -106,10 +128,22 @@ export class MediaService {
       updatedAt: now
     };
     this.processingJobs.push(job);
+    this.auditService.record({
+      workspaceId: job.workspaceId,
+      userId: user?.userId,
+      action: "media.upload_completed",
+      entityType: "media_processing_job",
+      entityId: job.id,
+      newValues: {
+        uploadIntentId: input.uploadIntentId,
+        checksumSha256: input.checksumSha256,
+        status: job.status
+      }
+    });
     return job;
   }
 
-  processNext(id: string) {
+  processNext(id: string, user?: Principal) {
     const job = this.findJob(id);
     if (job.status === "failed" || job.status === "completed") {
       return job;
@@ -121,6 +155,7 @@ export class MediaService {
       throw new BadRequestException("No next media pipeline step available");
     }
 
+    const previousStatus = job.status;
     job.status = next.status;
     job.currentStep = next.currentStep;
     job.progress = next.progress;
@@ -144,15 +179,35 @@ export class MediaService {
       };
     }
 
+    this.auditService.record({
+      workspaceId: job.workspaceId,
+      userId: user?.userId,
+      action: "media.processing_advanced",
+      entityType: "media_processing_job",
+      entityId: job.id,
+      oldValues: { status: previousStatus },
+      newValues: { status: job.status, currentStep: job.currentStep, progress: job.progress }
+    });
+
     return job;
   }
 
-  failJob(id: string, errorMessage: string, step = "unknown") {
+  failJob(id: string, errorMessage: string, step = "unknown", user?: Principal) {
     const job = this.findJob(id);
+    const previousStatus = job.status;
     job.status = "failed";
     job.currentStep = step;
     job.errorMessage = errorMessage;
     job.updatedAt = new Date().toISOString();
+    this.auditService.record({
+      workspaceId: job.workspaceId,
+      userId: user?.userId,
+      action: "media.processing_failed",
+      entityType: "media_processing_job",
+      entityId: job.id,
+      oldValues: { status: previousStatus },
+      newValues: { status: job.status, currentStep: step, errorMessage }
+    });
     return job;
   }
 

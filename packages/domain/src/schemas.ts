@@ -1,7 +1,10 @@
 import { z } from "zod";
 import {
   accountStatuses,
+  apiKeyStatuses,
   campaignTypes,
+  connectorEventSeverities,
+  invitationStatuses,
   mediaProcessingJobStatuses,
   mediaAssetTypes,
   notificationTypes,
@@ -10,6 +13,7 @@ import {
   postStatuses,
   roles,
   sentimentLabels,
+  socialOAuthStateStatuses,
   publishingJobStatuses,
   webhookEndpointStatuses,
   webhookStatuses,
@@ -69,6 +73,35 @@ export const teamMemberSchema = z.object({
   joinedAt: isoDateTimeSchema.optional()
 });
 
+export const workspaceInvitationSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  email: z.email(),
+  role: z.enum(roles),
+  status: z.enum(invitationStatuses),
+  tokenHash: z.string().min(16),
+  invitedBy: idSchema,
+  invitedAt: isoDateTimeSchema,
+  expiresAt: isoDateTimeSchema,
+  acceptedAt: isoDateTimeSchema.optional(),
+  revokedAt: isoDateTimeSchema.optional()
+});
+
+export const apiKeySchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  name: z.string().min(1).max(160),
+  keyPrefix: z.string().min(6).max(32),
+  secretHash: z.string().min(16),
+  scopes: z.array(z.string().min(1)).min(1),
+  status: z.enum(apiKeyStatuses),
+  createdBy: idSchema,
+  createdAt: isoDateTimeSchema,
+  lastUsedAt: isoDateTimeSchema.optional(),
+  expiresAt: isoDateTimeSchema.optional(),
+  revokedAt: isoDateTimeSchema.optional()
+});
+
 export const socialAccountSchema = z.object({
   id: idSchema,
   workspaceId: idSchema,
@@ -82,6 +115,46 @@ export const socialAccountSchema = z.object({
   lastSyncedAt: isoDateTimeSchema.optional(),
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema
+});
+
+export const socialOAuthStateSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  platform: z.enum(platforms),
+  state: z.string().min(16),
+  authorizationUrl: z.url(),
+  redirectUri: z.url(),
+  scopes: z.array(z.string().min(1)),
+  status: z.enum(socialOAuthStateStatuses),
+  expiresAt: isoDateTimeSchema,
+  createdBy: idSchema,
+  createdAt: isoDateTimeSchema,
+  consumedAt: isoDateTimeSchema.optional()
+});
+
+export const socialRateLimitBucketSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  socialAccountId: idSchema,
+  platform: z.enum(platforms),
+  bucketKey: z.string().min(1),
+  limit: z.number().int().positive(),
+  remaining: z.number().int().nonnegative(),
+  windowSeconds: z.number().int().positive(),
+  resetAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
+export const socialConnectorEventSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  socialAccountId: idSchema.optional(),
+  platform: z.enum(platforms),
+  type: z.string().min(1),
+  severity: z.enum(connectorEventSeverities),
+  message: z.string().min(1),
+  metadata: z.record(z.string(), z.unknown()).default({}),
+  createdAt: isoDateTimeSchema
 });
 
 export const postContentVariantSchema = z.object({
@@ -215,6 +288,20 @@ export const notificationSchema = z.object({
   createdAt: isoDateTimeSchema
 });
 
+export const auditLogSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema.optional(),
+  userId: idSchema.optional(),
+  action: z.string().min(1),
+  entityType: z.string().min(1),
+  entityId: idSchema.optional(),
+  oldValues: z.record(z.string(), z.unknown()).optional(),
+  newValues: z.record(z.string(), z.unknown()).optional(),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+  createdAt: isoDateTimeSchema
+});
+
 export const webhookDeliverySchema = z.object({
   id: idSchema,
   workspaceId: idSchema,
@@ -313,7 +400,12 @@ export type User = z.infer<typeof userSchema>;
 export type Organization = z.infer<typeof organizationSchema>;
 export type Workspace = z.infer<typeof workspaceSchema>;
 export type TeamMember = z.infer<typeof teamMemberSchema>;
+export type WorkspaceInvitation = z.infer<typeof workspaceInvitationSchema>;
+export type ApiKey = z.infer<typeof apiKeySchema>;
 export type SocialAccount = z.infer<typeof socialAccountSchema>;
+export type SocialOAuthState = z.infer<typeof socialOAuthStateSchema>;
+export type SocialRateLimitBucket = z.infer<typeof socialRateLimitBucketSchema>;
+export type SocialConnectorEvent = z.infer<typeof socialConnectorEventSchema>;
 export type Post = z.infer<typeof postSchema>;
 export type Campaign = z.infer<typeof campaignSchema>;
 export type AnalyticsSnapshot = z.infer<typeof analyticsSnapshotSchema>;
@@ -321,6 +413,7 @@ export type Trend = z.infer<typeof trendSchema>;
 export type MediaAsset = z.infer<typeof mediaAssetSchema>;
 export type MediaProcessingJob = z.infer<typeof mediaProcessingJobSchema>;
 export type Notification = z.infer<typeof notificationSchema>;
+export type AuditLog = z.infer<typeof auditLogSchema>;
 export type WebhookDelivery = z.infer<typeof webhookDeliverySchema>;
 export type WebhookEndpoint = z.infer<typeof webhookEndpointSchema>;
 export type PublishingJob = z.infer<typeof publishingJobSchema>;

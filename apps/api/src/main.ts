@@ -19,7 +19,7 @@ async function bootstrap() {
     origin: [env.WEB_BASE_URL],
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["content-type", "authorization", "x-request-id", "x-workspace-id"]
+    allowedHeaders: ["content-type", "authorization", "x-api-key", "x-request-id", "x-workspace-id"]
   });
   app.setGlobalPrefix("api");
   app.useGlobalPipes(
@@ -38,10 +38,13 @@ async function bootstrap() {
     .addTag("health")
     .addTag("dashboard")
     .addTag("workspaces")
+    .addTag("members")
+    .addTag("api-keys")
     .addTag("posts")
     .addTag("ai")
     .addTag("analytics")
     .addTag("social")
+    .addTag("audit")
     .build();
 
   const document = SwaggerModule.createDocument(app, openApiConfig);

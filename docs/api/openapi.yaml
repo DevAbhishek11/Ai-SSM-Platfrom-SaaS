@@ -7,6 +7,7 @@ servers:
   - url: http://localhost:4000/api
 security:
   - bearerAuth: []
+  - apiKeyAuth: []
 paths:
   /auth/login:
     post:
@@ -93,6 +94,145 @@ paths:
           description: Workspace
         "404":
           description: Workspace not found
+  /members:
+    get:
+      tags: [members]
+      summary: List workspace team members
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Team members
+  /members/invitations:
+    get:
+      tags: [members]
+      summary: List workspace invitations
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Workspace invitations
+    post:
+      tags: [members]
+      summary: Invite a workspace member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteMember"
+      responses:
+        "201":
+          description: Created invitation and one-time accept URL
+  /members/invitations/{id}/resend:
+    post:
+      tags: [members]
+      summary: Resend a pending invitation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Refreshed invitation and one-time accept URL
+  /members/invitations/{id}/revoke:
+    post:
+      tags: [members]
+      summary: Revoke a pending invitation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Revoked invitation
+  /members/{memberId}/role:
+    post:
+      tags: [members]
+      summary: Update a member role
+      parameters:
+        - in: path
+          name: memberId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemberRole"
+      responses:
+        "201":
+          description: Updated member
+  /members/{memberId}/suspend:
+    post:
+      tags: [members]
+      summary: Suspend a team member
+      parameters:
+        - in: path
+          name: memberId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Suspended member
+  /api-keys:
+    get:
+      tags: [api-keys]
+      summary: List workspace API keys without raw secrets
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: API key metadata
+    post:
+      tags: [api-keys]
+      summary: Create a scoped API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApiKey"
+      responses:
+        "201":
+          description: API key metadata and one-time raw secret
+  /api-keys/{id}/revoke:
+    post:
+      tags: [api-keys]
+      summary: Revoke an active API key
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Revoked API key metadata
   /posts:
     get:
       tags: [posts]
@@ -306,6 +446,31 @@ paths:
       responses:
         "200":
           description: Workspace usage
+  /billing/entitlements/check:
+    get:
+      tags: [billing]
+      summary: Check projected workspace entitlement
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: capability
+          required: true
+          schema:
+            type: string
+            enum: [workspaces, socialAccounts, postsThisMonth, aiGenerations, teamMembers, mediaStorageGb, apiAccess]
+        - in: query
+          name: increment
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Allowed/denied entitlement decision with current and projected usage
+        "400":
+          description: Invalid capability
   /webhooks/deliveries:
     get:
       tags: [webhooks]
@@ -563,10 +728,74 @@ paths:
       responses:
         "200":
           description: Analytics totals and recommendations
+  /audit/logs:
+    get:
+      tags: [audit]
+      summary: List tenant-scoped audit logs
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: action
+          schema:
+            type: string
+        - in: query
+          name: entityType
+          schema:
+            type: string
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+      responses:
+        "200":
+          description: Audit log records
+  /audit/summary:
+    get:
+      tags: [audit]
+      summary: Audit event counts and risk signals
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Audit summary
+  /audit/export:
+    get:
+      tags: [audit]
+      summary: Export audit records for compliance review
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: JSON audit export with retention metadata
   /social/accounts:
     get:
       tags: [social]
       summary: Connected account list
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Social accounts
@@ -574,6 +803,12 @@ paths:
     get:
       tags: [social]
       summary: Social account health
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Account health summary
@@ -584,12 +819,123 @@ paths:
       responses:
         "200":
           description: Platform capabilities
+  /social/oauth/authorize:
+    post:
+      tags: [social]
+      summary: Start a provider OAuth connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartOAuth"
+      responses:
+        "201":
+          description: OAuth state and authorization URL
+  /social/oauth/callback:
+    post:
+      tags: [social]
+      summary: Consume OAuth callback state and connect an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteOAuth"
+      responses:
+        "201":
+          description: Connected social account and consumed OAuth state
+        "400":
+          description: Expired or already consumed OAuth state
+        "404":
+          description: OAuth state not found
+  /social/oauth/states:
+    get:
+      tags: [social]
+      summary: OAuth state audit trail
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OAuth state list
+  /social/accounts/{accountId}/refresh-token:
+    post:
+      tags: [social]
+      summary: Refresh a social account token
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Updated social account
+        "404":
+          description: Social account not found
+  /social/accounts/{accountId}/validate-scopes:
+    post:
+      tags: [social]
+      summary: Validate required provider scopes
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidateScopes"
+      responses:
+        "201":
+          description: Scope validation result
+        "404":
+          description: Social account not found
+  /social/rate-limits:
+    get:
+      tags: [social]
+      summary: Provider rate limit buckets
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Social provider rate limit buckets
+  /social/connector-events:
+    get:
+      tags: [social]
+      summary: Connector lifecycle events
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OAuth, token, scope, and connector health events
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
   schemas:
     CreatePost:
       type: object
@@ -633,6 +979,47 @@ components:
         link:
           type: string
           format: uri
+    InviteMember:
+      type: object
+      required: [workspaceId, email, role]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [owner, admin, manager, creator, reviewer, viewer, api_service_account]
+        expiresInDays:
+          type: integer
+          minimum: 1
+          maximum: 30
+    UpdateMemberRole:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [owner, admin, manager, creator, reviewer, viewer, api_service_account]
+    CreateApiKey:
+      type: object
+      required: [workspaceId, name, scopes]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        scopes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        expiresAt:
+          type: string
+          format: date-time
     GenerateContent:
       type: object
       required: [workspaceId, brief, platforms]
@@ -664,3 +1051,74 @@ components:
           type: string
           minLength: 1
           maxLength: 5000
+    StartOAuth:
+      type: object
+      required: [workspaceId, platform]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        platform:
+          type: string
+          enum: [x, instagram, facebook, linkedin, youtube, tiktok, reddit, pinterest, threads, mastodon, bluesky]
+        redirectUri:
+          type: string
+          format: uri
+        scopes:
+          type: array
+          items:
+            type: string
+    CompleteOAuth:
+      type: object
+      required: [state, code]
+      properties:
+        state:
+          type: string
+        code:
+          type: string
+        platformUserId:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+    ValidateScopes:
+      type: object
+      properties:
+        requiredScopes:
+          type: array
+          items:
+            type: string
+    AuditLog:
+      type: object
+      required: [id, action, entityType, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        action:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+        oldValues:
+          type: object
+          additionalProperties: true
+        newValues:
+          type: object
+          additionalProperties: true
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        createdAt:
+          type: string
+          format: date-time

@@ -5,6 +5,7 @@ import {
   type AiGenerationResponse,
   type Platform
 } from "@ssm/domain";
+import { BillingService } from "../billing/billing.service.js";
 import type { GenerateContentDto } from "./dto.js";
 
 const sensitivePatterns = [
@@ -16,7 +17,10 @@ const sensitivePatterns = [
 
 @Injectable()
 export class AiService {
+  constructor(private readonly billingService: BillingService) {}
+
   generate(input: GenerateContentDto): AiGenerationResponse {
+    this.billingService.assertAllowed(input.workspaceId, "aiGenerations", 1);
     const flags = sensitivePatterns
       .filter(({ pattern }) => pattern.test(input.brief))
       .map(({ label }) => label);

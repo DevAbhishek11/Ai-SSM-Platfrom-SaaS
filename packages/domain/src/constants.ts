@@ -60,6 +60,18 @@ export type CampaignType = (typeof campaignTypes)[number];
 export const accountStatuses = ["connected", "expired", "revoked", "error"] as const;
 export type AccountStatus = (typeof accountStatuses)[number];
 
+export const invitationStatuses = ["pending", "accepted", "revoked", "expired"] as const;
+export type InvitationStatus = (typeof invitationStatuses)[number];
+
+export const apiKeyStatuses = ["active", "revoked", "expired"] as const;
+export type ApiKeyStatus = (typeof apiKeyStatuses)[number];
+
+export const socialOAuthStateStatuses = ["pending", "consumed", "expired", "failed"] as const;
+export type SocialOAuthStateStatus = (typeof socialOAuthStateStatuses)[number];
+
+export const connectorEventSeverities = ["info", "warning", "critical"] as const;
+export type ConnectorEventSeverity = (typeof connectorEventSeverities)[number];
+
 export const sentimentLabels = ["negative", "neutral", "positive", "mixed"] as const;
 export type SentimentLabel = (typeof sentimentLabels)[number];
 

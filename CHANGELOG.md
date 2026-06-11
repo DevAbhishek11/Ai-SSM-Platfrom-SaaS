@@ -15,3 +15,8 @@
 - Added publishing job contracts, database migration, API endpoints, deterministic connectors, retry policy, and `/publishing` UI.
 - Added approval workflow contracts, comments, transition events, migration, API endpoints, and approvals timeline/actions UI.
 - Added media processing job contracts, migration, API lifecycle endpoints, runbook, and media pipeline UI.
+- Added social connector OAuth state, rate-limit, and connector event contracts, API lifecycle endpoints, accounts UI, runbooks, and tests.
+- Added audit log domain contracts, audit API, security audit settings UI, and audit hooks for auth, workflow, social, media, publishing, and webhook actions.
+- Added workspace invitations, team-member access controls, scoped API key lifecycle, database migration, settings UI, audit hooks, runbooks, and tests.
+- Added `x-api-key` authentication, scoped service-account principals, permission-scope enforcement, CORS support, and tests for allowed/denied/revoked key behavior.
+- Added centralized billing entitlement checks, projected entitlement API, plan-limit enforcement for core mutations, Settings usage visibility, runbooks, and tests.

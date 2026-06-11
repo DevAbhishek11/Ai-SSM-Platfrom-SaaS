@@ -24,7 +24,10 @@ export class PermissionsGuard implements CanActivate {
     const principal = request.user ?? this.buildDevelopmentPrincipal(request);
     request.user = principal;
 
-    return required.every((permission) => hasPermission(principal.role, permission));
+    return required.every(
+      (permission) =>
+        principal.permissions.includes(permission) && hasPermission(principal.role, permission)
+    );
   }
 
   private buildDevelopmentPrincipal(request: Request): Principal {

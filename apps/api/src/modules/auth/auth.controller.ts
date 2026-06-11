@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Post, UnauthorizedException } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Ip, Post, UnauthorizedException } from "@nestjs/common";
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { LoginDto } from "./dto.js";
 import { AuthService } from "./auth.service.js";
@@ -10,8 +10,12 @@ export class AuthController {
 
   @Post("login")
   @ApiCreatedResponse({ description: "Issue access token for a valid user session" })
-  async login(@Body() input: LoginDto) {
-    return this.authService.login(input.email, input.password);
+  async login(
+    @Body() input: LoginDto,
+    @Ip() ipAddress?: string,
+    @Headers("user-agent") userAgent?: string
+  ) {
+    return this.authService.login(input.email, input.password, { ipAddress, userAgent });
   }
 
   @Get("session")

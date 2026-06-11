@@ -1,5 +1,7 @@
 import type {
   AnalyticsSnapshot,
+  ApiKey,
+  AuditLog,
   Campaign,
   MediaAsset,
   MediaProcessingJob,
@@ -7,12 +9,17 @@ import type {
   Post,
   PostComment,
   PublishingJob,
+  SocialConnectorEvent,
+  SocialOAuthState,
+  SocialRateLimitBucket,
   SocialAccount,
+  TeamMember,
   Trend,
   User,
   WebhookDelivery,
   WebhookEndpoint,
   WorkflowEvent,
+  WorkspaceInvitation,
   Workspace
 } from "./schemas.js";
 
@@ -47,6 +54,47 @@ export const demoWorkspace: Workspace = {
   createdAt: now,
   updatedAt: now
 };
+
+export const demoTeamMembers: TeamMember[] = [
+  {
+    id: "41414141-4141-4414-8414-414141414141",
+    userId: demoUser.id,
+    workspaceId: demoWorkspace.id,
+    role: "owner",
+    status: "active",
+    joinedAt: now
+  }
+];
+
+export const demoWorkspaceInvitations: WorkspaceInvitation[] = [
+  {
+    id: "42424242-4242-4424-8424-424242424242",
+    workspaceId: demoWorkspace.id,
+    email: "reviewer@acmegrowth.test",
+    role: "reviewer",
+    status: "pending",
+    tokenHash: "sha256:demo-invite-token-hash",
+    invitedBy: demoUser.id,
+    invitedAt: now,
+    expiresAt: "2026-06-18T05:45:00.000Z"
+  }
+];
+
+export const demoApiKeys: ApiKey[] = [
+  {
+    id: "43434343-4343-4434-8434-434343434343",
+    workspaceId: demoWorkspace.id,
+    name: "Publishing worker",
+    keyPrefix: "ssm_live_demo",
+    secretHash: "sha256:demo-api-key-secret-hash",
+    scopes: ["posts.publish", "posts.view", "webhooks.manage"],
+    status: "active",
+    createdBy: demoUser.id,
+    createdAt: now,
+    lastUsedAt: "2026-06-11T05:40:00.000Z",
+    expiresAt: "2026-09-11T05:45:00.000Z"
+  }
+];
 
 export const demoSocialAccounts: SocialAccount[] = [
   {
@@ -87,6 +135,87 @@ export const demoSocialAccounts: SocialAccount[] = [
     lastSyncedAt: "2026-06-10T04:45:00.000Z",
     createdAt: now,
     updatedAt: now
+  }
+];
+
+export const demoSocialOAuthStates: SocialOAuthState[] = [
+  {
+    id: "32323232-3232-4323-8323-323232323232",
+    workspaceId: demoWorkspace.id,
+    platform: "instagram",
+    state: "state-instagram-demo-20260611",
+    authorizationUrl:
+      "https://social.example.com/instagram/oauth/authorize?state=state-instagram-demo-20260611",
+    redirectUri: "http://localhost:4000/api/social/oauth/callback",
+    scopes: ["publish", "insights", "comments"],
+    status: "pending",
+    expiresAt: "2026-06-11T06:45:00.000Z",
+    createdBy: demoUser.id,
+    createdAt: now
+  }
+];
+
+export const demoSocialRateLimitBuckets: SocialRateLimitBucket[] = [
+  {
+    id: "33333333-4444-4333-8444-333333333333",
+    workspaceId: demoWorkspace.id,
+    socialAccountId: "33333333-3333-4333-8333-333333333333",
+    platform: "instagram",
+    bucketKey: "publish",
+    limit: 200,
+    remaining: 184,
+    windowSeconds: 3600,
+    resetAt: "2026-06-11T06:45:00.000Z",
+    updatedAt: now
+  },
+  {
+    id: "34343434-3434-4343-8343-343434343434",
+    workspaceId: demoWorkspace.id,
+    socialAccountId: "44444444-4444-4444-8444-444444444444",
+    platform: "linkedin",
+    bucketKey: "publish",
+    limit: 150,
+    remaining: 91,
+    windowSeconds: 3600,
+    resetAt: "2026-06-11T06:45:00.000Z",
+    updatedAt: now
+  },
+  {
+    id: "35353535-3535-4353-8353-353535353535",
+    workspaceId: demoWorkspace.id,
+    socialAccountId: "55555555-5555-4555-8555-555555555555",
+    platform: "x",
+    bucketKey: "publish",
+    limit: 100,
+    remaining: 0,
+    windowSeconds: 900,
+    resetAt: "2026-06-11T06:00:00.000Z",
+    updatedAt: "2026-06-10T04:45:00.000Z"
+  }
+];
+
+export const demoSocialConnectorEvents: SocialConnectorEvent[] = [
+  {
+    id: "36363636-3636-4363-8363-363636363636",
+    workspaceId: demoWorkspace.id,
+    socialAccountId: "55555555-5555-4555-8555-555555555555",
+    platform: "x",
+    type: "token_expired",
+    severity: "warning",
+    message: "X token expired and publishing is paused for this account.",
+    metadata: { action: "reconnect" },
+    createdAt: "2026-06-10T04:45:00.000Z"
+  },
+  {
+    id: "37373737-3737-4373-8373-373737373737",
+    workspaceId: demoWorkspace.id,
+    socialAccountId: "33333333-3333-4333-8333-333333333333",
+    platform: "instagram",
+    type: "scopes_validated",
+    severity: "info",
+    message: "Instagram scopes validated successfully.",
+    metadata: { scopes: ["publish", "insights", "comments"] },
+    createdAt: now
   }
 ];
 
@@ -323,6 +452,46 @@ export const demoNotifications: Notification[] = [
     body: "The token for @acmegrowth expired and publishing is paused for that account.",
     metadata: { accountId: "55555555-5555-4555-8555-555555555555" },
     read: false,
+    createdAt: "2026-06-10T04:45:00.000Z"
+  }
+];
+
+export const demoAuditLogs: AuditLog[] = [
+  {
+    id: "38383838-3838-4383-8383-383838383838",
+    workspaceId: demoWorkspace.id,
+    userId: demoUser.id,
+    action: "auth.login_succeeded",
+    entityType: "session",
+    newValues: { role: "owner", email: demoUser.email },
+    ipAddress: "127.0.0.1",
+    userAgent: "local-dev",
+    createdAt: now
+  },
+  {
+    id: "39393939-3939-4393-8393-393939393939",
+    workspaceId: demoWorkspace.id,
+    userId: demoUser.id,
+    action: "workflow.submitted_for_review",
+    entityType: "post",
+    entityId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    oldValues: { status: "draft" },
+    newValues: { status: "in_review" },
+    ipAddress: "127.0.0.1",
+    userAgent: "local-dev",
+    createdAt: "2026-06-11T03:30:00.000Z"
+  },
+  {
+    id: "40404040-4040-4404-8404-404040404040",
+    workspaceId: demoWorkspace.id,
+    userId: demoUser.id,
+    action: "social.token_expired",
+    entityType: "social_account",
+    entityId: "55555555-5555-4555-8555-555555555555",
+    oldValues: { status: "connected" },
+    newValues: { status: "expired", platform: "x" },
+    ipAddress: "127.0.0.1",
+    userAgent: "connector-worker",
     createdAt: "2026-06-10T04:45:00.000Z"
   }
 ];

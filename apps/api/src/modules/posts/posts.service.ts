@@ -1,18 +1,23 @@
 import { randomUUID } from "node:crypto";
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { supportedPlatformCapabilities, type Post } from "@ssm/domain";
+import { BillingService } from "../billing/billing.service.js";
 import { PostsRepository } from "../repositories/posts.repository.js";
 import type { CreatePostDto } from "./dto.js";
 
 @Injectable()
 export class PostsService {
-  constructor(private readonly postsRepository: PostsRepository) {}
+  constructor(
+    private readonly postsRepository: PostsRepository,
+    private readonly billingService: BillingService
+  ) {}
 
   list({ workspaceId }: { workspaceId: string }): Post[] {
     return this.postsRepository.listByWorkspace(workspaceId);
   }
 
   create(input: CreatePostDto): Post {
+    this.billingService.assertAllowed(input.workspaceId, "postsThisMonth", 1);
     for (const variant of input.content) {
       const capability = supportedPlatformCapabilities[variant.platform];
       if (variant.text.length > capability.maxCharacters) {

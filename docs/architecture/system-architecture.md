@@ -98,6 +98,44 @@ stateDiagram-v2
 
 Every publishing job stores a unique idempotency key derived from post id, social account id, platform, and scheduled time. Workers must use this key for deduplication and platform correlation.
 
+## Social Connector Lifecycle
+
+```mermaid
+sequenceDiagram
+  participant Admin
+  participant Web as Accounts UI
+  participant API as Social Module
+  participant DB as PostgreSQL
+  participant Provider as Social Provider
+
+  Admin->>Web: Choose platform and scopes
+  Web->>API: POST /api/social/oauth/authorize
+  API->>DB: Store pending OAuth state
+  API-->>Web: Authorization URL and state
+  Admin->>Provider: Approve OAuth consent
+  Provider->>API: OAuth callback with state and code
+  API->>DB: Consume state and upsert social account
+  API->>DB: Upsert publish rate-limit bucket
+  API->>DB: Append connector event
+  API-->>Web: Connected account
+```
+
+Connector events record OAuth, token refresh, scope validation, and account-health transitions. Publishing workers should consult account status and rate-limit buckets before dispatching provider calls.
+
+## Audit Event Backbone
+
+Sensitive modules emit audit records through a shared audit service before the storage layer is swapped to Drizzle repositories. Covered actions include authentication success/failure, workflow transitions, social connector lifecycle operations, media upload/processing changes, publishing job state changes, and webhook replay. Records include actor, workspace, action, entity, old/new values, IP, user agent, and timestamp where available.
+
+## Team Access And Service Credentials
+
+Admins manage human access through workspace invitations and role updates. Invitation tokens are stored only as hashes, expire by default, and every create/resend/revoke action emits audit records. API keys are scoped service credentials: the raw secret is returned once on creation, only a prefix and hash are stored, and revocation is auditable.
+
+API requests may authenticate with `x-api-key`. A global guard verifies the secret hash, rejects revoked/expired keys, updates last-used metadata, and creates an `api_service_account` principal whose permissions are limited to the key's stored scopes before the RBAC guard runs.
+
+## Entitlement Enforcement
+
+The billing module exposes a centralized entitlement check used by capacity-consuming workflows. Current enforcement covers member invitations, API key creation, social OAuth starts, AI generation, media upload intents, and post creation. Checks project the requested increment against the workspace plan before the mutation proceeds.
+
 ## Media Processing Pipeline
 
 ```mermaid

@@ -5,7 +5,13 @@ erDiagram
   USERS ||--o{ TEAM_MEMBERS : joins
   ORGANIZATIONS ||--o{ WORKSPACES : owns
   WORKSPACES ||--o{ TEAM_MEMBERS : contains
+  WORKSPACES ||--o{ WORKSPACE_INVITATIONS : invites
+  WORKSPACES ||--o{ API_KEYS : authenticates
   WORKSPACES ||--o{ SOCIAL_ACCOUNTS : connects
+  WORKSPACES ||--o{ SOCIAL_OAUTH_STATES : authorizes
+  WORKSPACES ||--o{ SOCIAL_CONNECTOR_EVENTS : audits
+  SOCIAL_ACCOUNTS ||--o{ SOCIAL_RATE_LIMIT_BUCKETS : throttles
+  SOCIAL_ACCOUNTS ||--o{ SOCIAL_CONNECTOR_EVENTS : emits
   WORKSPACES ||--o{ CAMPAIGNS : plans
   WORKSPACES ||--o{ POSTS : owns
   WORKSPACES ||--o{ MEDIA_ASSETS : stores
@@ -74,6 +80,86 @@ erDiagram
     text platform_post_id
     post_status status
   }
+
+  SOCIAL_OAUTH_STATES {
+    uuid id PK
+    uuid workspace_id FK
+    platform platform
+    text state UK
+    text authorization_url
+    text redirect_uri
+    text[] scopes
+    social_oauth_state_status status
+    timestamptz expires_at
+    uuid created_by FK
+    timestamptz consumed_at
+  }
+
+  SOCIAL_RATE_LIMIT_BUCKETS {
+    uuid id PK
+    uuid workspace_id FK
+    uuid social_account_id FK
+    platform platform
+    text bucket_key
+    integer limit
+    integer remaining
+    integer window_seconds
+    timestamptz reset_at
+  }
+
+  SOCIAL_CONNECTOR_EVENTS {
+    uuid id PK
+    uuid workspace_id FK
+    uuid social_account_id FK
+    platform platform
+    text type
+    connector_event_severity severity
+    text message
+    jsonb metadata
+  }
+
+  AUDIT_LOGS {
+    uuid id PK
+    uuid workspace_id FK
+    uuid user_id FK
+    text action
+    text entity_type
+    uuid entity_id
+    jsonb old_values
+    jsonb new_values
+    text ip_address
+    text user_agent
+    timestamptz created_at
+  }
+
+  WORKSPACE_INVITATIONS {
+    uuid id PK
+    uuid workspace_id FK
+    text email
+    role role
+    invitation_status status
+    text token_hash
+    uuid invited_by FK
+    timestamptz invited_at
+    timestamptz expires_at
+    timestamptz accepted_at
+    timestamptz revoked_at
+  }
+
+  API_KEYS {
+    uuid id PK
+    uuid workspace_id FK
+    text name
+    text key_prefix
+    text secret_hash
+    text[] scopes
+    api_key_status status
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz last_used_at
+    timestamptz expires_at
+    timestamptz revoked_at
+  }
 ```
 
 ## Index Strategy
@@ -84,6 +170,8 @@ erDiagram
 - Composite account/status index on platform targets.
 - GIN indexes for post content and analytics metrics.
 - Audit and AI generation indexes by workspace and created timestamp.
+- Social connector indexes by workspace, account, OAuth state, rate-limit reset, and event timestamp.
+- Invitation indexes by workspace/email/status and token hash; API key indexes by workspace/status and prefix.
 
 ## Retention Strategy
 

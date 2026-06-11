@@ -44,6 +44,9 @@ Supported flows:
 - Object ownership checks for posts, campaigns, media, and reports.
 - Database RLS using active workspace context.
 - Audit logging for permission-sensitive actions.
+- `audit.view` gates `/api/audit/logs`, `/api/audit/summary`, `/api/audit/export`, and the Settings security audit panel.
+- `members.invite`, `members.manage`, and `api_keys.manage` gate invitation, role, suspension, and service credential workflows.
+- API keys authenticate through `x-api-key` as `api_service_account` principals and can only use permissions included in their stored scopes.
 
 ## Security Controls
 
@@ -52,5 +55,8 @@ Supported flows:
 - Use CORS allowlist and strict security headers.
 - Rate-limit auth, AI, and publishing endpoints.
 - Store all external webhook secrets hashed.
+- Store invitation tokens and API key secrets only as hashes; raw API key secrets are returned once.
+- Revoke API keys to immediately reject future `x-api-key` requests.
 - Sign outbound webhooks with timestamped HMAC.
 - Record IP and user agent for security-relevant audit events.
+- Emit audit records for auth, workflow, connector, media, publishing, and webhook recovery actions.

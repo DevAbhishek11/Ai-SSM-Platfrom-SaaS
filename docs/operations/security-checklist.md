@@ -16,7 +16,7 @@
 - Encrypt OAuth tokens, refresh tokens, MFA secrets, and API keys.
 - Hash refresh tokens and webhook secrets.
 - Enable RLS on tenant-scoped tables.
-- Store audit logs for privileged actions.
+- Store audit logs for privileged actions and expose scoped compliance export.
 - Support GDPR export and deletion workflows.
 - Avoid storing unnecessary AI prompts beyond retention policy.
 
