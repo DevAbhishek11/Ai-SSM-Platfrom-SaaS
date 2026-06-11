@@ -1,0 +1,208 @@
+openapi: 3.0.3
+info:
+  title: AI Social Media Management Platform API
+  version: 0.1.0
+  description: Initial REST contract for the enterprise social media management SaaS.
+servers:
+  - url: http://localhost:4000/api
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: API is alive
+  /ready:
+    get:
+      tags: [health]
+      summary: Readiness probe
+      security: []
+      responses:
+        "200":
+          description: API dependencies are configured
+  /dashboard/overview:
+    get:
+      tags: [dashboard]
+      summary: Workspace dashboard overview
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Dashboard metrics, posts, accounts, trends, and alerts
+  /workspaces:
+    get:
+      tags: [workspaces]
+      summary: List caller workspaces
+      responses:
+        "200":
+          description: Workspace list
+  /workspaces/{id}:
+    get:
+      tags: [workspaces]
+      summary: Get workspace
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Workspace
+        "404":
+          description: Workspace not found
+  /posts:
+    get:
+      tags: [posts]
+      summary: List workspace posts
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Post list
+    post:
+      tags: [posts]
+      summary: Create a post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePost"
+      responses:
+        "201":
+          description: Created post
+        "400":
+          description: Invalid platform content
+  /ai/generate:
+    post:
+      tags: [ai]
+      summary: Generate platform-specific post variants
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateContent"
+      responses:
+        "201":
+          description: AI generation response with safety and quality metadata
+  /analytics/summary:
+    get:
+      tags: [analytics]
+      summary: Workspace analytics summary
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Analytics totals and recommendations
+  /social/accounts:
+    get:
+      tags: [social]
+      summary: Connected account list
+      responses:
+        "200":
+          description: Social accounts
+  /social/account-health:
+    get:
+      tags: [social]
+      summary: Social account health
+      responses:
+        "200":
+          description: Account health summary
+  /social/platform-capabilities:
+    get:
+      tags: [social]
+      summary: Supported platform capability matrix
+      responses:
+        "200":
+          description: Platform capabilities
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CreatePost:
+      type: object
+      required: [workspaceId, content]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        campaignId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [draft, in_review, revisions_needed, approved, scheduled, publishing, published, failed, archived]
+        scheduledAt:
+          type: string
+          format: date-time
+        aiGenerated:
+          type: boolean
+        content:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/PostContentVariant"
+    PostContentVariant:
+      type: object
+      required: [platform, text]
+      properties:
+        platform:
+          type: string
+          enum: [x, instagram, facebook, linkedin, youtube, tiktok, reddit, pinterest, threads, mastodon, bluesky]
+        text:
+          type: string
+          maxLength: 65000
+        hashtags:
+          type: array
+          items:
+            type: string
+        firstComment:
+          type: string
+        link:
+          type: string
+          format: uri
+    GenerateContent:
+      type: object
+      required: [workspaceId, brief, platforms]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        brief:
+          type: string
+          minLength: 10
+          maxLength: 5000
+        platforms:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        tone:
+          type: string
+        objective:
+          type: string
+        brandVoiceId:
+          type: string
+          format: uuid

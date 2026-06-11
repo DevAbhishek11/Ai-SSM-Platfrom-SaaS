@@ -1,0 +1,32 @@
+{
+  "name": "@ssm/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ssm/domain": "file:../../packages/domain",
+    "@tanstack/react-query": "5.101.0",
+    "lucide-react": "1.17.0",
+    "next": "16.2.9",
+    "next-intl": "4.13.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "recharts": "3.8.1",
+    "zustand": "5.0.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.0",
+    "@testing-library/react": "16.3.2",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "jsdom": "29.1.1",
+    "tailwindcss": "4.3.0"
+  }
+}

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ssm-config
+  namespace: ssm
+data:
+  NODE_ENV: production
+  API_PORT: "4000"
+  WEB_BASE_URL: https://app.example.com
+  API_BASE_URL: https://api.example.com/api
+  NEXT_PUBLIC_API_URL: https://api.example.com/api

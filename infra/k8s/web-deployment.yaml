@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ssm-web
+  namespace: ssm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ssm-web
+  template:
+    metadata:
+      labels:
+        app: ssm-web
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/example/ssm-web:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: ssm-config
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ssm-web
+  namespace: ssm
+spec:
+  selector:
+    app: ssm-web
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000

@@ -1,0 +1,24 @@
+groups:
+  - name: ssm-api
+    rules:
+      - alert: HighApiErrorRate
+        expr: sum(rate(http_requests_total{job="ssm-api",status=~"5.."}[5m])) / sum(rate(http_requests_total{job="ssm-api"}[5m])) > 0.01
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: API 5xx error rate above 1%
+      - alert: HighApiLatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="ssm-api"}[5m])) by (le)) > 0.2
+        for: 10m
+        labels:
+          severity: warn
+        annotations:
+          summary: API p95 latency above 200ms
+      - alert: PublishingQueueBacklog
+        expr: ssm_publishing_queue_depth > 1000
+        for: 15m
+        labels:
+          severity: warn
+        annotations:
+          summary: Publishing queue backlog is elevated
