@@ -21,6 +21,7 @@ export function ApprovalQueue({ posts }: { posts: Post[] }) {
                 <StatusBadge status={post.status} />
               </div>
               <p className="mt-2 line-clamp-2 text-sm">{post.content[0]?.text}</p>
+              <p className="mt-2 text-xs text-[var(--muted)]">Post ID: {post.id}</p>
             </article>
           ))
         )}

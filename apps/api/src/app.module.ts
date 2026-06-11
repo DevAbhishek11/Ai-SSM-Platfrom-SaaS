@@ -16,8 +16,10 @@ import { MediaModule } from "./modules/media/media.module.js";
 import { NotificationsModule } from "./modules/notifications/notifications.module.js";
 import { PostsModule } from "./modules/posts/posts.module.js";
 import { PublishingModule } from "./modules/publishing/publishing.module.js";
+import { RepositoriesModule } from "./modules/repositories/repositories.module.js";
 import { SocialModule } from "./modules/social/social.module.js";
 import { WebhooksModule } from "./modules/webhooks/webhooks.module.js";
+import { WorkflowModule } from "./modules/workflow/workflow.module.js";
 import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
 
 @Module({
@@ -30,6 +32,7 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
       }
     ]),
     DatabaseModule,
+    RepositoriesModule,
     AuthModule,
     HealthModule,
     DashboardModule,
@@ -41,6 +44,7 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
     BillingModule,
     WebhooksModule,
     PublishingModule,
+    WorkflowModule,
     AiModule,
     AnalyticsModule,
     SocialModule

@@ -82,4 +82,30 @@ describe("API application", () => {
     expect(retry.body.status).toBe("retrying");
     expect(retry.body.nextRetryAt).toEqual(expect.any(String));
   });
+
+  it("enforces approval workflow transitions and exposes timeline", async () => {
+    const changes = await request(app.getHttpServer())
+      .post("/api/workflow/posts/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/request-changes")
+      .set("x-user-role", "reviewer")
+      .send({ comment: "Please revise the hook before approval." })
+      .expect(201);
+
+    expect(changes.body.post.status).toBe("revisions_needed");
+    expect(changes.body.event.action).toBe("changes_requested");
+
+    const invalidApprove = await request(app.getHttpServer())
+      .post("/api/workflow/posts/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/approve")
+      .set("x-user-role", "reviewer")
+      .send({ comment: "Trying to approve too early." })
+      .expect(400);
+
+    expect(invalidApprove.body.message).toContain("Cannot transition");
+
+    const timeline = await request(app.getHttpServer())
+      .get("/api/workflow/posts/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/timeline")
+      .expect(200);
+
+    expect(timeline.body.events.length).toBeGreaterThanOrEqual(2);
+    expect(timeline.body.comments.length).toBeGreaterThanOrEqual(1);
+  });
 });

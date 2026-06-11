@@ -44,6 +44,19 @@ export const sentimentEnum = pgEnum("sentiment", sentimentLabels);
 export const webhookStatusEnum = pgEnum("webhook_status", ["pending", "delivered", "failed"]);
 export const webhookEndpointStatusEnum = pgEnum("webhook_endpoint_status", webhookEndpointStatuses);
 export const publishingJobStatusEnum = pgEnum("publishing_job_status", publishingJobStatuses);
+export const workflowEventActionEnum = pgEnum("workflow_event_action", [
+  "created",
+  "submitted_for_review",
+  "approved",
+  "changes_requested",
+  "scheduled",
+  "publishing_started",
+  "published",
+  "failed",
+  "canceled",
+  "archived",
+  "commented"
+]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -517,6 +530,57 @@ export const publishingJobs = pgTable(
   })
 );
 
+export const postComments = pgTable(
+  "post_comments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+    body: text("body").notNull(),
+    resolved: boolean("resolved").default(false).notNull(),
+    ...timestamps
+  },
+  (table) => ({
+    postCreatedIdx: index("post_comments_post_created_idx").on(table.postId, table.createdAt),
+    workspaceResolvedIdx: index("post_comments_workspace_resolved_idx").on(
+      table.workspaceId,
+      table.resolved
+    )
+  })
+);
+
+export const workflowEvents = pgTable(
+  "workflow_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+    action: workflowEventActionEnum("action").notNull(),
+    fromStatus: postStatusEnum("from_status"),
+    toStatus: postStatusEnum("to_status"),
+    comment: text("comment"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    postCreatedIdx: index("workflow_events_post_created_idx").on(table.postId, table.createdAt),
+    workspaceActionIdx: index("workflow_events_workspace_action_idx").on(
+      table.workspaceId,
+      table.action
+    )
+  })
+);
+
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   workspaces: many(workspaces)
 }));
@@ -537,7 +601,9 @@ export const postsRelations = relations(posts, ({ one, many }) => ({
   campaign: one(campaigns, { fields: [posts.campaignId], references: [campaigns.id] }),
   author: one(users, { fields: [posts.authorId], references: [users.id] }),
   platformTargets: many(postPlatforms),
-  publishingJobs: many(publishingJobs)
+  publishingJobs: many(publishingJobs),
+  comments: many(postComments),
+  workflowEvents: many(workflowEvents)
 }));
 
 export const publishingJobsRelations = relations(publishingJobs, ({ one }) => ({

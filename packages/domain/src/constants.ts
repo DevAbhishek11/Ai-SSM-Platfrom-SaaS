@@ -96,6 +96,21 @@ export const publishingJobStatuses = [
 ] as const;
 export type PublishingJobStatus = (typeof publishingJobStatuses)[number];
 
+export const workflowEventActions = [
+  "created",
+  "submitted_for_review",
+  "approved",
+  "changes_requested",
+  "scheduled",
+  "publishing_started",
+  "published",
+  "failed",
+  "canceled",
+  "archived",
+  "commented"
+] as const;
+export type WorkflowEventAction = (typeof workflowEventActions)[number];
+
 export const planLimits: Record<
   Plan,
   {

@@ -71,3 +71,12 @@ Social teams coordinate content across many platforms, tools, approvers, assets,
 - AI outputs require safety, auditability, and human review for regulated content.
 - Tenant isolation must be enforced at API and database layers.
 - Scheduling requires resilient queues, idempotency, and platform-specific retry policies.
+
+## Workflow Acceptance Notes
+
+- Draft posts can be submitted for review.
+- Reviewers can approve or request changes with required comments.
+- Approved posts can be scheduled with a future timestamp.
+- Scheduled posts can be canceled back to approved state.
+- Illegal transitions return a validation error and do not mutate post state.
+- Every transition writes a workflow event and optional comment for auditability.

@@ -343,6 +343,127 @@ paths:
       responses:
         "200":
           description: Publishing job scheduled for retry
+  /workflow/posts/{postId}/timeline:
+    get:
+      tags: [workflow]
+      summary: Get comments and workflow events for a post
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Workflow timeline
+  /workflow/posts/{postId}/submit:
+    post:
+      tags: [workflow]
+      summary: Submit a draft post for review
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowComment"
+      responses:
+        "200":
+          description: Updated post and timeline
+  /workflow/posts/{postId}/approve:
+    post:
+      tags: [workflow]
+      summary: Approve a post
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowComment"
+      responses:
+        "200":
+          description: Updated post and timeline
+  /workflow/posts/{postId}/request-changes:
+    post:
+      tags: [workflow]
+      summary: Request changes on a post
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowComment"
+      responses:
+        "200":
+          description: Updated post and timeline
+  /workflow/posts/{postId}/schedule:
+    post:
+      tags: [workflow]
+      summary: Schedule an approved post
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scheduledAt]
+              properties:
+                scheduledAt:
+                  type: string
+                  format: date-time
+                comment:
+                  type: string
+      responses:
+        "200":
+          description: Updated post and timeline
+  /workflow/posts/{postId}/cancel:
+    post:
+      tags: [workflow]
+      summary: Cancel a scheduled post
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowComment"
+      responses:
+        "200":
+          description: Updated post and timeline
   /ai/generate:
     post:
       tags: [ai]
@@ -462,3 +583,11 @@ components:
         brandVoiceId:
           type: string
           format: uuid
+    WorkflowComment:
+      type: object
+      required: [comment]
+      properties:
+        comment:
+          type: string
+          minLength: 1
+          maxLength: 5000

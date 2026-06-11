@@ -1,16 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { demoPosts, supportedPlatformCapabilities, type Post } from "@ssm/domain";
+import { supportedPlatformCapabilities, type Post } from "@ssm/domain";
+import { PostsRepository } from "../repositories/posts.repository.js";
 import type { CreatePostDto } from "./dto.js";
 
 @Injectable()
 export class PostsService {
-  private readonly posts: Post[] = [...demoPosts];
+  constructor(private readonly postsRepository: PostsRepository) {}
 
   list({ workspaceId }: { workspaceId: string }): Post[] {
-    return this.posts
-      .filter((post) => post.workspaceId === workspaceId)
-      .sort((a, b) => (a.scheduledAt ?? a.createdAt).localeCompare(b.scheduledAt ?? b.createdAt));
+    return this.postsRepository.listByWorkspace(workspaceId);
   }
 
   create(input: CreatePostDto): Post {
@@ -44,7 +43,6 @@ export class PostsService {
       updatedAt: now
     };
 
-    this.posts.push(post);
-    return post;
+    return this.postsRepository.save(post);
   }
 }

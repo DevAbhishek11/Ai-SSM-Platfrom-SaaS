@@ -16,6 +16,7 @@ The dashboard summarizes active campaigns, scheduled posts, approval queue items
 ## Approvals
 
 Reviewers can approve, reject, or request changes. Every status transition should keep comments and audit metadata.
+The approvals page now shows a timeline combining workflow events and comments for the selected review item.
 
 ## Social Accounts
 

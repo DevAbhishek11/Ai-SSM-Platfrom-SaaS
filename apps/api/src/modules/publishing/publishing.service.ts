@@ -1,19 +1,21 @@
 import { randomUUID } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import {
-  demoPosts,
   demoPublishingJobs,
   demoSocialAccounts,
   type Platform,
   type PublishingJob,
   type SocialAccount
 } from "@ssm/domain";
+import { PostsRepository } from "../repositories/posts.repository.js";
 import type { EnqueuePublishingJobsDto } from "./dto.js";
 import { deterministicConnectors } from "./platform-connectors.js";
 
 @Injectable()
 export class PublishingService {
   private readonly jobs: PublishingJob[] = [...demoPublishingJobs];
+
+  constructor(private readonly postsRepository: PostsRepository) {}
 
   listJobs(workspaceId: string) {
     return this.jobs
@@ -22,10 +24,11 @@ export class PublishingService {
   }
 
   enqueue(input: EnqueuePublishingJobsDto) {
-    const post = demoPosts.find(
-      (item) => item.id === input.postId && item.workspaceId === input.workspaceId
-    );
+    const post = this.postsRepository.findById(input.postId);
     if (!post) {
+      throw new NotFoundException("Post not found");
+    }
+    if (post.workspaceId !== input.workspaceId) {
       throw new NotFoundException("Post not found");
     }
 

@@ -11,7 +11,8 @@ import {
   sentimentLabels,
   publishingJobStatuses,
   webhookEndpointStatuses,
-  webhookStatuses
+  webhookStatuses,
+  workflowEventActions
 } from "./constants.js";
 
 export const idSchema = z.uuid();
@@ -228,6 +229,30 @@ export const publishingJobSchema = z.object({
   updatedAt: isoDateTimeSchema
 });
 
+export const postCommentSchema = z.object({
+  id: idSchema,
+  postId: idSchema,
+  workspaceId: idSchema,
+  authorId: idSchema,
+  body: z.string().min(1).max(5000),
+  resolved: z.boolean(),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
+export const workflowEventSchema = z.object({
+  id: idSchema,
+  postId: idSchema,
+  workspaceId: idSchema,
+  actorId: idSchema,
+  action: z.enum(workflowEventActions),
+  fromStatus: z.enum(postStatuses).optional(),
+  toStatus: z.enum(postStatuses).optional(),
+  comment: z.string().max(5000).optional(),
+  metadata: z.record(z.string(), z.unknown()).default({}),
+  createdAt: isoDateTimeSchema
+});
+
 export const aiGenerationRequestSchema = z.object({
   workspaceId: idSchema,
   brief: z.string().min(10).max(5000),
@@ -264,5 +289,7 @@ export type Notification = z.infer<typeof notificationSchema>;
 export type WebhookDelivery = z.infer<typeof webhookDeliverySchema>;
 export type WebhookEndpoint = z.infer<typeof webhookEndpointSchema>;
 export type PublishingJob = z.infer<typeof publishingJobSchema>;
+export type PostComment = z.infer<typeof postCommentSchema>;
+export type WorkflowEvent = z.infer<typeof workflowEventSchema>;
 export type AiGenerationRequest = z.infer<typeof aiGenerationRequestSchema>;
 export type AiGenerationResponse = z.infer<typeof aiGenerationResponseSchema>;

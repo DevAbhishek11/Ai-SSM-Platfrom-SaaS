@@ -21,6 +21,8 @@ erDiagram
   SOCIAL_ACCOUNTS ||--o{ POST_PLATFORMS : publishes
   SOCIAL_ACCOUNTS ||--o{ ANALYTICS_SNAPSHOTS : reports
   POSTS ||--o{ ANALYTICS_SNAPSHOTS : attributes
+  POSTS ||--o{ POST_COMMENTS : discusses
+  POSTS ||--o{ WORKFLOW_EVENTS : records
   USERS ||--o{ NOTIFICATIONS : receives
 
   USERS {

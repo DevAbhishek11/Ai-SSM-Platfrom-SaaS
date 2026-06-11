@@ -4,12 +4,14 @@ import type {
   MediaAsset,
   Notification,
   Post,
+  PostComment,
   PublishingJob,
   SocialAccount,
   Trend,
   User,
   WebhookDelivery,
   WebhookEndpoint,
+  WorkflowEvent,
   Workspace
 } from "./schemas.js";
 
@@ -352,5 +354,79 @@ export const demoPublishingJobs: PublishingJob[] = [
     nextRetryAt: "2026-06-11T06:30:00.000Z",
     createdAt: now,
     updatedAt: now
+  }
+];
+
+export const demoPostComments: PostComment[] = [
+  {
+    id: "22222222-3333-4222-8333-222222222222",
+    postId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    workspaceId: demoWorkspace.id,
+    authorId: demoUser.id,
+    body: "Please tighten the hook and confirm the X token is refreshed before scheduling.",
+    resolved: false,
+    createdAt: "2026-06-11T04:15:00.000Z",
+    updatedAt: "2026-06-11T04:15:00.000Z"
+  }
+];
+
+export const demoWorkflowEvents: WorkflowEvent[] = [
+  {
+    id: "23232323-2323-4232-8232-232323232323",
+    postId: "88888888-8888-4888-8888-888888888888",
+    workspaceId: demoWorkspace.id,
+    actorId: demoUser.id,
+    action: "submitted_for_review",
+    fromStatus: "draft",
+    toStatus: "in_review",
+    comment: "Launch sequence ready for manager review.",
+    metadata: {},
+    createdAt: "2026-06-10T08:00:00.000Z"
+  },
+  {
+    id: "24242424-2424-4242-8242-242424242424",
+    postId: "88888888-8888-4888-8888-888888888888",
+    workspaceId: demoWorkspace.id,
+    actorId: demoUser.id,
+    action: "approved",
+    fromStatus: "in_review",
+    toStatus: "approved",
+    comment: "Approved for launch calendar.",
+    metadata: {},
+    createdAt: "2026-06-10T09:00:00.000Z"
+  },
+  {
+    id: "25252525-2525-4252-8252-252525252525",
+    postId: "88888888-8888-4888-8888-888888888888",
+    workspaceId: demoWorkspace.id,
+    actorId: demoUser.id,
+    action: "scheduled",
+    fromStatus: "approved",
+    toStatus: "scheduled",
+    comment: "Scheduled for primary launch slot.",
+    metadata: { scheduledAt: "2026-06-12T10:30:00.000Z" },
+    createdAt: "2026-06-10T09:15:00.000Z"
+  },
+  {
+    id: "26262626-2626-4262-8262-262626262626",
+    postId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    workspaceId: demoWorkspace.id,
+    actorId: demoUser.id,
+    action: "submitted_for_review",
+    fromStatus: "draft",
+    toStatus: "in_review",
+    comment: "Needs quick compliance look.",
+    metadata: {},
+    createdAt: "2026-06-11T03:30:00.000Z"
+  },
+  {
+    id: "27272727-2727-4272-8272-272727272727",
+    postId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    workspaceId: demoWorkspace.id,
+    actorId: demoUser.id,
+    action: "commented",
+    comment: "Please tighten the hook and confirm the X token is refreshed before scheduling.",
+    metadata: {},
+    createdAt: "2026-06-11T04:15:00.000Z"
   }
 ];
