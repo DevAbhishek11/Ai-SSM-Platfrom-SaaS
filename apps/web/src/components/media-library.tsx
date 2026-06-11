@@ -19,7 +19,7 @@ export function MediaLibrary({ assets }: { assets: MediaAsset[] }) {
             <div className="aspect-[16/9] rounded-md bg-gradient-to-br from-teal-100 to-slate-100" />
             <p className="mt-3 truncate text-sm font-semibold">{asset.fileName}</p>
             <p className="mt-1 text-xs capitalize text-[var(--muted)]">
-              {asset.assetType} · {formatCompactNumber(asset.fileSize)}B
+              {asset.assetType} / {formatCompactNumber(asset.fileSize)}B
             </p>
             <div className="mt-3 flex flex-wrap gap-1">
               {asset.tags.map((tag) => (

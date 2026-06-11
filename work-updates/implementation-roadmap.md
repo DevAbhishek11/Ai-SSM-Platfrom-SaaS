@@ -16,6 +16,7 @@
 - Platform connector interfaces and queue-backed publishing pipeline.
 - Publishing jobs with idempotency keys, retries, connector receipts, and stuck-job runbooks.
 - Approval workflow events, comments, legal transition enforcement, reviewer actions, and timeline UI.
+- Media processing jobs covering virus scanning, format detection, optimization, thumbnails, AI tagging, storage, and CDN distribution.
 
 ## Phase 3: Infrastructure
 

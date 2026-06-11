@@ -20,7 +20,14 @@ const statusLabels: Record<string, string> = {
   processing: "Processing",
   retrying: "Retrying",
   succeeded: "Succeeded",
-  canceled: "Canceled"
+  canceled: "Canceled",
+  virus_scanning: "Virus scan",
+  format_detecting: "Detecting",
+  optimizing: "Optimizing",
+  thumbnailing: "Thumbnailing",
+  ai_tagging: "AI tagging",
+  storing: "Storing",
+  cdn_distributing: "CDN"
 };
 
 const toneClasses: Record<string, string> = {
@@ -43,7 +50,14 @@ const toneClasses: Record<string, string> = {
   processing: "bg-sky-50 text-sky-800 border-sky-200",
   retrying: "bg-amber-50 text-amber-800 border-amber-200",
   succeeded: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  canceled: "bg-neutral-100 text-neutral-700 border-neutral-200"
+  canceled: "bg-neutral-100 text-neutral-700 border-neutral-200",
+  virus_scanning: "bg-sky-50 text-sky-800 border-sky-200",
+  format_detecting: "bg-sky-50 text-sky-800 border-sky-200",
+  optimizing: "bg-teal-50 text-teal-800 border-teal-200",
+  thumbnailing: "bg-teal-50 text-teal-800 border-teal-200",
+  ai_tagging: "bg-indigo-50 text-indigo-800 border-indigo-200",
+  storing: "bg-amber-50 text-amber-800 border-amber-200",
+  cdn_distributing: "bg-amber-50 text-amber-800 border-amber-200"
 };
 
 export function StatusBadge({ status }: { status: PostStatus | string }) {

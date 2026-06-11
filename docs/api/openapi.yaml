@@ -186,6 +186,79 @@ paths:
       responses:
         "201":
           description: Constrained upload URL and required headers
+  /media/processing-jobs:
+    get:
+      tags: [media]
+      summary: List media processing jobs
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Media processing job list
+  /media/uploads/complete:
+    post:
+      tags: [media]
+      summary: Complete an upload and create a processing job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [uploadIntentId, checksumSha256]
+              properties:
+                uploadIntentId:
+                  type: string
+                  format: uuid
+                checksumSha256:
+                  type: string
+      responses:
+        "201":
+          description: Created processing job
+  /media/processing-jobs/{id}/process-next:
+    post:
+      tags: [media]
+      summary: Advance a media processing job by one step
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Updated processing job
+  /media/processing-jobs/{id}/fail:
+    post:
+      tags: [media]
+      summary: Mark a media processing job as failed
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [errorMessage]
+              properties:
+                errorMessage:
+                  type: string
+                step:
+                  type: string
+      responses:
+        "200":
+          description: Failed processing job
   /notifications:
     get:
       tags: [notifications]

@@ -66,6 +66,20 @@ export type SentimentLabel = (typeof sentimentLabels)[number];
 export const mediaAssetTypes = ["image", "video", "audio", "document", "design", "three_d"] as const;
 export type MediaAssetType = (typeof mediaAssetTypes)[number];
 
+export const mediaProcessingJobStatuses = [
+  "queued",
+  "virus_scanning",
+  "format_detecting",
+  "optimizing",
+  "thumbnailing",
+  "ai_tagging",
+  "storing",
+  "cdn_distributing",
+  "completed",
+  "failed"
+] as const;
+export type MediaProcessingJobStatus = (typeof mediaProcessingJobStatuses)[number];
+
 export const notificationTypes = [
   "publishing_failure",
   "approval_request",

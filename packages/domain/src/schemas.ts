@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   accountStatuses,
   campaignTypes,
+  mediaProcessingJobStatuses,
   mediaAssetTypes,
   notificationTypes,
   platforms,
@@ -170,6 +171,39 @@ export const mediaAssetSchema = z.object({
   createdAt: isoDateTimeSchema
 });
 
+export const mediaProcessingJobSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  assetId: idSchema.optional(),
+  uploadIntentId: idSchema,
+  fileName: z.string().min(1).max(255),
+  fileType: z.string().min(1),
+  fileSize: z.number().int().nonnegative(),
+  storageKey: z.string().min(1),
+  status: z.enum(mediaProcessingJobStatuses),
+  currentStep: z.string().min(1),
+  progress: z.number().min(0).max(100),
+  checksumSha256: z.string().optional(),
+  virusScan: z
+    .object({
+      status: z.enum(["pending", "clean", "infected", "error"]),
+      engine: z.string(),
+      scannedAt: isoDateTimeSchema.optional()
+    })
+    .optional(),
+  output: z
+    .object({
+      cdnUrl: z.url().optional(),
+      thumbnailUrl: z.url().optional(),
+      optimizedBytes: z.number().int().nonnegative().optional(),
+      tags: z.array(z.string()).default([])
+    })
+    .optional(),
+  errorMessage: z.string().optional(),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
 export const notificationSchema = z.object({
   id: idSchema,
   userId: idSchema,
@@ -285,6 +319,7 @@ export type Campaign = z.infer<typeof campaignSchema>;
 export type AnalyticsSnapshot = z.infer<typeof analyticsSnapshotSchema>;
 export type Trend = z.infer<typeof trendSchema>;
 export type MediaAsset = z.infer<typeof mediaAssetSchema>;
+export type MediaProcessingJob = z.infer<typeof mediaProcessingJobSchema>;
 export type Notification = z.infer<typeof notificationSchema>;
 export type WebhookDelivery = z.infer<typeof webhookDeliverySchema>;
 export type WebhookEndpoint = z.infer<typeof webhookEndpointSchema>;

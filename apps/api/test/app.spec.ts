@@ -108,4 +108,33 @@ describe("API application", () => {
     expect(timeline.body.events.length).toBeGreaterThanOrEqual(2);
     expect(timeline.body.comments.length).toBeGreaterThanOrEqual(1);
   });
+
+  it("creates upload intents and advances media processing jobs", async () => {
+    const intent = await request(app.getHttpServer())
+      .post("/api/media/upload-intents")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        fileName: "launch-card.webp",
+        fileType: "image/webp",
+        fileSize: 512000
+      })
+      .expect(201);
+
+    const completed = await request(app.getHttpServer())
+      .post("/api/media/uploads/complete")
+      .send({
+        uploadIntentId: intent.body.id,
+        checksumSha256: "sha256-test-upload"
+      })
+      .expect(201);
+
+    expect(completed.body.status).toBe("queued");
+
+    const processed = await request(app.getHttpServer())
+      .post(`/api/media/processing-jobs/${completed.body.id}/process-next`)
+      .expect(201);
+
+    expect(processed.body.status).toBe("virus_scanning");
+    expect(processed.body.virusScan.status).toBe("clean");
+  });
 });

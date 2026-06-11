@@ -98,6 +98,26 @@ stateDiagram-v2
 
 Every publishing job stores a unique idempotency key derived from post id, social account id, platform, and scheduled time. Workers must use this key for deduplication and platform correlation.
 
+## Media Processing Pipeline
+
+```mermaid
+flowchart LR
+  upload[Upload Intent] --> complete[Upload Complete]
+  complete --> scan[Virus Scan]
+  scan --> detect[Format Detection]
+  detect --> optimize[Optimization]
+  optimize --> thumb[Thumbnail Generation]
+  thumb --> tag[AI Tagging]
+  tag --> storage[Storage Commit]
+  storage --> cdn[CDN Distribution]
+  cdn --> ready[Asset Ready]
+  scan --> quarantine[Quarantine]:::danger
+  optimize --> failed[Failed Job]:::danger
+  cdn --> failed
+
+  classDef danger fill:#fee2e2,stroke:#b42318,color:#7f1d1d
+```
+
 ## Tenancy Model
 
 - Organization owns billing and one or more workspaces.

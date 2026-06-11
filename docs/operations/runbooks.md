@@ -76,3 +76,19 @@ Actions:
 2. Check redirect URI and scope changes.
 3. Trigger re-auth notifications.
 4. Pause scheduled posts for affected accounts.
+
+## Media Processing Failure
+
+Signals:
+
+- Media processing jobs move to `failed`.
+- Antivirus scanner, optimizer, thumbnailer, or CDN distribution errors increase.
+
+Actions:
+
+1. Identify the failed step and affected workspace.
+2. If virus scan reports infected content, quarantine the object and notify admins.
+3. If optimization or thumbnailing fails, retry with original asset preserved.
+4. If CDN distribution fails, keep the asset private and retry invalidation/distribution.
+5. Mark job output only after storage and CDN URLs are confirmed.
+6. Record audit context and expose user-facing recovery guidance.

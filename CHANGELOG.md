@@ -14,3 +14,4 @@
 - Added workflow routes for calendar, AI studio, approvals, analytics, accounts, media, and settings.
 - Added publishing job contracts, database migration, API endpoints, deterministic connectors, retry policy, and `/publishing` UI.
 - Added approval workflow contracts, comments, transition events, migration, API endpoints, and approvals timeline/actions UI.
+- Added media processing job contracts, migration, API lifecycle endpoints, runbook, and media pipeline UI.

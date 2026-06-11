@@ -2,6 +2,7 @@ import type {
   AnalyticsSnapshot,
   Campaign,
   MediaAsset,
+  MediaProcessingJob,
   Notification,
   Post,
   PostComment,
@@ -245,6 +246,61 @@ export const demoMediaAssets: MediaAsset[] = [
     aiTags: { scenes: ["workflow", "analytics"] },
     createdBy: demoUser.id,
     createdAt: now
+  }
+];
+
+export const demoMediaProcessingJobs: MediaProcessingJob[] = [
+  {
+    id: "28282828-2828-4282-8282-282828282828",
+    workspaceId: demoWorkspace.id,
+    assetId: "12121212-1212-4121-8121-121212121212",
+    uploadIntentId: "29292929-2929-4292-8292-292929292929",
+    fileName: "launch-hero-4x5.webp",
+    fileType: "image/webp",
+    fileSize: 842114,
+    storageKey: "workspaces/acme-growth-lab/media/launch-hero-4x5.webp",
+    status: "completed",
+    currentStep: "cdn_distributing",
+    progress: 100,
+    checksumSha256: "sha256-demo-launch-hero",
+    virusScan: {
+      status: "clean",
+      engine: "clamav-demo",
+      scannedAt: now
+    },
+    output: {
+      cdnUrl: "https://cdn.example.com/workspaces/acme-growth-lab/media/launch-hero-4x5.webp",
+      thumbnailUrl: "https://cdn.example.com/workspaces/acme-growth-lab/media/thumbs/launch-hero-4x5.webp",
+      optimizedBytes: 612004,
+      tags: ["launch", "hero", "instagram"]
+    },
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "30303030-3030-4303-8303-303030303030",
+    workspaceId: demoWorkspace.id,
+    assetId: "13131313-1313-4131-8131-131313131313",
+    uploadIntentId: "31313131-3131-4313-8313-313131313131",
+    fileName: "product-demo-short.mp4",
+    fileType: "video/mp4",
+    fileSize: 18421140,
+    storageKey: "workspaces/acme-growth-lab/media/product-demo-short.mp4",
+    status: "thumbnailing",
+    currentStep: "thumbnailing",
+    progress: 58,
+    checksumSha256: "sha256-demo-product-demo",
+    virusScan: {
+      status: "clean",
+      engine: "clamav-demo",
+      scannedAt: "2026-06-11T05:50:00.000Z"
+    },
+    output: {
+      optimizedBytes: 15120400,
+      tags: ["demo", "short-form", "launch"]
+    },
+    createdAt: "2026-06-11T05:50:00.000Z",
+    updatedAt: "2026-06-11T05:55:00.000Z"
   }
 ];
 

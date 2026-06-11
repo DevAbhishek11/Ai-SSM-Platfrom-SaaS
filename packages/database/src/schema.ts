@@ -16,6 +16,7 @@ import {
 import {
   accountStatuses,
   campaignTypes,
+  mediaProcessingJobStatuses,
   platforms,
   plans,
   postStatuses,
@@ -30,6 +31,10 @@ export const planEnum = pgEnum("plan", plans);
 export const platformEnum = pgEnum("platform", platforms);
 export const postStatusEnum = pgEnum("post_status", postStatuses);
 export const accountStatusEnum = pgEnum("account_status", accountStatuses);
+export const mediaProcessingJobStatusEnum = pgEnum(
+  "media_processing_job_status",
+  mediaProcessingJobStatuses
+);
 export const campaignTypeEnum = pgEnum("campaign_type", campaignTypes);
 export const campaignStatusEnum = pgEnum("campaign_status", [
   "planning",
@@ -252,6 +257,40 @@ export const mediaAssets = pgTable(
   (table) => ({
     storageKeyUnique: uniqueIndex("media_assets_storage_key_unique").on(table.storageKey),
     workspaceTypeIdx: index("media_assets_workspace_type_idx").on(table.workspaceId, table.fileType)
+  })
+);
+
+export const mediaProcessingJobs = pgTable(
+  "media_processing_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    assetId: uuid("asset_id").references(() => mediaAssets.id, { onDelete: "set null" }),
+    uploadIntentId: uuid("upload_intent_id").notNull(),
+    fileName: text("file_name").notNull(),
+    fileType: text("file_type").notNull(),
+    fileSize: integer("file_size").notNull(),
+    storageKey: text("storage_key").notNull(),
+    status: mediaProcessingJobStatusEnum("status").default("queued").notNull(),
+    currentStep: text("current_step").default("queued").notNull(),
+    progress: integer("progress").default(0).notNull(),
+    checksumSha256: text("checksum_sha256"),
+    virusScan: jsonb("virus_scan").$type<Record<string, unknown>>(),
+    output: jsonb("output").$type<Record<string, unknown>>(),
+    errorMessage: text("error_message"),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceStatusIdx: index("media_processing_jobs_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    ),
+    uploadIntentUnique: uniqueIndex("media_processing_jobs_upload_intent_unique").on(
+      table.uploadIntentId
+    ),
+    assetIdx: index("media_processing_jobs_asset_idx").on(table.assetId)
   })
 );
 
