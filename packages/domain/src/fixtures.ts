@@ -11,11 +11,13 @@ import type {
   ContentTemplate,
   ListeningAlert,
   ListeningMonitor,
+  LocalizationPreference,
   MediaAsset,
   MediaProcessingJob,
   Notification,
   NotificationDeliveryAttempt,
   NotificationPreference,
+  OnboardingStep,
   ContentSafetyCheck,
   ModerationQueueItem,
   Post,
@@ -24,6 +26,7 @@ import type {
   ReportExport,
   ReportShareLink,
   ReportTemplate,
+  RegionalComplianceProfile,
   ScheduleRule,
   ScheduleSlot,
   ScheduledReport,
@@ -74,6 +77,136 @@ export const demoWorkspace: Workspace = {
     approvalSlaHours: 24,
     aiReviewRequiredForRegulatedContent: true
   },
+  createdAt: now,
+  updatedAt: now
+};
+
+export const demoOnboardingSteps: OnboardingStep[] = [
+  {
+    id: "86868686-8686-4868-8868-868686868686",
+    workspaceId: demoWorkspace.id,
+    key: "workspace_profile",
+    title: "Confirm workspace profile",
+    description: "Set workspace name, timezone, branding, and approval defaults.",
+    status: "completed",
+    targetHref: "/settings",
+    sortOrder: 1,
+    metadata: { section: "workspace" },
+    completedBy: demoUser.id,
+    completedAt: "2026-06-11T04:00:00.000Z",
+    createdAt: now,
+    updatedAt: "2026-06-11T04:00:00.000Z"
+  },
+  {
+    id: "87878787-8787-4878-8878-878787878787",
+    workspaceId: demoWorkspace.id,
+    key: "connect_social_account",
+    title: "Connect social accounts",
+    description: "Connect at least one publishing account and verify required scopes.",
+    status: "completed",
+    targetHref: "/accounts",
+    sortOrder: 2,
+    metadata: { requiredAccounts: 1, connectedAccounts: 2 },
+    completedBy: demoUser.id,
+    completedAt: now,
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "88888887-8887-4887-8887-888888878887",
+    workspaceId: demoWorkspace.id,
+    key: "brand_voice",
+    title: "Create brand voice",
+    description: "Define tone, vocabulary, CTA preferences, and examples before AI generation.",
+    status: "completed",
+    targetHref: "/ai-studio",
+    sortOrder: 3,
+    metadata: { profiles: 2 },
+    completedBy: demoUser.id,
+    completedAt: now,
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "89898989-8989-4898-8898-898989898989",
+    workspaceId: demoWorkspace.id,
+    key: "first_post",
+    title: "Create first post",
+    description: "Draft or generate a post and move it into review or scheduling.",
+    status: "in_progress",
+    targetHref: "/calendar",
+    sortOrder: 4,
+    metadata: { drafts: 0, scheduled: 1 },
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "90909090-9090-4909-8909-909090909090",
+    workspaceId: demoWorkspace.id,
+    key: "invite_team",
+    title: "Invite collaborators",
+    description: "Invite reviewers, creators, or managers with least-privilege roles.",
+    status: "pending",
+    targetHref: "/settings",
+    sortOrder: 5,
+    metadata: { recommendedRole: "reviewer" },
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "91919191-9191-4919-8919-919191919191",
+    workspaceId: demoWorkspace.id,
+    key: "notifications",
+    title: "Configure notifications",
+    description: "Enable routing for approvals, publishing failures, account issues, and security alerts.",
+    status: "pending",
+    targetHref: "/settings",
+    sortOrder: 6,
+    metadata: { channels: ["in_app", "email", "slack"] },
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "92929292-9292-4929-8929-929292929292",
+    workspaceId: demoWorkspace.id,
+    key: "analytics_review",
+    title: "Review analytics baseline",
+    description: "Inspect initial analytics, listening signals, and report templates.",
+    status: "pending",
+    targetHref: "/analytics",
+    sortOrder: 7,
+    metadata: { reportReady: true },
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+export const demoLocalizationPreference: LocalizationPreference = {
+  id: "93939393-9393-4939-8939-939393939393",
+  workspaceId: demoWorkspace.id,
+  userId: demoUser.id,
+  locale: "en",
+  direction: "ltr",
+  timezone: "Asia/Calcutta",
+  dateFormat: "DD/MM/YYYY",
+  timeFormat: "24h",
+  firstDayOfWeek: 1,
+  numberingSystem: "latn",
+  contentTranslationEnabled: true,
+  createdAt: now,
+  updatedAt: now
+};
+
+export const demoRegionalComplianceProfile: RegionalComplianceProfile = {
+  id: "94949494-9494-4949-8949-949494949494",
+  workspaceId: demoWorkspace.id,
+  dataResidency: "in",
+  primaryRegion: "ap-south-1",
+  regulations: ["dpdp", "soc2"],
+  consentRequired: true,
+  retentionDays: 730,
+  crossBorderTransfer: false,
+  updatedBy: demoUser.id,
   createdAt: now,
   updatedAt: now
 };

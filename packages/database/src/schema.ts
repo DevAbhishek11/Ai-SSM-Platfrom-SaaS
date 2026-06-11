@@ -21,16 +21,22 @@ import {
   campaignTaskPriorities,
   campaignTaskStatuses,
   campaignTypes,
+  complianceRegulations,
   contentTemplateCategories,
   contentTemplateStatuses,
   connectorEventSeverities,
+  dataResidencyRegions,
+  dateFormatOptions,
   invitationStatuses,
+  localeDirections,
   listeningAlertSeverities,
   listeningMonitorStatuses,
   listeningMonitorTypes,
   notificationChannels,
   notificationDeliveryStatuses,
   notificationDigestFrequencies,
+  onboardingStepKeys,
+  onboardingStepStatuses,
   contentSafetyStatuses,
   mediaProcessingJobStatuses,
   moderationStatuses,
@@ -46,6 +52,8 @@ import {
   roles,
   scheduleRuleStatuses,
   scheduleSlotStatuses,
+  supportedLocales,
+  timeFormatOptions,
   safetyPolicyStatuses,
   safetySeverities,
   sentimentLabels,
@@ -60,6 +68,14 @@ import {
 export const roleEnum = pgEnum("role", roles);
 export const planEnum = pgEnum("plan", plans);
 export const platformEnum = pgEnum("platform", platforms);
+export const onboardingStepKeyEnum = pgEnum("onboarding_step_key", onboardingStepKeys);
+export const onboardingStepStatusEnum = pgEnum("onboarding_step_status", onboardingStepStatuses);
+export const supportedLocaleEnum = pgEnum("supported_locale", supportedLocales);
+export const localeDirectionEnum = pgEnum("locale_direction", localeDirections);
+export const dateFormatEnum = pgEnum("date_format", dateFormatOptions);
+export const timeFormatEnum = pgEnum("time_format", timeFormatOptions);
+export const dataResidencyRegionEnum = pgEnum("data_residency_region", dataResidencyRegions);
+export const complianceRegulationEnum = pgEnum("compliance_regulation", complianceRegulations);
 export const postStatusEnum = pgEnum("post_status", postStatuses);
 export const contentTemplateCategoryEnum = pgEnum(
   "content_template_category",
@@ -215,6 +231,97 @@ export const workspaces = pgTable(
       table.slug
     ),
     organizationIdx: index("workspaces_organization_idx").on(table.organizationId)
+  })
+);
+
+export const onboardingSteps = pgTable(
+  "onboarding_steps",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    key: onboardingStepKeyEnum("key").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    status: onboardingStepStatusEnum("status").default("pending").notNull(),
+    targetHref: text("target_href").notNull(),
+    sortOrder: integer("sort_order").notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+    completedBy: uuid("completed_by").references(() => users.id, { onDelete: "set null" }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    skippedAt: timestamp("skipped_at", { withTimezone: true }),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceKeyUnique: uniqueIndex("onboarding_steps_workspace_key_unique").on(
+      table.workspaceId,
+      table.key
+    ),
+    workspaceStatusIdx: index("onboarding_steps_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    ),
+    workspaceSortIdx: index("onboarding_steps_workspace_sort_idx").on(
+      table.workspaceId,
+      table.sortOrder
+    )
+  })
+);
+
+export const localizationPreferences = pgTable(
+  "localization_preferences",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    locale: supportedLocaleEnum("locale").default("en").notNull(),
+    direction: localeDirectionEnum("direction").default("ltr").notNull(),
+    timezone: text("timezone").default("UTC").notNull(),
+    dateFormat: dateFormatEnum("date_format").default("MM/DD/YYYY").notNull(),
+    timeFormat: timeFormatEnum("time_format").default("12h").notNull(),
+    firstDayOfWeek: integer("first_day_of_week").default(0).notNull(),
+    numberingSystem: text("numbering_system").default("latn").notNull(),
+    contentTranslationEnabled: boolean("content_translation_enabled").default(false).notNull(),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceUserUnique: uniqueIndex("localization_preferences_workspace_user_unique").on(
+      table.workspaceId,
+      table.userId
+    ),
+    workspaceLocaleIdx: index("localization_preferences_workspace_locale_idx").on(
+      table.workspaceId,
+      table.locale
+    )
+  })
+);
+
+export const regionalComplianceProfiles = pgTable(
+  "regional_compliance_profiles",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    dataResidency: dataResidencyRegionEnum("data_residency").default("global").notNull(),
+    primaryRegion: text("primary_region").notNull(),
+    regulations: complianceRegulationEnum("regulations").array().default(sql`ARRAY[]::compliance_regulation[]`).notNull(),
+    consentRequired: boolean("consent_required").default(false).notNull(),
+    retentionDays: integer("retention_days").default(365).notNull(),
+    crossBorderTransfer: boolean("cross_border_transfer").default(true).notNull(),
+    updatedBy: uuid("updated_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceUnique: uniqueIndex("regional_compliance_profiles_workspace_unique").on(
+      table.workspaceId
+    ),
+    residencyIdx: index("regional_compliance_profiles_residency_idx").on(table.dataResidency)
   })
 );
 
@@ -1504,6 +1611,9 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
     references: [organizations.id]
   }),
   members: many(teamMembers),
+  onboardingSteps: many(onboardingSteps),
+  localizationPreferences: many(localizationPreferences),
+  regionalComplianceProfiles: many(regionalComplianceProfiles),
   invitations: many(workspaceInvitations),
   apiKeys: many(apiKeys),
   ssoConnections: many(ssoConnections),
@@ -1530,6 +1640,42 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   scheduleRules: many(scheduleRules),
   scheduleSlots: many(scheduleSlots)
 }));
+
+export const onboardingStepsRelations = relations(onboardingSteps, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [onboardingSteps.workspaceId],
+    references: [workspaces.id]
+  }),
+  completer: one(users, {
+    fields: [onboardingSteps.completedBy],
+    references: [users.id]
+  })
+}));
+
+export const localizationPreferencesRelations = relations(localizationPreferences, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [localizationPreferences.workspaceId],
+    references: [workspaces.id]
+  }),
+  user: one(users, {
+    fields: [localizationPreferences.userId],
+    references: [users.id]
+  })
+}));
+
+export const regionalComplianceProfilesRelations = relations(
+  regionalComplianceProfiles,
+  ({ one }) => ({
+    workspace: one(workspaces, {
+      fields: [regionalComplianceProfiles.workspaceId],
+      references: [workspaces.id]
+    }),
+    updater: one(users, {
+      fields: [regionalComplianceProfiles.updatedBy],
+      references: [users.id]
+    })
+  })
+);
 
 export const ssoConnectionsRelations = relations(ssoConnections, ({ one }) => ({
   workspace: one(workspaces, {

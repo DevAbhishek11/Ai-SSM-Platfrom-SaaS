@@ -19,9 +19,11 @@ import { DatabaseModule } from "./modules/database/database.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
 import { IdentityModule } from "./modules/identity/identity.module.js";
 import { ListeningModule } from "./modules/listening/listening.module.js";
+import { LocalizationModule } from "./modules/localization/localization.module.js";
 import { MediaModule } from "./modules/media/media.module.js";
 import { MembersModule } from "./modules/members/members.module.js";
 import { NotificationsModule } from "./modules/notifications/notifications.module.js";
+import { OnboardingModule } from "./modules/onboarding/onboarding.module.js";
 import { PostsModule } from "./modules/posts/posts.module.js";
 import { PublishingModule } from "./modules/publishing/publishing.module.js";
 import { RepositoriesModule } from "./modules/repositories/repositories.module.js";
@@ -56,6 +58,7 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
     CampaignsModule,
     MediaModule,
     NotificationsModule,
+    OnboardingModule,
     BillingModule,
     BrandVoicesModule,
     WebhooksModule,
@@ -67,6 +70,7 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
     ReportsModule,
     IdentityModule,
     ListeningModule,
+    LocalizationModule,
     SafetyModule,
     SocialModule
   ],

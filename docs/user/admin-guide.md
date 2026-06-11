@@ -3,10 +3,12 @@
 ## Workspace Setup
 
 - Configure workspace name, slug, timezone, branding, and compliance settings.
+- Complete the Dashboard onboarding checklist before handing the workspace to a broader campaign team.
 - Review Settings > Billing and limits before launch windows; capacity-consuming actions are entitlement-checked.
 - Invite members with the least privileged role required.
 - Create API keys only for service integrations, scope them narrowly, send them as `x-api-key`, and revoke unused keys.
 - Configure enterprise SSO connections, test metadata before enforcement, and disable stale connections.
+- Configure localization preferences and regional compliance profile for each workspace's contract and user base.
 - Connect social accounts through OAuth and confirm publish, insights, and comment scopes.
 - Review connector events and rate-limit buckets before major campaign launch windows.
 - Configure social listening monitors for brand, campaign, competitor, and crisis keywords.
@@ -30,6 +32,8 @@
 - Review social listening thresholds before launches and resolve alerts only after response ownership is recorded.
 - Generate campaign reports after major launch moments and before stakeholder readouts.
 - Review content template usage and smart scheduling reservations before high-stakes launches.
+- Review onboarding progress for newly provisioned workspaces and skip only steps that truly do not apply.
+- Review regional compliance updates during audits and before enabling data export or cross-border workflows.
 - Use Analytics > Reports and exports to create branded templates, schedule stakeholder delivery, generate exports, and issue time-bound share links.
 - Review AI moderation queue items before approving blocked drafts for regulated campaigns.
 - Monitor webhook retries and account-health alerts before campaign launch windows.

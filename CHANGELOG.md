@@ -29,3 +29,5 @@
 - Added enterprise identity controls for SSO connections, auth sessions, trusted devices, database migration, Identity API, Settings security UI, runbook, docs, and tests.
 - Added reusable content template contracts, database migration, Content API, Calendar template UI, runbook, docs, and tests.
 - Added smart scheduling rule/slot contracts, database migration, Scheduling API, Calendar recommendation UI, runbook, docs, and tests.
+- Added onboarding checklist contracts, database migration, Onboarding API, Dashboard activation UI, runbook, docs, and tests.
+- Added localization preferences and regional compliance profile contracts, database migration, Localization API, Settings localization UI, runbook, docs, and tests.

@@ -7,10 +7,14 @@ import {
   campaignTaskStatuses,
   apiKeyStatuses,
   campaignTypes,
+  complianceRegulations,
   contentTemplateCategories,
   contentTemplateStatuses,
   connectorEventSeverities,
+  dataResidencyRegions,
+  dateFormatOptions,
   invitationStatuses,
+  localeDirections,
   listeningAlertSeverities,
   listeningMonitorStatuses,
   listeningMonitorTypes,
@@ -20,6 +24,8 @@ import {
   mediaProcessingJobStatuses,
   mediaAssetTypes,
   notificationTypes,
+  onboardingStepKeys,
+  onboardingStepStatuses,
   platforms,
   plans,
   postStatuses,
@@ -31,6 +37,8 @@ import {
   roles,
   scheduleRuleStatuses,
   scheduleSlotStatuses,
+  supportedLocales,
+  timeFormatOptions,
   contentSafetyStatuses,
   moderationStatuses,
   safetyPolicyStatuses,
@@ -86,6 +94,53 @@ export const workspaceSchema = z.object({
     })
     .default({ primaryColor: "#111827", accentColor: "#0f766e" }),
   settings: z.record(z.string(), z.unknown()).default({}),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
+export const onboardingStepSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  key: z.enum(onboardingStepKeys),
+  title: z.string().min(1).max(180),
+  description: z.string().min(1).max(1000),
+  status: z.enum(onboardingStepStatuses),
+  targetHref: z.string().min(1).max(240),
+  sortOrder: z.number().int().nonnegative(),
+  metadata: z.record(z.string(), z.unknown()).default({}),
+  completedBy: idSchema.optional(),
+  completedAt: isoDateTimeSchema.optional(),
+  skippedAt: isoDateTimeSchema.optional(),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
+export const localizationPreferenceSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  userId: idSchema.optional(),
+  locale: z.enum(supportedLocales),
+  direction: z.enum(localeDirections),
+  timezone: z.string().min(1).max(80),
+  dateFormat: z.enum(dateFormatOptions),
+  timeFormat: z.enum(timeFormatOptions),
+  firstDayOfWeek: z.number().int().min(0).max(6),
+  numberingSystem: z.string().min(1).max(40),
+  contentTranslationEnabled: z.boolean(),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
+export const regionalComplianceProfileSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  dataResidency: z.enum(dataResidencyRegions),
+  primaryRegion: z.string().min(1).max(80),
+  regulations: z.array(z.enum(complianceRegulations)).default([]),
+  consentRequired: z.boolean(),
+  retentionDays: z.number().int().positive(),
+  crossBorderTransfer: z.boolean(),
+  updatedBy: idSchema,
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema
 });
@@ -797,6 +852,9 @@ export const aiGenerationResponseSchema = z.object({
 export type User = z.infer<typeof userSchema>;
 export type Organization = z.infer<typeof organizationSchema>;
 export type Workspace = z.infer<typeof workspaceSchema>;
+export type OnboardingStep = z.infer<typeof onboardingStepSchema>;
+export type LocalizationPreference = z.infer<typeof localizationPreferenceSchema>;
+export type RegionalComplianceProfile = z.infer<typeof regionalComplianceProfileSchema>;
 export type TeamMember = z.infer<typeof teamMemberSchema>;
 export type WorkspaceInvitation = z.infer<typeof workspaceInvitationSchema>;
 export type ApiKey = z.infer<typeof apiKeySchema>;

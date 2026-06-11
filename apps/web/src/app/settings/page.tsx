@@ -2,8 +2,10 @@ import {
   demoApiKeys,
   demoAuditLogs,
   demoAuthSessions,
+  demoLocalizationPreference,
   demoNotificationDeliveryAttempts,
   demoNotificationPreferences,
+  demoRegionalComplianceProfile,
   demoSsoConnections,
   demoTeamMembers,
   demoTrustedDevices,
@@ -14,6 +16,7 @@ import { AppShell } from "@/components/app-shell";
 import { AuditLogPanel } from "@/components/audit-log-panel";
 import { BillingPanel } from "@/components/billing-panel";
 import { IdentitySecurityPanel } from "@/components/identity-security-panel";
+import { LocalizationSettingsPanel } from "@/components/localization-settings-panel";
 import { NotificationPreferencesPanel } from "@/components/notification-preferences-panel";
 import { TeamAccessPanel } from "@/components/team-access-panel";
 import { WebhookDeliveries } from "@/components/webhook-deliveries";
@@ -40,6 +43,12 @@ export default async function SettingsPage() {
           ssoConnections={demoSsoConnections}
           sessions={demoAuthSessions}
           devices={demoTrustedDevices}
+        />
+        <LocalizationSettingsPanel
+          workspaceId={overview.workspace.id}
+          userId="77777777-7777-4777-8777-777777777777"
+          preference={demoLocalizationPreference}
+          complianceProfile={demoRegionalComplianceProfile}
         />
         <NotificationPreferencesPanel
           workspaceId={overview.workspace.id}

@@ -85,6 +85,35 @@ sequenceDiagram
   Worker->>DB: Update post_platforms and audit log
 ```
 
+## Onboarding And Activation
+
+Workspace onboarding is modeled as ordered activation steps rather than one-off UI state. Each step records key, status, target route, metadata, completion/skipping timestamps, and actor. The Onboarding module returns checklist progress and next action for the Dashboard, and all step changes emit audit records.
+
+```mermaid
+flowchart LR
+  workspace[Workspace] --> steps[Onboarding Steps]
+  steps --> progress[Activation Progress]
+  progress --> dashboard[Dashboard Checklist]
+  steps --> audit[Audit Events]
+```
+
+This keeps the first-run experience measurable: product analytics can later segment activation by workspace type, plan, connected accounts, first post, team invite, notification configuration, and analytics review.
+
+## Localization And Regional Compliance
+
+Localization preferences store user/workspace locale, direction, timezone, date/time format, first day of week, numbering system, and translation enablement. Regional compliance profiles store data residency, primary region, regulations, consent requirement, retention period, and cross-border transfer policy.
+
+```mermaid
+flowchart LR
+  user[User] --> locale[Localization Preference]
+  workspace[Workspace] --> compliance[Regional Compliance Profile]
+  locale --> ui[Localized UI]
+  compliance --> policy[Regional Controls]
+  compliance --> audit[Compliance Audit]
+```
+
+The local implementation records preferences and compliance settings in memory while preserving the production data model, API contract, and audit surface. Later production work should connect these settings to Next.js route localization, storage residency routing, consent capture, and retention workers.
+
 ## Campaign Operations
 
 Campaigns are treated as the planning aggregate for launch work. Each campaign can own milestones, tasks, budget lines, generated reports, and posts. The Campaigns module computes operational summaries from those resources so the Calendar view can show schedule risk, budget pacing, blocked tasks, and report readiness without waiting for a separate reporting warehouse.
@@ -218,7 +247,7 @@ Listening monitors define brand, keyword, hashtag, competitor, or influencer que
 
 ## Audit Event Backbone
 
-Sensitive modules emit audit records through a shared audit service before the storage layer is swapped to Drizzle repositories. Covered actions include authentication success/failure, SSO connection changes, session and device revocation, content template creation/use, schedule rule and slot operations, report template/schedule/export/share-link operations, campaign task/budget/report operations, AI safety policy/check/moderation operations, workflow transitions, social connector lifecycle operations, listening monitor and alert operations, media upload/processing changes, publishing job state changes, and webhook replay. Records include actor, workspace, action, entity, old/new values, IP, user agent, and timestamp where available.
+Sensitive modules emit audit records through a shared audit service before the storage layer is swapped to Drizzle repositories. Covered actions include authentication success/failure, onboarding step outcomes, localization and regional compliance updates, SSO connection changes, session and device revocation, content template creation/use, schedule rule and slot operations, report template/schedule/export/share-link operations, campaign task/budget/report operations, AI safety policy/check/moderation operations, workflow transitions, social connector lifecycle operations, listening monitor and alert operations, media upload/processing changes, publishing job state changes, and webhook replay. Records include actor, workspace, action, entity, old/new values, IP, user agent, and timestamp where available.
 
 ## Team Access And Service Credentials
 
@@ -288,7 +317,7 @@ flowchart LR
 ## Tenancy Model
 
 - Organization owns billing and one or more workspaces.
-- Workspace is the primary tenant boundary for content, templates, schedule rules, schedule slots, accounts, media, analytics, reports, identity controls, trends, listening monitors, social mentions, alerts, notifications, AI generations, webhooks, and audit logs.
+- Workspace is the primary tenant boundary for onboarding, localization, regional compliance, content, templates, schedule rules, schedule slots, accounts, media, analytics, reports, identity controls, trends, listening monitors, social mentions, alerts, notifications, AI generations, webhooks, and audit logs.
 - API authorizes every request against role permissions.
 - PostgreSQL RLS uses `app.workspace_id` for database-layer isolation in production.
 

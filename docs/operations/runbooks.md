@@ -177,6 +177,40 @@ Actions:
 4. Upgrade the workspace plan or request an enterprise override.
 5. Retry the blocked operation after usage or plan changes are reflected.
 
+## Onboarding Activation Stalled
+
+Signals:
+
+- `/api/onboarding/checklist` progress remains low after workspace creation.
+- Users connect accounts but do not create a first post, invite reviewers, or configure notifications.
+- Support tickets mention confusion during first-run setup.
+
+Actions:
+
+1. Open Dashboard > Onboarding checklist and identify the next pending or in-progress step.
+2. Complete steps only after the underlying workspace action is verified.
+3. Skip non-applicable steps with a reason when the workspace uses external processes.
+4. Review `onboarding.step_completed` and `onboarding.step_skipped` audit events for setup history.
+5. Check connected accounts, brand voice, first post, team invites, and notification preferences for blocked activation.
+6. Feed repeated stalled steps back into onboarding copy, defaults, or product instrumentation.
+
+## Localization Or Regional Compliance Misconfiguration
+
+Signals:
+
+- Users see incorrect locale, date/time format, timezone, or text direction.
+- Workspace data residency or regulatory profile does not match customer contract.
+- Retention, consent, or cross-border-transfer controls are disputed during audit.
+
+Actions:
+
+1. Inspect `/api/localization/preferences` for the affected user and workspace.
+2. Update locale, direction, timezone, date format, time format, and translation enablement with `/api/localization/preferences`.
+3. Inspect `/api/localization/compliance-profile` for data residency, primary region, regulations, retention days, and transfer policy.
+4. Update compliance settings only after confirming the customer contract and legal requirements.
+5. Export audit records filtered by `localization.` for evidence.
+6. Confirm downstream storage, retention, consent, and export workers honor the updated regional profile before closing the incident.
+
 ## Notification Delivery Issue
 
 Signals:

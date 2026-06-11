@@ -1,5 +1,5 @@
 import { CalendarClock, CheckCircle2, MousePointerClick, TrendingUp } from "lucide-react";
-import { demoAnalytics, demoPublishingJobs } from "@ssm/domain";
+import { demoAnalytics, demoOnboardingSteps, demoPublishingJobs } from "@ssm/domain";
 import { AccountHealth } from "@/components/account-health";
 import { AiStudioPanel } from "@/components/ai-studio-panel";
 import { AnalyticsChart } from "@/components/analytics-chart";
@@ -7,6 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { ApprovalQueue } from "@/components/approval-queue";
 import { CalendarBoard } from "@/components/calendar-board";
 import { MetricCard } from "@/components/metric-card";
+import { OnboardingChecklistPanel } from "@/components/onboarding-checklist-panel";
 import { PublishingQueue } from "@/components/publishing-queue";
 import { TrendList } from "@/components/trend-list";
 import { formatCompactNumber } from "@/lib/format";
@@ -54,6 +55,8 @@ export default async function DashboardPage() {
             </div>
           </div>
         </section>
+
+        <OnboardingChecklistPanel workspaceId={overview.workspace.id} steps={demoOnboardingSteps} />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Workspace metrics">
           <MetricCard

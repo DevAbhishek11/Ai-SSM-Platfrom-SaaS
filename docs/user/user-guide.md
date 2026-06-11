@@ -3,6 +3,7 @@
 ## Dashboard
 
 The dashboard summarizes active campaigns, scheduled posts, approval queue items, connected account health, recent analytics, trend opportunities, and live alerts.
+It also includes the workspace onboarding checklist so owners can finish profile setup, account connection, brand voice, first post, team invites, notifications, and analytics review.
 
 ## Creating Content
 
@@ -40,3 +41,4 @@ The Analytics page includes report templates, scheduled stakeholder reports, on-
 The media page tracks reusable campaign assets, tags, and upload readiness. Settings groups billing usage, entitlement limits, team access, API keys, notification routing, webhook delivery status, and operational controls that admins use before launch.
 Media processing shows upload scan, format detection, optimization, thumbnail, AI tagging, storage, and CDN distribution progress.
 Settings also includes identity security controls for enterprise SSO, active sessions, trusted devices, and a Security audit panel for recent privileged actions and recovery events.
+Settings includes localization and regional controls for locale, timezone, date/time format, AI-assisted translation, data residency, applicable regulations, consent, retention, and cross-border transfer policy.

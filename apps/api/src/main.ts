@@ -47,6 +47,8 @@ async function bootstrap() {
     .addTag("reports")
     .addTag("identity")
     .addTag("scheduling")
+    .addTag("onboarding")
+    .addTag("localization")
     .addTag("listening")
     .addTag("safety")
     .addTag("social")

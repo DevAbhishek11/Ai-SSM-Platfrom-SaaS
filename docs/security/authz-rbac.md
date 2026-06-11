@@ -26,6 +26,7 @@ Supported flows:
 | Platform management | Yes | No | No | No | No | No | No | No |
 | Billing management | Yes | Yes | No | No | No | No | No | No |
 | Workspace settings | Yes | Yes | Yes | No | No | No | No | No |
+| Onboarding/localization | Yes | Yes | Yes | No | No | No | No | No |
 | Member management | Yes | Yes | Yes | No | No | No | No | No |
 | API keys/webhooks | Yes | Yes | Yes | No | No | No | No | Yes |
 | Enterprise identity | Yes | Yes | Yes | No | No | No | No | No |
@@ -49,6 +50,7 @@ Supported flows:
 - `audit.view` gates `/api/audit/logs`, `/api/audit/summary`, `/api/audit/export`, and the Settings security audit panel.
 - `members.invite`, `members.manage`, and `api_keys.manage` gate invitation, role, suspension, and service credential workflows.
 - `workspace.manage` gates `/api/identity/sso-connections`, `/api/identity/sessions`, `/api/identity/devices`, and Settings identity security controls.
+- `workspace.manage` gates `/api/onboarding/*`, `/api/localization/*`, Dashboard onboarding actions, and Settings localization/regional controls.
 - `analytics.view` gates report lists; `analytics.export` gates report template, schedule, export, and share-link creation.
 - `posts.create` gates `/api/content/templates` mutations and template usage.
 - `posts.schedule` gates `/api/scheduling/rules`, `/api/scheduling/recommendations`, and slot reservation.
@@ -65,6 +67,7 @@ Supported flows:
 - Revoke API keys to immediately reject future `x-api-key` requests.
 - Revoke sessions and trusted devices to terminate suspicious browser/device access.
 - Store report share-link tokens hashed in production and enforce expiry/revocation before download.
+- Audit onboarding, localization preference, and regional compliance profile changes for setup and regulatory evidence.
 - Review content templates before activation to prevent unsafe placeholders or off-brand approved copy from spreading.
 - Validate schedule reservations against platform/account health before publishing windows.
 - Sign outbound webhooks with timestamped HMAC.

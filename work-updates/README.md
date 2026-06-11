@@ -25,6 +25,8 @@ This folder tracks implementation phases, sessions, decisions, validation result
 | 2026-06-11 | `phase-16-session-2026-06-11.md` | Enterprise SSO, auth sessions, and trusted devices | Complete |
 | 2026-06-11 | `phase-17-session-2026-06-11.md` | Reusable content templates and template-created drafts | Complete |
 | 2026-06-11 | `phase-18-session-2026-06-11.md` | Smart scheduling rules, recommendations, and slot reservations | Complete |
+| 2026-06-11 | `phase-19-session-2026-06-11.md` | Onboarding checklist and workspace activation tracking | Complete |
+| 2026-06-11 | `phase-20-session-2026-06-11.md` | Localization preferences and regional compliance controls | Complete |
 
 ## Operating Rules
 

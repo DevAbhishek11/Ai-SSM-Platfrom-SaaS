@@ -107,6 +107,10 @@ describe("API application", () => {
     await request(app.getHttpServer()).get("/api/content/templates").expect(200);
     await request(app.getHttpServer()).get("/api/scheduling/rules").expect(200);
     await request(app.getHttpServer()).get("/api/scheduling/slots").expect(200);
+    await request(app.getHttpServer()).get("/api/onboarding/checklist").expect(200);
+    await request(app.getHttpServer()).get("/api/localization/capabilities").expect(200);
+    await request(app.getHttpServer()).get("/api/localization/preferences").expect(200);
+    await request(app.getHttpServer()).get("/api/localization/compliance-profile").expect(200);
     await request(app.getHttpServer())
       .get("/api/billing/entitlements/check?capability=unknown")
       .expect(400);
@@ -364,6 +368,87 @@ describe("API application", () => {
       postId: post.body.id,
       platform: "linkedin",
       scheduledFor: recommendations.body.generated[0].startsAt
+    });
+  });
+
+  it("tracks onboarding progress and step outcomes", async () => {
+    const initial = await request(app.getHttpServer())
+      .get("/api/onboarding/checklist")
+      .expect(200);
+
+    expect(initial.body.progress).toBeGreaterThan(0);
+    expect(initial.body.steps).toEqual(
+      expect.arrayContaining([expect.objectContaining({ key: "first_post", status: "in_progress" })])
+    );
+
+    const firstPostStep = initial.body.steps.find(
+      (step: { key: string }) => step.key === "first_post"
+    );
+    const completed = await request(app.getHttpServer())
+      .post(`/api/onboarding/steps/${firstPostStep.id}/complete`)
+      .send({ metadata: { postId: "88888888-8888-4888-8888-888888888888" } })
+      .expect(201);
+
+    expect(completed.body.steps).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: firstPostStep.id, status: "completed" })])
+    );
+    expect(completed.body.progress).toBeGreaterThan(initial.body.progress);
+
+    const inviteStep = completed.body.steps.find(
+      (step: { key: string }) => step.key === "invite_team"
+    );
+    const skipped = await request(app.getHttpServer())
+      .post(`/api/onboarding/steps/${inviteStep.id}/skip`)
+      .send({ reason: "Agency workspace uses external staffing for now." })
+      .expect(201);
+
+    expect(skipped.body.steps).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: inviteStep.id, status: "skipped" })])
+    );
+  });
+
+  it("updates localization preferences and regional compliance profile", async () => {
+    const preference = await request(app.getHttpServer())
+      .patch("/api/localization/preferences")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        userId: "77777777-7777-4777-8777-777777777777",
+        locale: "hi",
+        direction: "ltr",
+        timezone: "Asia/Calcutta",
+        dateFormat: "DD/MM/YYYY",
+        timeFormat: "24h",
+        firstDayOfWeek: 1,
+        numberingSystem: "latn",
+        contentTranslationEnabled: true
+      })
+      .expect(200);
+
+    expect(preference.body).toMatchObject({
+      locale: "hi",
+      timezone: "Asia/Calcutta",
+      contentTranslationEnabled: true
+    });
+
+    const compliance = await request(app.getHttpServer())
+      .patch("/api/localization/compliance-profile")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        dataResidency: "eu",
+        primaryRegion: "eu-central-1",
+        regulations: ["gdpr", "soc2"],
+        consentRequired: true,
+        retentionDays: 1095,
+        crossBorderTransfer: false
+      })
+      .expect(200);
+
+    expect(compliance.body).toMatchObject({
+      dataResidency: "eu",
+      primaryRegion: "eu-central-1",
+      regulations: ["gdpr", "soc2"],
+      retentionDays: 1095,
+      crossBorderTransfer: false
     });
   });
 

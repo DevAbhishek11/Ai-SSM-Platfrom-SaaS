@@ -94,6 +94,121 @@ paths:
           description: Workspace
         "404":
           description: Workspace not found
+  /onboarding/checklist:
+    get:
+      tags: [onboarding]
+      summary: Get workspace onboarding checklist and activation progress
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Checklist progress and ordered onboarding steps
+  /onboarding/steps/{id}/complete:
+    post:
+      tags: [onboarding]
+      summary: Complete an onboarding step
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteOnboardingStep"
+      responses:
+        "201":
+          description: Updated checklist
+  /onboarding/steps/{id}/skip:
+    post:
+      tags: [onboarding]
+      summary: Skip an onboarding step
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkipOnboardingStep"
+      responses:
+        "201":
+          description: Updated checklist
+  /localization/capabilities:
+    get:
+      tags: [localization]
+      summary: List supported locales, formats, residency regions, and regulations
+      responses:
+        "200":
+          description: Localization capability metadata
+  /localization/preferences:
+    get:
+      tags: [localization]
+      summary: Get localization preferences
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Localization preferences
+    patch:
+      tags: [localization]
+      summary: Update localization preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLocalizationPreference"
+      responses:
+        "200":
+          description: Updated localization preferences
+  /localization/compliance-profile:
+    get:
+      tags: [localization]
+      summary: Get workspace regional compliance profile
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Regional compliance profile
+    patch:
+      tags: [localization]
+      summary: Update workspace regional compliance profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRegionalComplianceProfile"
+      responses:
+        "200":
+          description: Updated regional compliance profile
   /members:
     get:
       tags: [members]
@@ -1958,6 +2073,75 @@ components:
         scheduledAt:
           type: string
           format: date-time
+    CompleteOnboardingStep:
+      type: object
+      properties:
+        metadata:
+          type: object
+          additionalProperties: true
+    SkipOnboardingStep:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+    UpdateLocalizationPreference:
+      type: object
+      required: [workspaceId]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        locale:
+          type: string
+          enum: [en, es, fr, de, hi, ja, ar]
+        direction:
+          type: string
+          enum: [ltr, rtl]
+        timezone:
+          type: string
+          example: Asia/Calcutta
+        dateFormat:
+          type: string
+          enum: [MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD]
+        timeFormat:
+          type: string
+          enum: [12h, 24h]
+        firstDayOfWeek:
+          type: integer
+          minimum: 0
+          maximum: 6
+        numberingSystem:
+          type: string
+        contentTranslationEnabled:
+          type: boolean
+    UpdateRegionalComplianceProfile:
+      type: object
+      required: [workspaceId]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        dataResidency:
+          type: string
+          enum: [global, us, eu, in, jp]
+        primaryRegion:
+          type: string
+        regulations:
+          type: array
+          items:
+            type: string
+            enum: [gdpr, ccpa, dpdp, lgpd, soc2]
+        consentRequired:
+          type: boolean
+        retentionDays:
+          type: integer
+          minimum: 1
+        crossBorderTransfer:
+          type: boolean
     InviteMember:
       type: object
       required: [workspaceId, email, role]

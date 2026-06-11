@@ -30,6 +30,38 @@ export const platforms = [
 
 export type Platform = (typeof platforms)[number];
 
+export const onboardingStepKeys = [
+  "workspace_profile",
+  "connect_social_account",
+  "brand_voice",
+  "first_post",
+  "invite_team",
+  "notifications",
+  "analytics_review"
+] as const;
+export type OnboardingStepKey = (typeof onboardingStepKeys)[number];
+
+export const onboardingStepStatuses = ["pending", "in_progress", "completed", "skipped"] as const;
+export type OnboardingStepStatus = (typeof onboardingStepStatuses)[number];
+
+export const supportedLocales = ["en", "es", "fr", "de", "hi", "ja", "ar"] as const;
+export type SupportedLocale = (typeof supportedLocales)[number];
+
+export const localeDirections = ["ltr", "rtl"] as const;
+export type LocaleDirection = (typeof localeDirections)[number];
+
+export const dateFormatOptions = ["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"] as const;
+export type DateFormatOption = (typeof dateFormatOptions)[number];
+
+export const timeFormatOptions = ["12h", "24h"] as const;
+export type TimeFormatOption = (typeof timeFormatOptions)[number];
+
+export const dataResidencyRegions = ["global", "us", "eu", "in", "jp"] as const;
+export type DataResidencyRegion = (typeof dataResidencyRegions)[number];
+
+export const complianceRegulations = ["gdpr", "ccpa", "dpdp", "lgpd", "soc2"] as const;
+export type ComplianceRegulation = (typeof complianceRegulations)[number];
+
 export const postStatuses = [
   "draft",
   "in_review",

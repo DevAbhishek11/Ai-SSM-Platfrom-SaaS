@@ -3,10 +3,14 @@
 ```mermaid
 erDiagram
   USERS ||--o{ TEAM_MEMBERS : joins
+  USERS ||--o{ LOCALIZATION_PREFERENCES : personalizes
   USERS ||--o{ NOTIFICATION_PREFERENCES : configures
   USERS ||--o{ NOTIFICATION_DELIVERY_ATTEMPTS : receives
   ORGANIZATIONS ||--o{ WORKSPACES : owns
   WORKSPACES ||--o{ TEAM_MEMBERS : contains
+  WORKSPACES ||--o{ ONBOARDING_STEPS : activates
+  WORKSPACES ||--o{ LOCALIZATION_PREFERENCES : localizes
+  WORKSPACES ||--o{ REGIONAL_COMPLIANCE_PROFILES : governs
   WORKSPACES ||--o{ WORKSPACE_INVITATIONS : invites
   WORKSPACES ||--o{ API_KEYS : authenticates
   WORKSPACES ||--o{ SSO_CONNECTIONS : federates
@@ -90,6 +94,53 @@ erDiagram
     text slug
     jsonb branding
     jsonb settings
+  }
+
+  ONBOARDING_STEPS {
+    uuid id PK
+    uuid workspace_id FK
+    onboarding_step_key key
+    text title
+    text description
+    onboarding_step_status status
+    text target_href
+    integer sort_order
+    jsonb metadata
+    uuid completed_by FK
+    timestamptz completed_at
+    timestamptz skipped_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  LOCALIZATION_PREFERENCES {
+    uuid id PK
+    uuid workspace_id FK
+    uuid user_id FK
+    supported_locale locale
+    locale_direction direction
+    text timezone
+    date_format date_format
+    time_format time_format
+    integer first_day_of_week
+    text numbering_system
+    boolean content_translation_enabled
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  REGIONAL_COMPLIANCE_PROFILES {
+    uuid id PK
+    uuid workspace_id FK
+    data_residency_region data_residency
+    text primary_region
+    compliance_regulation[] regulations
+    boolean consent_required
+    integer retention_days
+    boolean cross_border_transfer
+    uuid updated_by FK
+    timestamptz created_at
+    timestamptz updated_at
   }
 
   POSTS {
@@ -514,6 +565,8 @@ erDiagram
 
 - Unique lower-case email index on `users`.
 - Unique organization slug and workspace slug per organization.
+- Onboarding indexes by workspace/key, workspace/status, and workspace/sort order.
+- Localization preference indexes by workspace/user and workspace/locale; regional compliance profile is unique per workspace.
 - Composite workspace/status and workspace/scheduled indexes on posts.
 - Composite account/status index on platform targets.
 - Unique brand voice name per workspace.
@@ -542,4 +595,6 @@ erDiagram
 - Schedule slots: 1 year hot storage for planning analytics, then archive with publishing jobs.
 - Report exports and share links: expire by policy, retain metadata and audit records for 2 years.
 - Auth sessions and trusted device events: 1 year hot storage, then security archive; SSO connection history follows audit retention.
+- Onboarding steps: retained for workspace lifetime as activation history.
+- Localization preferences and regional compliance profile: retained for workspace lifetime, with updates mirrored to audit logs.
 - Media assets: until workspace deletion or explicit user deletion.
