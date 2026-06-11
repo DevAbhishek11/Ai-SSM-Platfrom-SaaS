@@ -177,6 +177,75 @@ Actions:
 5. Re-route the notification after preferences or provider configuration are corrected.
 6. Preserve failed delivery attempts for incident evidence.
 
+## Campaign Execution Risk
+
+Signals:
+
+- Campaign milestones show `at_risk` or overdue pending work.
+- Campaign tasks are `blocked` near a scheduled publishing window.
+- Budget utilization exceeds the planned pace or a category is close to its cap.
+- Generated campaign reports show weak ROI or low engagement rate.
+
+Actions:
+
+1. Open Calendar > Campaign operations and select the affected campaign.
+2. Review milestone due dates, blocked tasks, budget lines, and the latest generated report.
+3. Assign owners for blocked tasks and complete milestones only after the underlying work is verified.
+4. Update budget lines with current allocated and spent amounts before stakeholder reporting.
+5. Generate a fresh campaign report after task, budget, publishing, or analytics changes.
+6. Preserve audit records for task status, budget, milestone, and report changes tied to launch decisions.
+
+## AI Safety Block
+
+Signals:
+
+- AI generation returns `safety.blocked: true`.
+- `/api/safety/moderation-queue?status=open` shows blocked AI drafts.
+- Safety checks contain financial, medical, payment, PII, or policy blocked-term flags.
+
+Actions:
+
+1. Open AI Studio > AI safety review and inspect the check flags, recommendations, and moderation item.
+2. Rewrite the draft to remove prohibited claims, personal data, or payment-like values.
+3. Add required workspace disclosure language when the policy calls for it.
+4. Re-run `/api/safety/evaluate` or the AI Studio safety check before moving to approval.
+5. Resolve the moderation item as approved, rejected, or resolved with a clear note.
+6. Preserve safety checks and moderation audit records for regulated campaign review.
+
+## Social Listening Alert Spike
+
+Signals:
+
+- `/api/listening/alerts?resolved=false` shows multiple `warning` or `critical` alerts.
+- Negative mentions exceed normal campaign baseline.
+- High-reach mentions mention broken account connections, publishing failures, compliance issues, or customer-impacting launches.
+
+Actions:
+
+1. Open Analytics > Social listening command center and identify the affected monitor, platform, author, reach, and sentiment.
+2. Confirm the monitor query and threshold are correct; pause noisy monitors only after preserving the alert context.
+3. Triage critical alerts first and route owner-approved response copy through the normal approval workflow.
+4. Check account health, connector events, publishing jobs, and notification delivery attempts for linked operational failures.
+5. Resolve alerts only after response ownership, external follow-up, and internal incident notes are recorded.
+6. Export related audit logs and keep mention metadata for post-incident review.
+
+## Brand Voice Violation
+
+Signals:
+
+- AI generation returns `brand_voice_banned_term:*` safety flags.
+- Brand voice evaluation score drops below review threshold.
+- Reviewers repeatedly request copy changes for tone, vocabulary, or CTA mismatch.
+
+Actions:
+
+1. Evaluate the draft against the active brand voice profile.
+2. Remove banned terms and add preferred workspace vocabulary.
+3. Confirm the selected profile version matches the target campaign or sub-brand.
+4. Update examples, CTA preferences, or banned terms when guidance is stale.
+5. Re-run AI generation with the intended `brandVoiceId`.
+6. Keep audit records for profile changes tied to regulated campaigns.
+
 ## Media Processing Failure
 
 Signals:

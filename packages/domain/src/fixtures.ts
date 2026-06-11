@@ -2,19 +2,30 @@ import type {
   AnalyticsSnapshot,
   ApiKey,
   AuditLog,
+  BrandVoice,
   Campaign,
+  CampaignBudgetLine,
+  CampaignMilestone,
+  CampaignReport,
+  CampaignTask,
+  ListeningAlert,
+  ListeningMonitor,
   MediaAsset,
   MediaProcessingJob,
   Notification,
   NotificationDeliveryAttempt,
   NotificationPreference,
+  ContentSafetyCheck,
+  ModerationQueueItem,
   Post,
   PostComment,
   PublishingJob,
   SocialConnectorEvent,
   SocialOAuthState,
   SocialRateLimitBucket,
+  SocialMention,
   SocialAccount,
+  SafetyPolicy,
   TeamMember,
   Trend,
   User,
@@ -238,6 +249,221 @@ export const demoCampaigns: Campaign[] = [
   }
 ];
 
+export const demoCampaignMilestones: CampaignMilestone[] = [
+  {
+    id: "56565656-5656-4565-8565-565656565656",
+    workspaceId: demoWorkspace.id,
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    name: "Launch narrative approved",
+    description: "Positioning, proof points, and primary CTA signed off by brand and growth.",
+    dueDate: "2026-06-05",
+    status: "completed",
+    ownerId: demoUser.id,
+    completedAt: "2026-06-05T10:15:00.000Z",
+    createdAt: now,
+    updatedAt: "2026-06-05T10:15:00.000Z"
+  },
+  {
+    id: "57575757-5757-4575-8575-575757575757",
+    workspaceId: demoWorkspace.id,
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    name: "Creator review sprint",
+    description: "Review creator variants and approve platform-specific edits.",
+    dueDate: "2026-06-14",
+    status: "at_risk",
+    ownerId: demoUser.id,
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "58585858-5858-4585-8585-585858585858",
+    workspaceId: demoWorkspace.id,
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    name: "Launch day reporting pack",
+    description: "Prepare executive metrics, listening signals, and paid spend summary.",
+    dueDate: "2026-07-15",
+    status: "pending",
+    ownerId: demoUser.id,
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+export const demoCampaignTasks: CampaignTask[] = [
+  {
+    id: "59595959-5959-4595-8595-595959595959",
+    workspaceId: demoWorkspace.id,
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    title: "Finalize LinkedIn launch thread",
+    status: "in_progress",
+    priority: "high",
+    assigneeId: demoUser.id,
+    dueDate: "2026-06-12",
+    metadata: { channel: "linkedin", workflow: "approval" },
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "60606060-6060-4606-8606-606060606060",
+    workspaceId: demoWorkspace.id,
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    title: "Reconnect X account before teaser queue",
+    status: "blocked",
+    priority: "urgent",
+    assigneeId: demoUser.id,
+    dueDate: "2026-06-11",
+    metadata: { accountStatus: "expired" },
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "61616161-6161-4616-8616-616161616161",
+    workspaceId: demoWorkspace.id,
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    title: "Brief paid creative variants",
+    status: "todo",
+    priority: "normal",
+    assigneeId: demoUser.id,
+    dueDate: "2026-06-18",
+    metadata: { budgetCategory: "paid_social" },
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+export const demoCampaignBudgetLines: CampaignBudgetLine[] = [
+  {
+    id: "62626262-6262-4626-8626-626262626262",
+    workspaceId: demoWorkspace.id,
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    category: "Paid social",
+    allocated: 20000,
+    spent: 8200,
+    currency: "USD",
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "63636363-6363-4636-8636-636363636363",
+    workspaceId: demoWorkspace.id,
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    category: "Creator partners",
+    allocated: 15000,
+    spent: 6400,
+    currency: "USD",
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "64646464-6464-4646-8646-646464646464",
+    workspaceId: demoWorkspace.id,
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    category: "Production",
+    allocated: 10000,
+    spent: 9100,
+    currency: "USD",
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+export const demoCampaignReports: CampaignReport[] = [
+  {
+    id: "65656565-6565-4656-8656-656565656565",
+    workspaceId: demoWorkspace.id,
+    campaignId: "66666666-6666-4666-8666-666666666666",
+    title: "Summer Product Launch mid-flight report",
+    status: "generated",
+    periodStart: "2026-06-01",
+    periodEnd: "2026-06-11",
+    metrics: {
+      posts: 2,
+      published: 0,
+      scheduled: 1,
+      impressions: 149000,
+      engagements: 7400,
+      conversions: 480,
+      spend: 23700,
+      roi: 1.8,
+      engagementRate: 0.0497
+    },
+    insights: [
+      "LinkedIn carries the strongest approval-ready narrative for launch operators.",
+      "Paid social spend is pacing below the campaign budget while production spend is near cap.",
+      "X account reconnection remains the highest operational risk before teaser publishing."
+    ],
+    generatedAt: now
+  }
+];
+
+export const demoBrandVoices: BrandVoice[] = [
+  {
+    id: "99999999-9999-4999-8999-999999999999",
+    workspaceId: demoWorkspace.id,
+    name: "Acme Practical Confidence",
+    tone: {
+      primary: "confident",
+      secondary: "practical",
+      avoid: ["hype", "fearmongering", "vague futurism"]
+    },
+    style: {
+      sentenceLength: "medium",
+      formality: "professional",
+      jargonTolerance: "low",
+      readingLevel: "grade-8"
+    },
+    vocabulary: {
+      preferredTerms: ["launch operations", "workflow", "planning sprint", "approval loop"],
+      bannedTerms: ["revolutionary", "guaranteed", "10x"],
+      industryTerms: ["campaign calendar", "content ops", "brand governance"]
+    },
+    emojiUsage: "light",
+    ctaPreferences: {
+      mode: "value-led",
+      examples: ["Save this for your next planning sprint.", "Start with the launch checklist today."]
+    },
+    examples: [
+      "Teams move faster when strategy, approvals, and analytics share one workflow.",
+      "A calm launch comes from practical planning, clear owners, and fewer surprise handoffs."
+    ],
+    version: 1,
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "49494949-4949-4494-8494-494949494949",
+    workspaceId: demoWorkspace.id,
+    name: "Executive Launch Brief",
+    tone: {
+      primary: "authoritative",
+      secondary: "concise",
+      avoid: ["slang", "overpromising"]
+    },
+    style: {
+      sentenceLength: "short",
+      formality: "executive",
+      jargonTolerance: "medium",
+      readingLevel: "grade-10"
+    },
+    vocabulary: {
+      preferredTerms: ["operating rhythm", "governance", "measurable pipeline"],
+      bannedTerms: ["viral", "magic", "hack"],
+      industryTerms: ["ROI", "pipeline", "campaign governance"]
+    },
+    emojiUsage: "none",
+    ctaPreferences: {
+      mode: "executive",
+      examples: ["Review the launch operating model.", "Align the next campaign milestone."]
+    },
+    examples: [
+      "Launch performance improves when every asset has a clear owner, approval path, and measurement plan."
+    ],
+    version: 1,
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
 export const demoPosts: Post[] = [
   {
     id: "88888888-8888-4888-8888-888888888888",
@@ -342,6 +568,78 @@ export const demoTrends: Trend[] = [
     sentiment: "mixed",
     detectedAt: now,
     expiresAt: "2026-06-13T05:45:00.000Z"
+  }
+];
+
+export const demoListeningMonitors: ListeningMonitor[] = [
+  {
+    id: "50505050-5050-4505-8505-505050505050",
+    workspaceId: demoWorkspace.id,
+    type: "brand",
+    query: "Acme Growth",
+    platforms: ["x", "linkedin", "reddit"],
+    status: "active",
+    alertThreshold: 72,
+    createdBy: demoUser.id,
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "51515151-5151-4515-8515-515151515151",
+    workspaceId: demoWorkspace.id,
+    type: "competitor",
+    query: "LaunchFlow",
+    platforms: ["linkedin", "x"],
+    status: "active",
+    alertThreshold: 80,
+    createdBy: demoUser.id,
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+export const demoSocialMentions: SocialMention[] = [
+  {
+    id: "52525252-5252-4525-8525-525252525252",
+    workspaceId: demoWorkspace.id,
+    monitorId: "50505050-5050-4505-8505-505050505050",
+    platform: "linkedin",
+    author: "Priya MarketingOps",
+    content: "Acme Growth has a practical approval workflow for busy campaign teams.",
+    url: "https://social.example.com/linkedin/mentions/5252",
+    sentiment: "positive",
+    reach: 18400,
+    engagement: 640,
+    detectedAt: now,
+    metadata: { source: "demo-listener" }
+  },
+  {
+    id: "53535353-5353-4535-8535-535353535353",
+    workspaceId: demoWorkspace.id,
+    monitorId: "50505050-5050-4505-8505-505050505050",
+    platform: "x",
+    author: "LaunchOps Watch",
+    content: "Acme Growth account connection seems broken before launch day.",
+    url: "https://social.example.com/x/mentions/5353",
+    sentiment: "negative",
+    reach: 91000,
+    engagement: 2100,
+    detectedAt: "2026-06-11T05:30:00.000Z",
+    metadata: { source: "demo-listener", crisisSignal: true }
+  }
+];
+
+export const demoListeningAlerts: ListeningAlert[] = [
+  {
+    id: "54545454-5454-4545-8545-545454545454",
+    workspaceId: demoWorkspace.id,
+    monitorId: "50505050-5050-4505-8505-505050505050",
+    mentionId: "53535353-5353-4535-8535-535353535353",
+    severity: "critical",
+    title: "Negative brand mention is gaining reach",
+    body: "A high-reach X mention reports broken account connection before launch day.",
+    resolved: false,
+    createdAt: "2026-06-11T05:30:00.000Z"
   }
 ];
 
@@ -524,6 +822,57 @@ export const demoNotificationDeliveryAttempts: NotificationDeliveryAttempt[] = [
     errorMessage: "Suppressed by quiet hours.",
     metadata: { priority: "high", quietHours: true },
     attemptedAt: "2026-06-10T04:45:00.000Z"
+  }
+];
+
+export const demoSafetyPolicies: SafetyPolicy[] = [
+  {
+    id: "67676767-6767-4676-8676-676767676767",
+    workspaceId: demoWorkspace.id,
+    name: "Default AI publishing guardrails",
+    status: "active",
+    rules: {
+      blockedTerms: ["guaranteed return", "risk-free investment", "cure"],
+      requiredDisclosures: ["AI-assisted draft", "reviewed by social team"],
+      industry: "b2b_saas",
+      maxRiskScore: 0.72
+    },
+    createdBy: demoUser.id,
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+export const demoContentSafetyChecks: ContentSafetyCheck[] = [
+  {
+    id: "68686868-6868-4686-8686-686868686868",
+    workspaceId: demoWorkspace.id,
+    policyId: "67676767-6767-4676-8676-676767676767",
+    source: "ai_generation",
+    text: "Our AI workflow guarantees risk-free investment returns for every launch.",
+    status: "blocked",
+    severity: "critical",
+    riskScore: 0.92,
+    flags: ["financial_claim", "policy_blocked_term:guaranteed return", "policy_blocked_term:risk-free investment"],
+    recommendations: [
+      "Remove guaranteed financial outcome claims.",
+      "Add approved disclosure language before publishing."
+    ],
+    createdAt: now
+  }
+];
+
+export const demoModerationQueueItems: ModerationQueueItem[] = [
+  {
+    id: "69696969-6969-4696-8696-696969696969",
+    workspaceId: demoWorkspace.id,
+    safetyCheckId: "68686868-6868-4686-8686-686868686868",
+    source: "ai_generation",
+    status: "open",
+    reason: "Blocked AI draft contains prohibited financial claims.",
+    assignedTo: demoUser.id,
+    createdAt: now,
+    updatedAt: now
   }
 ];
 

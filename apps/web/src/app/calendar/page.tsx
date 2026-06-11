@@ -1,4 +1,11 @@
+import {
+  demoCampaignBudgetLines,
+  demoCampaignMilestones,
+  demoCampaignReports,
+  demoCampaignTasks
+} from "@ssm/domain";
 import { AppShell } from "@/components/app-shell";
+import { CampaignOperationsPanel } from "@/components/campaign-operations-panel";
 import { CalendarBoard } from "@/components/calendar-board";
 import { CampaignPortfolio } from "@/components/campaign-portfolio";
 import { getDashboardOverview } from "@/lib/dashboard";
@@ -8,9 +15,18 @@ export default async function CalendarPage() {
 
   return (
     <AppShell workspace={overview.workspace} activeItem="Calendar">
-      <div className="grid gap-5 xl:grid-cols-[1.3fr_0.8fr]">
-        <CalendarBoard posts={overview.posts} />
-        <CampaignPortfolio campaigns={overview.campaigns} />
+      <div className="grid gap-5">
+        <div className="grid gap-5 xl:grid-cols-[1.3fr_0.8fr]">
+          <CalendarBoard posts={overview.posts} />
+          <CampaignPortfolio campaigns={overview.campaigns} />
+        </div>
+        <CampaignOperationsPanel
+          campaigns={overview.campaigns}
+          milestones={demoCampaignMilestones}
+          tasks={demoCampaignTasks}
+          budgetLines={demoCampaignBudgetLines}
+          reports={demoCampaignReports}
+        />
       </div>
     </AppShell>
   );

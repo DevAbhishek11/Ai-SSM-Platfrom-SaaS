@@ -43,7 +43,10 @@ async function bootstrap() {
     .addTag("posts")
     .addTag("ai")
     .addTag("analytics")
+    .addTag("listening")
+    .addTag("safety")
     .addTag("social")
+    .addTag("brand-voices")
     .addTag("audit")
     .build();
 

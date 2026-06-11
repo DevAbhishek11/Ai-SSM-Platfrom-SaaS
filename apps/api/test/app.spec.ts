@@ -60,6 +60,18 @@ describe("API application", () => {
 
   it("exposes core SaaS operational modules", async () => {
     await request(app.getHttpServer()).get("/api/campaigns").expect(200);
+    await request(app.getHttpServer())
+      .get("/api/campaigns/66666666-6666-4666-8666-666666666666/milestones")
+      .expect(200);
+    await request(app.getHttpServer())
+      .get("/api/campaigns/66666666-6666-4666-8666-666666666666/tasks")
+      .expect(200);
+    await request(app.getHttpServer())
+      .get("/api/campaigns/66666666-6666-4666-8666-666666666666/budget")
+      .expect(200);
+    await request(app.getHttpServer())
+      .get("/api/campaigns/66666666-6666-4666-8666-666666666666/reports")
+      .expect(200);
     await request(app.getHttpServer()).get("/api/media/assets").expect(200);
     await request(app.getHttpServer()).get("/api/notifications").expect(200);
     await request(app.getHttpServer()).get("/api/notifications/preferences").expect(200);
@@ -77,6 +89,14 @@ describe("API application", () => {
     await request(app.getHttpServer()).get("/api/members").expect(200);
     await request(app.getHttpServer()).get("/api/members/invitations").expect(200);
     await request(app.getHttpServer()).get("/api/api-keys").expect(200);
+    await request(app.getHttpServer()).get("/api/brand-voices").expect(200);
+    await request(app.getHttpServer()).get("/api/safety/policies").expect(200);
+    await request(app.getHttpServer()).get("/api/safety/checks").expect(200);
+    await request(app.getHttpServer()).get("/api/safety/moderation-queue").expect(200);
+    await request(app.getHttpServer()).get("/api/listening/summary").expect(200);
+    await request(app.getHttpServer()).get("/api/listening/monitors").expect(200);
+    await request(app.getHttpServer()).get("/api/listening/mentions").expect(200);
+    await request(app.getHttpServer()).get("/api/listening/alerts").expect(200);
     await request(app.getHttpServer())
       .get("/api/billing/entitlements/check?capability=unknown")
       .expect(400);
@@ -96,6 +116,71 @@ describe("API application", () => {
 
     expect(retry.body.status).toBe("retrying");
     expect(retry.body.nextRetryAt).toEqual(expect.any(String));
+  });
+
+  it("manages campaign operations and generates reports", async () => {
+    const completedMilestone = await request(app.getHttpServer())
+      .post("/api/campaigns/milestones/57575757-5757-4575-8575-575757575757/complete")
+      .expect(201);
+
+    expect(completedMilestone.body).toMatchObject({
+      status: "completed",
+      completedAt: expect.any(String)
+    });
+
+    const task = await request(app.getHttpServer())
+      .post("/api/campaigns/66666666-6666-4666-8666-666666666666/tasks")
+      .send({
+        title: "Prepare executive campaign readout",
+        priority: "high",
+        dueDate: "2026-06-19",
+        metadata: { source: "test" }
+      })
+      .expect(201);
+
+    expect(task.body).toMatchObject({
+      title: "Prepare executive campaign readout",
+      status: "todo",
+      priority: "high"
+    });
+
+    const doneTask = await request(app.getHttpServer())
+      .post(`/api/campaigns/tasks/${task.body.id}/status`)
+      .send({ status: "done" })
+      .expect(201);
+
+    expect(doneTask.body).toMatchObject({
+      status: "done",
+      completedAt: expect.any(String)
+    });
+
+    const budgetLine = await request(app.getHttpServer())
+      .post("/api/campaigns/66666666-6666-4666-8666-666666666666/budget-lines")
+      .send({
+        category: "Analyst relations",
+        allocated: 5000,
+        spent: 1200,
+        currency: "USD"
+      })
+      .expect(201);
+
+    expect(budgetLine.body).toMatchObject({
+      category: "Analyst relations",
+      allocated: 5000,
+      spent: 1200
+    });
+
+    const report = await request(app.getHttpServer())
+      .post("/api/campaigns/66666666-6666-4666-8666-666666666666/reports/generate")
+      .send({
+        periodStart: "2026-06-01",
+        periodEnd: "2026-06-30"
+      })
+      .expect(201);
+
+    expect(report.body.status).toBe("generated");
+    expect(report.body.metrics.posts).toBeGreaterThanOrEqual(1);
+    expect(report.body.insights.length).toBeGreaterThanOrEqual(2);
   });
 
   it("enforces approval workflow transitions and exposes timeline", async () => {
@@ -313,5 +398,160 @@ describe("API application", () => {
         expect.objectContaining({ channel: "email", status: "suppressed" })
       ])
     );
+  });
+
+  it("monitors social listening mentions and resolves alerts", async () => {
+    const monitor = await request(app.getHttpServer())
+      .post("/api/listening/monitors")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        type: "keyword",
+        query: "AI approval delays",
+        platforms: ["x"],
+        alertThreshold: 10
+      })
+      .expect(201);
+
+    expect(monitor.body).toMatchObject({
+      query: "AI approval delays",
+      status: "active"
+    });
+
+    const ingested = await request(app.getHttpServer())
+      .post("/api/listening/mentions")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        monitorId: monitor.body.id,
+        platform: "x",
+        author: "Ops critic",
+        content: "AI approval delays are hurting launch day readiness.",
+        sentiment: "negative",
+        reach: 50000,
+        engagement: 1200,
+        metadata: { source: "test" }
+      })
+      .expect(201);
+
+    expect(ingested.body.mention.monitorId).toBe(monitor.body.id);
+    expect(ingested.body.alert).toMatchObject({
+      severity: "critical",
+      resolved: false
+    });
+
+    const alerts = await request(app.getHttpServer())
+      .get("/api/listening/alerts?resolved=false")
+      .expect(200);
+
+    expect(alerts.body).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: ingested.body.alert.id })])
+    );
+
+    const resolved = await request(app.getHttpServer())
+      .post(`/api/listening/alerts/${ingested.body.alert.id}/resolve`)
+      .expect(201);
+
+    expect(resolved.body.resolved).toBe(true);
+    expect(resolved.body.resolvedAt).toEqual(expect.any(String));
+  });
+
+  it("evaluates AI safety checks and resolves moderation queue items", async () => {
+    const evaluated = await request(app.getHttpServer())
+      .post("/api/safety/evaluate")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        text: "This launch guarantees risk-free investment returns for every buyer.",
+        source: "manual"
+      })
+      .expect(201);
+
+    expect(evaluated.body.check).toMatchObject({
+      status: "blocked",
+      severity: "critical"
+    });
+    expect(evaluated.body.check.flags).toEqual(
+      expect.arrayContaining(["financial_claim", "policy_blocked_term:risk-free investment"])
+    );
+    expect(evaluated.body.moderationItem.status).toBe("open");
+
+    const resolved = await request(app.getHttpServer())
+      .post(`/api/safety/moderation-queue/${evaluated.body.moderationItem.id}/resolve`)
+      .send({
+        status: "approved",
+        resolutionNote: "Approved after compliance rewrite."
+      })
+      .expect(201);
+
+    expect(resolved.body).toMatchObject({
+      status: "approved",
+      resolutionNote: "Approved after compliance rewrite."
+    });
+
+    const generated = await request(app.getHttpServer())
+      .post("/api/ai/generate")
+      .set("x-user-role", "creator")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        brief: "Create a post claiming a guaranteed return for every launch buyer.",
+        platforms: ["linkedin"]
+      })
+      .expect(201);
+
+    expect(generated.body.safety.blocked).toBe(true);
+    expect(generated.body.safety.checkId).toEqual(expect.any(String));
+    expect(generated.body.safety.moderationItemId).toEqual(expect.any(String));
+  });
+
+  it("manages brand voices and applies them to AI generation", async () => {
+    const created = await request(app.getHttpServer())
+      .post("/api/brand-voices")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        name: "Test Brand Voice",
+        tone: { primary: "direct", secondary: "helpful" },
+        style: { sentenceLength: "short", formality: "professional" },
+        vocabulary: {
+          preferredTerms: ["content ops", "launch rhythm"],
+          bannedTerms: ["magic"],
+          industryTerms: ["campaign calendar"]
+        },
+        emojiUsage: "none",
+        ctaPreferences: { examples: ["Plan the next content milestone."] },
+        examples: ["Content ops works best when teams share one launch rhythm."]
+      })
+      .expect(201);
+
+    expect(created.body).toMatchObject({
+      name: "Test Brand Voice",
+      version: 1
+    });
+
+    const evaluation = await request(app.getHttpServer())
+      .post(`/api/brand-voices/${created.body.id}/evaluate`)
+      .send({ text: "This magic campaign calendar improves content ops." })
+      .expect(201);
+
+    expect(evaluation.body.bannedTerms).toContain("magic");
+    expect(evaluation.body.preferredTermsUsed).toContain("content ops");
+
+    const updated = await request(app.getHttpServer())
+      .put(`/api/brand-voices/${created.body.id}`)
+      .send({ name: "Test Brand Voice Updated" })
+      .expect(200);
+
+    expect(updated.body.version).toBe(2);
+
+    const generated = await request(app.getHttpServer())
+      .post("/api/ai/generate")
+      .set("x-user-role", "creator")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        brief: "Create a launch post for a practical social planning workflow.",
+        platforms: ["linkedin"],
+        brandVoiceId: created.body.id
+      })
+      .expect(201);
+
+    expect(generated.body.modelUsed).toContain("Test Brand Voice Updated");
+    expect(generated.body.variants[0].text).toContain("content ops");
   });
 });

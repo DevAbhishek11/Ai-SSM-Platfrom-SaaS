@@ -28,6 +28,7 @@ flowchart TB
   gateway --> analytics[Analytics Service]
   gateway --> ai[AI Service]
   gateway --> social[Social Connector Service]
+  gateway --> listening[Listening Service]
   gateway --> billing[Billing Service]
   gateway --> notification[Notification Service]
 
@@ -40,6 +41,8 @@ flowchart TB
   media --> objectStore[(S3/R2)]
   ai --> vector[(pgvector)]
   social --> queue
+  listening --> queue
+  listening --> notification
   notification --> queue
   billing --> stripe[Stripe]
   queue --> publisher[Publishing Workers]
@@ -77,6 +80,22 @@ sequenceDiagram
   Worker->>Platform: Publish with retry/idempotency key
   Platform-->>Worker: Platform post id and status
   Worker->>DB: Update post_platforms and audit log
+```
+
+## Campaign Operations
+
+Campaigns are treated as the planning aggregate for launch work. Each campaign can own milestones, tasks, budget lines, generated reports, and posts. The Campaigns module computes operational summaries from those resources so the Calendar view can show schedule risk, budget pacing, blocked tasks, and report readiness without waiting for a separate reporting warehouse.
+
+```mermaid
+flowchart LR
+  campaign[Campaign] --> milestones[Milestones]
+  campaign --> tasks[Tasks]
+  campaign --> budget[Budget Lines]
+  campaign --> posts[Posts]
+  campaign --> reports[Generated Reports]
+  posts --> analytics[Analytics Snapshots]
+  budget --> reports
+  analytics --> reports
 ```
 
 ## Publishing Job Lifecycle
@@ -122,9 +141,29 @@ sequenceDiagram
 
 Connector events record OAuth, token refresh, scope validation, and account-health transitions. Publishing workers should consult account status and rate-limit buckets before dispatching provider calls.
 
+## Social Listening And Alerting
+
+```mermaid
+sequenceDiagram
+  participant Worker as Connector Worker
+  participant API as Listening Module
+  participant DB as PostgreSQL
+  participant Notify as Notification Module
+  participant Ops as Social Ops
+
+  Worker->>API: POST /api/listening/mentions
+  API->>DB: Store mention with sentiment, reach, and engagement
+  API->>API: Compare mention against monitor threshold
+  API->>DB: Create listening alert when risk or momentum is detected
+  API->>Notify: Route warning or critical mention notification
+  Notify-->>Ops: In-app/email/Slack delivery attempt
+```
+
+Listening monitors define brand, keyword, hashtag, competitor, or influencer queries per workspace. Mentions are stored with platform, author, sentiment, reach, engagement, and metadata. Warning and critical alerts are auditable, resolvable, and routed through the notification preference engine.
+
 ## Audit Event Backbone
 
-Sensitive modules emit audit records through a shared audit service before the storage layer is swapped to Drizzle repositories. Covered actions include authentication success/failure, workflow transitions, social connector lifecycle operations, media upload/processing changes, publishing job state changes, and webhook replay. Records include actor, workspace, action, entity, old/new values, IP, user agent, and timestamp where available.
+Sensitive modules emit audit records through a shared audit service before the storage layer is swapped to Drizzle repositories. Covered actions include authentication success/failure, campaign task/budget/report operations, AI safety policy/check/moderation operations, workflow transitions, social connector lifecycle operations, listening monitor and alert operations, media upload/processing changes, publishing job state changes, and webhook replay. Records include actor, workspace, action, entity, old/new values, IP, user agent, and timestamp where available.
 
 ## Team Access And Service Credentials
 
@@ -139,6 +178,31 @@ The billing module exposes a centralized entitlement check used by capacity-cons
 ## Notification Routing
 
 Notifications are created once and routed into delivery attempts per enabled channel. Preferences store channel opt-ins, digest mode, muted event types, and quiet-hour windows. The local router deterministically records sent or suppressed attempts for in-app, email, push, Slack, Teams, SMS, and webhook channels so later workers can replace the simulated providers without changing API contracts.
+
+## Brand Voice Engine
+
+Brand voice profiles store tone, style, vocabulary controls, emoji strategy, CTA preferences, examples, and versions per workspace. AI generation can reference a profile to shape deterministic variants and surface banned-term findings as safety flags. The brand voice API also evaluates arbitrary copy so reviewers can check fit before publishing.
+
+## AI Safety And Moderation
+
+AI generation routes every brief through the Safety module before returning variants. Safety policies define blocked terms, required disclosure guidance, industry context, and maximum risk score per workspace. Checks persist flags, recommendations, severity, and risk score. Blocked drafts create moderation queue items so reviewers can approve, reject, or resolve them with audit evidence.
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant AI as AI Module
+  participant Safety as Safety Module
+  participant Audit as Audit Service
+  participant Reviewer
+
+  User->>AI: POST /api/ai/generate
+  AI->>Safety: Evaluate brief against active policy
+  Safety->>Audit: Record content safety check
+  Safety-->>AI: Check, flags, recommendations, queue item
+  AI-->>User: Variants with safety metadata
+  Reviewer->>Safety: Resolve moderation queue item
+  Safety->>Audit: Record moderation decision
+```
 
 ## Media Processing Pipeline
 
@@ -163,7 +227,7 @@ flowchart LR
 ## Tenancy Model
 
 - Organization owns billing and one or more workspaces.
-- Workspace is the primary tenant boundary for content, accounts, media, analytics, trends, notifications, AI generations, webhooks, and audit logs.
+- Workspace is the primary tenant boundary for content, accounts, media, analytics, trends, listening monitors, social mentions, alerts, notifications, AI generations, webhooks, and audit logs.
 - API authorizes every request against role permissions.
 - PostgreSQL RLS uses `app.workspace_id` for database-layer isolation in production.
 
@@ -172,6 +236,6 @@ flowchart LR
 1. Publishing workers and scheduling queue.
 2. Social connector service.
 3. Media processing service.
-4. Analytics ingestion/query service.
+4. Analytics and listening ingestion/query service.
 5. AI model router service.
 6. Billing and webhook service.

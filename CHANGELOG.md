@@ -21,3 +21,7 @@
 - Added `x-api-key` authentication, scoped service-account principals, permission-scope enforcement, CORS support, and tests for allowed/denied/revoked key behavior.
 - Added centralized billing entitlement checks, projected entitlement API, plan-limit enforcement for core mutations, Settings usage visibility, runbooks, and tests.
 - Added notification preferences, delivery attempt contracts, routing API, quiet-hour suppression, Settings routing UI, runbooks, and tests.
+- Added brand voice domain contracts, management/evaluation API, AI generation integration, AI Studio profile UI, docs, and tests.
+- Added social listening monitor, mention, and alert contracts, database migration, API lifecycle endpoints, Analytics command center UI, runbook, docs, and tests.
+- Added campaign milestone, task, budget line, and report contracts, database migration, API operations, Calendar command center UI, runbook, docs, and tests.
+- Added AI safety policy, content check, and moderation queue contracts, database migration, safety API, AI generation integration, AI Studio safety review UI, runbook, docs, and tests.

@@ -57,6 +57,18 @@ export const campaignTypes = [
 
 export type CampaignType = (typeof campaignTypes)[number];
 
+export const campaignMilestoneStatuses = ["pending", "at_risk", "completed"] as const;
+export type CampaignMilestoneStatus = (typeof campaignMilestoneStatuses)[number];
+
+export const campaignTaskStatuses = ["todo", "in_progress", "blocked", "done"] as const;
+export type CampaignTaskStatus = (typeof campaignTaskStatuses)[number];
+
+export const campaignTaskPriorities = ["low", "normal", "high", "urgent"] as const;
+export type CampaignTaskPriority = (typeof campaignTaskPriorities)[number];
+
+export const campaignReportStatuses = ["draft", "generated", "shared"] as const;
+export type CampaignReportStatus = (typeof campaignReportStatuses)[number];
+
 export const accountStatuses = ["connected", "expired", "revoked", "error"] as const;
 export type AccountStatus = (typeof accountStatuses)[number];
 
@@ -74,6 +86,15 @@ export type ConnectorEventSeverity = (typeof connectorEventSeverities)[number];
 
 export const sentimentLabels = ["negative", "neutral", "positive", "mixed"] as const;
 export type SentimentLabel = (typeof sentimentLabels)[number];
+
+export const listeningMonitorTypes = ["brand", "keyword", "hashtag", "competitor", "influencer"] as const;
+export type ListeningMonitorType = (typeof listeningMonitorTypes)[number];
+
+export const listeningMonitorStatuses = ["active", "paused", "archived"] as const;
+export type ListeningMonitorStatus = (typeof listeningMonitorStatuses)[number];
+
+export const listeningAlertSeverities = ["info", "warning", "critical"] as const;
+export type ListeningAlertSeverity = (typeof listeningAlertSeverities)[number];
 
 export const mediaAssetTypes = ["image", "video", "audio", "document", "design", "three_d"] as const;
 export type MediaAssetType = (typeof mediaAssetTypes)[number];
@@ -119,6 +140,18 @@ export type NotificationChannel = (typeof notificationChannels)[number];
 
 export const notificationDeliveryStatuses = ["pending", "sent", "failed", "suppressed"] as const;
 export type NotificationDeliveryStatus = (typeof notificationDeliveryStatuses)[number];
+
+export const safetyPolicyStatuses = ["draft", "active", "archived"] as const;
+export type SafetyPolicyStatus = (typeof safetyPolicyStatuses)[number];
+
+export const contentSafetyStatuses = ["passed", "flagged", "blocked"] as const;
+export type ContentSafetyStatus = (typeof contentSafetyStatuses)[number];
+
+export const safetySeverities = ["low", "medium", "high", "critical"] as const;
+export type SafetySeverity = (typeof safetySeverities)[number];
+
+export const moderationStatuses = ["open", "approved", "rejected", "resolved"] as const;
+export type ModerationStatus = (typeof moderationStatuses)[number];
 
 export const notificationDigestFrequencies = ["instant", "daily", "weekly", "muted"] as const;
 export type NotificationDigestFrequency = (typeof notificationDigestFrequencies)[number];

@@ -17,6 +17,10 @@ This folder tracks implementation phases, sessions, decisions, validation result
 | 2026-06-11 | `phase-08-session-2026-06-11.md` | API-key authentication and scoped service principals | Complete |
 | 2026-06-11 | `phase-09-session-2026-06-11.md` | Billing entitlement enforcement and usage visibility | Complete |
 | 2026-06-11 | `phase-10-session-2026-06-11.md` | Notification preferences, channel routing, and delivery attempts | Complete |
+| 2026-06-11 | `phase-11-session-2026-06-11.md` | Brand voice engine, evaluation, and AI generation integration | Complete |
+| 2026-06-11 | `phase-12-session-2026-06-11.md` | Social listening monitors, mentions, alerts, and command center | Complete |
+| 2026-06-11 | `phase-13-session-2026-06-11.md` | Campaign operations, budgets, tasks, milestones, and reports | Complete |
+| 2026-06-11 | `phase-14-session-2026-06-11.md` | AI safety policies, checks, moderation queue, and guardrails | Complete |
 
 ## Operating Rules
 

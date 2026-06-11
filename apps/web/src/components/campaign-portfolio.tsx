@@ -11,7 +11,7 @@ export function CampaignPortfolio({ campaigns }: { campaigns: Campaign[] }) {
               <div>
                 <p className="font-semibold">{campaign.name}</p>
                 <p className="mt-1 text-sm capitalize text-[var(--muted)]">
-                  {campaign.type.replace(/_/g, " ")} · {campaign.status}
+                  {campaign.type.replace(/_/g, " ")} - {campaign.status}
                 </p>
               </div>
               <time className="text-sm font-medium text-[var(--accent)]">

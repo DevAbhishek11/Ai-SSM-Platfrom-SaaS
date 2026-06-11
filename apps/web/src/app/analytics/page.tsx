@@ -1,7 +1,13 @@
-import { demoAnalytics } from "@ssm/domain";
+import {
+  demoAnalytics,
+  demoListeningAlerts,
+  demoListeningMonitors,
+  demoSocialMentions
+} from "@ssm/domain";
 import { AnalyticsChart } from "@/components/analytics-chart";
 import { AppShell } from "@/components/app-shell";
 import { MetricCard } from "@/components/metric-card";
+import { SocialListeningPanel } from "@/components/social-listening-panel";
 import { formatCompactNumber, formatPercent } from "@/lib/format";
 import { getDashboardOverview } from "@/lib/dashboard";
 import { CheckCircle2, MousePointerClick, TrendingUp } from "lucide-react";
@@ -39,6 +45,12 @@ export default async function AnalyticsPage() {
           />
         </section>
         <AnalyticsChart data={chartData} />
+        <SocialListeningPanel
+          workspaceId={overview.workspace.id}
+          monitors={demoListeningMonitors}
+          mentions={demoSocialMentions}
+          alerts={demoListeningAlerts}
+        />
       </div>
     </AppShell>
   );

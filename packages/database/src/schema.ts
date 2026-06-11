@@ -16,18 +16,29 @@ import {
 import {
   accountStatuses,
   apiKeyStatuses,
+  campaignMilestoneStatuses,
+  campaignReportStatuses,
+  campaignTaskPriorities,
+  campaignTaskStatuses,
   campaignTypes,
   connectorEventSeverities,
   invitationStatuses,
+  listeningAlertSeverities,
+  listeningMonitorStatuses,
+  listeningMonitorTypes,
   notificationChannels,
   notificationDeliveryStatuses,
   notificationDigestFrequencies,
+  contentSafetyStatuses,
   mediaProcessingJobStatuses,
+  moderationStatuses,
   platforms,
   plans,
   postStatuses,
   publishingJobStatuses,
   roles,
+  safetyPolicyStatuses,
+  safetySeverities,
   sentimentLabels,
   socialOAuthStateStatuses,
   webhookEndpointStatuses
@@ -60,14 +71,28 @@ export const campaignStatusEnum = pgEnum("campaign_status", [
   "completed",
   "archived"
 ]);
+export const campaignMilestoneStatusEnum = pgEnum(
+  "campaign_milestone_status",
+  campaignMilestoneStatuses
+);
+export const campaignTaskStatusEnum = pgEnum("campaign_task_status", campaignTaskStatuses);
+export const campaignTaskPriorityEnum = pgEnum("campaign_task_priority", campaignTaskPriorities);
+export const campaignReportStatusEnum = pgEnum("campaign_report_status", campaignReportStatuses);
 export const memberStatusEnum = pgEnum("member_status", ["active", "invited", "suspended"]);
 export const userStatusEnum = pgEnum("user_status", ["active", "suspended", "deleted"]);
 export const sentimentEnum = pgEnum("sentiment", sentimentLabels);
+export const listeningMonitorTypeEnum = pgEnum("listening_monitor_type", listeningMonitorTypes);
+export const listeningMonitorStatusEnum = pgEnum("listening_monitor_status", listeningMonitorStatuses);
+export const listeningAlertSeverityEnum = pgEnum("listening_alert_severity", listeningAlertSeverities);
 export const notificationChannelEnum = pgEnum("notification_channel", notificationChannels);
 export const notificationDeliveryStatusEnum = pgEnum(
   "notification_delivery_status",
   notificationDeliveryStatuses
 );
+export const safetyPolicyStatusEnum = pgEnum("safety_policy_status", safetyPolicyStatuses);
+export const contentSafetyStatusEnum = pgEnum("content_safety_status", contentSafetyStatuses);
+export const safetySeverityEnum = pgEnum("safety_severity", safetySeverities);
+export const moderationStatusEnum = pgEnum("moderation_status", moderationStatuses);
 export const notificationDigestFrequencyEnum = pgEnum(
   "notification_digest_frequency",
   notificationDigestFrequencies
@@ -376,6 +401,126 @@ export const campaigns = pgTable(
   })
 );
 
+export const campaignMilestones = pgTable(
+  "campaign_milestones",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    dueDate: date("due_date").notNull(),
+    status: campaignMilestoneStatusEnum("status").default("pending").notNull(),
+    ownerId: uuid("owner_id").references(() => users.id, { onDelete: "set null" }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    ...timestamps
+  },
+  (table) => ({
+    campaignDueIdx: index("campaign_milestones_campaign_due_idx").on(
+      table.campaignId,
+      table.dueDate
+    ),
+    workspaceStatusIdx: index("campaign_milestones_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    )
+  })
+);
+
+export const campaignTasks = pgTable(
+  "campaign_tasks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    status: campaignTaskStatusEnum("status").default("todo").notNull(),
+    priority: campaignTaskPriorityEnum("priority").default("normal").notNull(),
+    assigneeId: uuid("assignee_id").references(() => users.id, { onDelete: "set null" }),
+    dueDate: date("due_date"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+    ...timestamps
+  },
+  (table) => ({
+    campaignStatusIdx: index("campaign_tasks_campaign_status_idx").on(
+      table.campaignId,
+      table.status
+    ),
+    workspacePriorityIdx: index("campaign_tasks_workspace_priority_idx").on(
+      table.workspaceId,
+      table.priority
+    )
+  })
+);
+
+export const campaignBudgetLines = pgTable(
+  "campaign_budget_lines",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    category: text("category").notNull(),
+    allocated: numeric("allocated", { precision: 14, scale: 2 }).default("0").notNull(),
+    spent: numeric("spent", { precision: 14, scale: 2 }).default("0").notNull(),
+    currency: text("currency").default("USD").notNull(),
+    ...timestamps
+  },
+  (table) => ({
+    campaignCategoryUnique: uniqueIndex("campaign_budget_lines_campaign_category_unique").on(
+      table.campaignId,
+      table.category
+    ),
+    workspaceCampaignIdx: index("campaign_budget_lines_workspace_campaign_idx").on(
+      table.workspaceId,
+      table.campaignId
+    )
+  })
+);
+
+export const campaignReports = pgTable(
+  "campaign_reports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    status: campaignReportStatusEnum("status").default("generated").notNull(),
+    periodStart: date("period_start").notNull(),
+    periodEnd: date("period_end").notNull(),
+    metrics: jsonb("metrics").$type<Record<string, number>>().notNull(),
+    insights: jsonb("insights").$type<string[]>().default([]).notNull(),
+    generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
+    sharedAt: timestamp("shared_at", { withTimezone: true })
+  },
+  (table) => ({
+    campaignGeneratedIdx: index("campaign_reports_campaign_generated_idx").on(
+      table.campaignId,
+      table.generatedAt
+    ),
+    workspaceStatusIdx: index("campaign_reports_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    )
+  })
+);
+
 export const brandVoices = pgTable(
   "brand_voices",
   {
@@ -575,6 +720,92 @@ export const trends = pgTable(
   })
 );
 
+export const listeningMonitors = pgTable(
+  "listening_monitors",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    type: listeningMonitorTypeEnum("type").notNull(),
+    query: text("query").notNull(),
+    platforms: platformEnum("platforms").array().default(sql`ARRAY[]::platform[]`).notNull(),
+    status: listeningMonitorStatusEnum("status").default("active").notNull(),
+    alertThreshold: integer("alert_threshold").default(75).notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceStatusIdx: index("listening_monitors_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    ),
+    workspaceQueryIdx: index("listening_monitors_workspace_query_idx").on(table.workspaceId, table.query)
+  })
+);
+
+export const socialMentions = pgTable(
+  "social_mentions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    monitorId: uuid("monitor_id")
+      .notNull()
+      .references(() => listeningMonitors.id, { onDelete: "cascade" }),
+    platform: platformEnum("platform").notNull(),
+    author: text("author").notNull(),
+    content: text("content").notNull(),
+    url: text("url"),
+    sentiment: sentimentEnum("sentiment").notNull(),
+    reach: integer("reach").default(0).notNull(),
+    engagement: integer("engagement").default(0).notNull(),
+    detectedAt: timestamp("detected_at", { withTimezone: true }).defaultNow().notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull()
+  },
+  (table) => ({
+    workspaceDetectedIdx: index("social_mentions_workspace_detected_idx").on(
+      table.workspaceId,
+      table.detectedAt
+    ),
+    monitorDetectedIdx: index("social_mentions_monitor_detected_idx").on(
+      table.monitorId,
+      table.detectedAt
+    ),
+    sentimentIdx: index("social_mentions_sentiment_idx").on(table.sentiment)
+  })
+);
+
+export const listeningAlerts = pgTable(
+  "listening_alerts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    monitorId: uuid("monitor_id")
+      .notNull()
+      .references(() => listeningMonitors.id, { onDelete: "cascade" }),
+    mentionId: uuid("mention_id").references(() => socialMentions.id, { onDelete: "set null" }),
+    severity: listeningAlertSeverityEnum("severity").default("info").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    resolved: boolean("resolved").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true })
+  },
+  (table) => ({
+    workspaceResolvedIdx: index("listening_alerts_workspace_resolved_idx").on(
+      table.workspaceId,
+      table.resolved
+    ),
+    monitorCreatedIdx: index("listening_alerts_monitor_created_idx").on(table.monitorId, table.createdAt)
+  })
+);
+
 export const notifications = pgTable(
   "notifications",
   {
@@ -652,6 +883,86 @@ export const notificationDeliveryAttempts = pgTable(
       table.userId,
       table.channel
     )
+  })
+);
+
+export const safetyPolicies = pgTable(
+  "safety_policies",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    status: safetyPolicyStatusEnum("status").default("draft").notNull(),
+    rules: jsonb("rules").$type<Record<string, unknown>>().default({}).notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceStatusIdx: index("safety_policies_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    )
+  })
+);
+
+export const contentSafetyChecks = pgTable(
+  "content_safety_checks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    policyId: uuid("policy_id").references(() => safetyPolicies.id, { onDelete: "set null" }),
+    source: text("source").notNull(),
+    sourceEntityId: uuid("source_entity_id"),
+    text: text("text").notNull(),
+    status: contentSafetyStatusEnum("status").notNull(),
+    severity: safetySeverityEnum("severity").notNull(),
+    riskScore: numeric("risk_score", { precision: 4, scale: 3 }).notNull(),
+    flags: text("flags").array().default(sql`ARRAY[]::text[]`).notNull(),
+    recommendations: text("recommendations").array().default(sql`ARRAY[]::text[]`).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    workspaceCreatedIdx: index("content_safety_checks_workspace_created_idx").on(
+      table.workspaceId,
+      table.createdAt
+    ),
+    workspaceStatusIdx: index("content_safety_checks_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    )
+  })
+);
+
+export const moderationQueueItems = pgTable(
+  "moderation_queue_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    safetyCheckId: uuid("safety_check_id")
+      .notNull()
+      .references(() => contentSafetyChecks.id, { onDelete: "cascade" }),
+    source: text("source").notNull(),
+    sourceEntityId: uuid("source_entity_id"),
+    status: moderationStatusEnum("status").default("open").notNull(),
+    reason: text("reason").notNull(),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
+    resolutionNote: text("resolution_note"),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceStatusIdx: index("moderation_queue_items_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    ),
+    safetyCheckIdx: index("moderation_queue_items_safety_check_idx").on(table.safetyCheckId)
   })
 );
 
@@ -861,7 +1172,164 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   apiKeys: many(apiKeys),
   socialAccounts: many(socialAccounts),
   campaigns: many(campaigns),
+  campaignMilestones: many(campaignMilestones),
+  campaignTasks: many(campaignTasks),
+  campaignBudgetLines: many(campaignBudgetLines),
+  campaignReports: many(campaignReports),
+  safetyPolicies: many(safetyPolicies),
+  contentSafetyChecks: many(contentSafetyChecks),
+  moderationQueueItems: many(moderationQueueItems),
+  listeningMonitors: many(listeningMonitors),
+  socialMentions: many(socialMentions),
+  listeningAlerts: many(listeningAlerts),
   posts: many(posts)
+}));
+
+export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
+  workspace: one(workspaces, {
+    fields: [campaigns.workspaceId],
+    references: [workspaces.id]
+  }),
+  creator: one(users, {
+    fields: [campaigns.createdBy],
+    references: [users.id]
+  }),
+  posts: many(posts),
+  milestones: many(campaignMilestones),
+  tasks: many(campaignTasks),
+  budgetLines: many(campaignBudgetLines),
+  reports: many(campaignReports)
+}));
+
+export const campaignMilestonesRelations = relations(campaignMilestones, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [campaignMilestones.workspaceId],
+    references: [workspaces.id]
+  }),
+  campaign: one(campaigns, {
+    fields: [campaignMilestones.campaignId],
+    references: [campaigns.id]
+  }),
+  owner: one(users, {
+    fields: [campaignMilestones.ownerId],
+    references: [users.id]
+  })
+}));
+
+export const campaignTasksRelations = relations(campaignTasks, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [campaignTasks.workspaceId],
+    references: [workspaces.id]
+  }),
+  campaign: one(campaigns, {
+    fields: [campaignTasks.campaignId],
+    references: [campaigns.id]
+  }),
+  assignee: one(users, {
+    fields: [campaignTasks.assigneeId],
+    references: [users.id]
+  })
+}));
+
+export const campaignBudgetLinesRelations = relations(campaignBudgetLines, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [campaignBudgetLines.workspaceId],
+    references: [workspaces.id]
+  }),
+  campaign: one(campaigns, {
+    fields: [campaignBudgetLines.campaignId],
+    references: [campaigns.id]
+  })
+}));
+
+export const campaignReportsRelations = relations(campaignReports, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [campaignReports.workspaceId],
+    references: [workspaces.id]
+  }),
+  campaign: one(campaigns, {
+    fields: [campaignReports.campaignId],
+    references: [campaigns.id]
+  })
+}));
+
+export const safetyPoliciesRelations = relations(safetyPolicies, ({ one, many }) => ({
+  workspace: one(workspaces, {
+    fields: [safetyPolicies.workspaceId],
+    references: [workspaces.id]
+  }),
+  creator: one(users, {
+    fields: [safetyPolicies.createdBy],
+    references: [users.id]
+  }),
+  checks: many(contentSafetyChecks)
+}));
+
+export const contentSafetyChecksRelations = relations(contentSafetyChecks, ({ one, many }) => ({
+  workspace: one(workspaces, {
+    fields: [contentSafetyChecks.workspaceId],
+    references: [workspaces.id]
+  }),
+  policy: one(safetyPolicies, {
+    fields: [contentSafetyChecks.policyId],
+    references: [safetyPolicies.id]
+  }),
+  moderationItems: many(moderationQueueItems)
+}));
+
+export const moderationQueueItemsRelations = relations(moderationQueueItems, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [moderationQueueItems.workspaceId],
+    references: [workspaces.id]
+  }),
+  safetyCheck: one(contentSafetyChecks, {
+    fields: [moderationQueueItems.safetyCheckId],
+    references: [contentSafetyChecks.id]
+  }),
+  assignee: one(users, {
+    fields: [moderationQueueItems.assignedTo],
+    references: [users.id]
+  })
+}));
+
+export const listeningMonitorsRelations = relations(listeningMonitors, ({ one, many }) => ({
+  workspace: one(workspaces, {
+    fields: [listeningMonitors.workspaceId],
+    references: [workspaces.id]
+  }),
+  creator: one(users, {
+    fields: [listeningMonitors.createdBy],
+    references: [users.id]
+  }),
+  mentions: many(socialMentions),
+  alerts: many(listeningAlerts)
+}));
+
+export const socialMentionsRelations = relations(socialMentions, ({ one, many }) => ({
+  workspace: one(workspaces, {
+    fields: [socialMentions.workspaceId],
+    references: [workspaces.id]
+  }),
+  monitor: one(listeningMonitors, {
+    fields: [socialMentions.monitorId],
+    references: [listeningMonitors.id]
+  }),
+  alerts: many(listeningAlerts)
+}));
+
+export const listeningAlertsRelations = relations(listeningAlerts, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [listeningAlerts.workspaceId],
+    references: [workspaces.id]
+  }),
+  monitor: one(listeningMonitors, {
+    fields: [listeningAlerts.monitorId],
+    references: [listeningMonitors.id]
+  }),
+  mention: one(socialMentions, {
+    fields: [listeningAlerts.mentionId],
+    references: [socialMentions.id]
+  })
 }));
 
 export const postsRelations = relations(posts, ({ one, many }) => ({

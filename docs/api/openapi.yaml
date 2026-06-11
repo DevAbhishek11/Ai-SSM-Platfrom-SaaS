@@ -289,6 +289,155 @@ paths:
           description: Campaign details
         "404":
           description: Campaign not found
+  /campaigns/{id}/milestones:
+    get:
+      tags: [campaigns]
+      summary: List campaign milestones
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Campaign milestones
+  /campaigns/milestones/{milestoneId}/complete:
+    post:
+      tags: [campaigns]
+      summary: Complete a campaign milestone
+      parameters:
+        - in: path
+          name: milestoneId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Completed milestone
+  /campaigns/{id}/tasks:
+    get:
+      tags: [campaigns]
+      summary: List campaign tasks
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Campaign tasks
+    post:
+      tags: [campaigns]
+      summary: Create a campaign task
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCampaignTask"
+      responses:
+        "201":
+          description: Created campaign task
+  /campaigns/tasks/{taskId}/status:
+    post:
+      tags: [campaigns]
+      summary: Update a campaign task status
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCampaignTaskStatus"
+      responses:
+        "201":
+          description: Updated campaign task
+  /campaigns/{id}/budget:
+    get:
+      tags: [campaigns]
+      summary: Campaign budget lines and utilization
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Budget lines, allocated/spent totals, remaining budget, and utilization
+  /campaigns/{id}/budget-lines:
+    post:
+      tags: [campaigns]
+      summary: Create or update a campaign budget line
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertCampaignBudgetLine"
+      responses:
+        "201":
+          description: Created or updated budget line
+  /campaigns/{id}/reports:
+    get:
+      tags: [campaigns]
+      summary: List generated campaign reports
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Campaign reports
+  /campaigns/{id}/reports/generate:
+    post:
+      tags: [campaigns]
+      summary: Generate a campaign report
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateCampaignReport"
+      responses:
+        "201":
+          description: Generated campaign report with metrics and insights
   /media/assets:
     get:
       tags: [media]
@@ -787,6 +936,189 @@ paths:
       responses:
         "201":
           description: AI generation response with safety and quality metadata
+  /safety/policies:
+    get:
+      tags: [safety]
+      summary: List AI safety policies
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Safety policies
+    post:
+      tags: [safety]
+      summary: Create an AI safety policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSafetyPolicy"
+      responses:
+        "201":
+          description: Created safety policy
+  /safety/evaluate:
+    post:
+      tags: [safety]
+      summary: Evaluate content against workspace AI safety policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluateContentSafety"
+      responses:
+        "201":
+          description: Safety check with optional moderation queue item
+  /safety/checks:
+    get:
+      tags: [safety]
+      summary: List content safety checks
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Content safety checks
+  /safety/moderation-queue:
+    get:
+      tags: [safety]
+      summary: List AI moderation queue items
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [open, approved, rejected, resolved]
+      responses:
+        "200":
+          description: Moderation queue items
+  /safety/moderation-queue/{id}/resolve:
+    post:
+      tags: [safety]
+      summary: Resolve an AI moderation queue item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveModerationItem"
+      responses:
+        "201":
+          description: Resolved moderation queue item
+  /brand-voices:
+    get:
+      tags: [brand-voices]
+      summary: List workspace brand voice profiles
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Brand voice profiles
+    post:
+      tags: [brand-voices]
+      summary: Create a brand voice profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBrandVoice"
+      responses:
+        "201":
+          description: Created brand voice profile
+  /brand-voices/{id}:
+    get:
+      tags: [brand-voices]
+      summary: Get a brand voice profile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Brand voice profile
+        "404":
+          description: Brand voice not found
+    put:
+      tags: [brand-voices]
+      summary: Update a brand voice profile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBrandVoice"
+      responses:
+        "200":
+          description: Updated brand voice profile
+  /brand-voices/{id}/duplicate:
+    post:
+      tags: [brand-voices]
+      summary: Duplicate a brand voice profile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Duplicated brand voice profile
+  /brand-voices/{id}/evaluate:
+    post:
+      tags: [brand-voices]
+      summary: Evaluate copy against a brand voice
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluateBrandVoice"
+      responses:
+        "201":
+          description: Brand fit score, matched terms, and recommendations
   /analytics/summary:
     get:
       tags: [analytics]
@@ -800,6 +1132,152 @@ paths:
       responses:
         "200":
           description: Analytics totals and recommendations
+  /listening/summary:
+    get:
+      tags: [listening]
+      summary: Social listening summary
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Monitor counts, mention totals, sentiment mix, reach, and open alerts
+  /listening/monitors:
+    get:
+      tags: [listening]
+      summary: List social listening monitors
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, paused, archived]
+      responses:
+        "200":
+          description: Listening monitor list
+    post:
+      tags: [listening]
+      summary: Create a social listening monitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateListeningMonitor"
+      responses:
+        "201":
+          description: Created listening monitor
+  /listening/monitors/{monitorId}/pause:
+    post:
+      tags: [listening]
+      summary: Pause a social listening monitor
+      parameters:
+        - in: path
+          name: monitorId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Paused listening monitor
+  /listening/monitors/{monitorId}/resume:
+    post:
+      tags: [listening]
+      summary: Resume a social listening monitor
+      parameters:
+        - in: path
+          name: monitorId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Resumed listening monitor
+  /listening/monitors/{monitorId}/archive:
+    post:
+      tags: [listening]
+      summary: Archive a social listening monitor
+      parameters:
+        - in: path
+          name: monitorId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Archived listening monitor
+  /listening/mentions:
+    get:
+      tags: [listening]
+      summary: List detected social mentions
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: monitorId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Social mention list
+    post:
+      tags: [listening]
+      summary: Ingest a social mention and create an alert when needed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestSocialMention"
+      responses:
+        "201":
+          description: Ingested mention with optional generated alert
+  /listening/alerts:
+    get:
+      tags: [listening]
+      summary: List social listening alerts
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: resolved
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Listening alert list
+  /listening/alerts/{alertId}/resolve:
+    post:
+      tags: [listening]
+      summary: Resolve a social listening alert
+      parameters:
+        - in: path
+          name: alertId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Resolved listening alert
   /audit/logs:
     get:
       tags: [audit]
@@ -1092,6 +1570,59 @@ components:
         expiresAt:
           type: string
           format: date-time
+    CreateCampaignTask:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 240
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+        assigneeId:
+          type: string
+          format: uuid
+        dueDate:
+          type: string
+          format: date
+        metadata:
+          type: object
+          additionalProperties: true
+    UpdateCampaignTaskStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [todo, in_progress, blocked, done]
+    UpsertCampaignBudgetLine:
+      type: object
+      required: [category, allocated, spent]
+      properties:
+        category:
+          type: string
+          minLength: 1
+          maxLength: 120
+        allocated:
+          type: number
+          minimum: 0
+        spent:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          example: USD
+    GenerateCampaignReport:
+      type: object
+      properties:
+        periodStart:
+          type: string
+          format: date
+        periodEnd:
+          type: string
+          format: date
     UpdateNotificationPreferences:
       type: object
       properties:
@@ -1142,6 +1673,164 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    CreateListeningMonitor:
+      type: object
+      required: [workspaceId, type, query]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [brand, keyword, hashtag, competitor, influencer]
+        query:
+          type: string
+          minLength: 1
+          maxLength: 240
+        platforms:
+          type: array
+          items:
+            type: string
+            enum: [x, instagram, facebook, linkedin, youtube, tiktok, reddit, pinterest, threads, mastodon, bluesky]
+        alertThreshold:
+          type: integer
+          minimum: 0
+          maximum: 100
+    IngestSocialMention:
+      type: object
+      required: [workspaceId, monitorId, platform, author, content, sentiment, reach, engagement]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        monitorId:
+          type: string
+          format: uuid
+        platform:
+          type: string
+          enum: [x, instagram, facebook, linkedin, youtube, tiktok, reddit, pinterest, threads, mastodon, bluesky]
+        author:
+          type: string
+          minLength: 1
+          maxLength: 180
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        url:
+          type: string
+          format: uri
+        sentiment:
+          type: string
+          enum: [negative, neutral, positive, mixed]
+        reach:
+          type: integer
+          minimum: 0
+        engagement:
+          type: integer
+          minimum: 0
+        metadata:
+          type: object
+          additionalProperties: true
+    ListeningMonitor:
+      type: object
+      required: [id, workspaceId, type, query, platforms, status, alertThreshold, createdBy, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [brand, keyword, hashtag, competitor, influencer]
+        query:
+          type: string
+        platforms:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, paused, archived]
+        alertThreshold:
+          type: integer
+        createdBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SocialMention:
+      type: object
+      required: [id, workspaceId, monitorId, platform, author, content, sentiment, reach, engagement, detectedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        monitorId:
+          type: string
+          format: uuid
+        platform:
+          type: string
+        author:
+          type: string
+        content:
+          type: string
+        url:
+          type: string
+          format: uri
+        sentiment:
+          type: string
+          enum: [negative, neutral, positive, mixed]
+        reach:
+          type: integer
+        engagement:
+          type: integer
+        detectedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+    ListeningAlert:
+      type: object
+      required: [id, workspaceId, monitorId, severity, title, body, resolved, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        monitorId:
+          type: string
+          format: uuid
+        mentionId:
+          type: string
+          format: uuid
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        title:
+          type: string
+        body:
+          type: string
+        resolved:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
     GenerateContent:
       type: object
       required: [workspaceId, brief, platforms]
@@ -1165,6 +1854,145 @@ components:
         brandVoiceId:
           type: string
           format: uuid
+    CreateSafetyPolicy:
+      type: object
+      required: [workspaceId, name]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 180
+        rules:
+          type: object
+          properties:
+            blockedTerms:
+              type: array
+              items:
+                type: string
+            requiredDisclosures:
+              type: array
+              items:
+                type: string
+            industry:
+              type: string
+            maxRiskScore:
+              type: number
+              minimum: 0
+              maximum: 1
+    EvaluateContentSafety:
+      type: object
+      required: [workspaceId, text]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        text:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        source:
+          type: string
+          enum: [ai_generation, manual, post_review]
+        sourceEntityId:
+          type: string
+          format: uuid
+    ResolveModerationItem:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [approved, rejected, resolved]
+        resolutionNote:
+          type: string
+          maxLength: 2000
+    CreateBrandVoice:
+      type: object
+      required: [workspaceId, name]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        tone:
+          type: object
+          additionalProperties: true
+        style:
+          type: object
+          additionalProperties: true
+        vocabulary:
+          type: object
+          properties:
+            preferredTerms:
+              type: array
+              items:
+                type: string
+            bannedTerms:
+              type: array
+              items:
+                type: string
+            industryTerms:
+              type: array
+              items:
+                type: string
+        emojiUsage:
+          type: string
+          enum: [none, light, moderate, expressive]
+        ctaPreferences:
+          type: object
+          additionalProperties: true
+        examples:
+          type: array
+          items:
+            type: string
+    UpdateBrandVoice:
+      type: object
+      properties:
+        name:
+          type: string
+        tone:
+          type: object
+          additionalProperties: true
+        style:
+          type: object
+          additionalProperties: true
+        vocabulary:
+          type: object
+          properties:
+            preferredTerms:
+              type: array
+              items:
+                type: string
+            bannedTerms:
+              type: array
+              items:
+                type: string
+            industryTerms:
+              type: array
+              items:
+                type: string
+        emojiUsage:
+          type: string
+          enum: [none, light, moderate, expressive]
+        ctaPreferences:
+          type: object
+          additionalProperties: true
+        examples:
+          type: array
+          items:
+            type: string
+    EvaluateBrandVoice:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 5000
     WorkflowComment:
       type: object
       required: [comment]

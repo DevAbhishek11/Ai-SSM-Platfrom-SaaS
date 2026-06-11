@@ -3,48 +3,71 @@ import { Injectable } from "@nestjs/common";
 import {
   supportedPlatformCapabilities,
   type AiGenerationResponse,
+  type BrandVoice,
   type Platform
 } from "@ssm/domain";
+import { BrandVoicesService } from "../brand-voices/brand-voices.service.js";
 import { BillingService } from "../billing/billing.service.js";
+import { SafetyService } from "../safety/safety.service.js";
 import type { GenerateContentDto } from "./dto.js";
-
-const sensitivePatterns = [
-  { label: "possible_pii_email", pattern: /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i },
-  { label: "possible_payment_card", pattern: /\b(?:\d[ -]*?){13,16}\b/ },
-  { label: "medical_claim", pattern: /\b(cure|guaranteed treatment|diagnose)\b/i },
-  { label: "financial_claim", pattern: /\b(guaranteed return|risk-free investment)\b/i }
-];
 
 @Injectable()
 export class AiService {
-  constructor(private readonly billingService: BillingService) {}
+  constructor(
+    private readonly billingService: BillingService,
+    private readonly brandVoicesService: BrandVoicesService,
+    private readonly safetyService: SafetyService
+  ) {}
 
   generate(input: GenerateContentDto): AiGenerationResponse {
     this.billingService.assertAllowed(input.workspaceId, "aiGenerations", 1);
-    const flags = sensitivePatterns
-      .filter(({ pattern }) => pattern.test(input.brief))
-      .map(({ label }) => label);
-    const riskScore = Math.min(flags.length * 0.28, 1);
+    const generationId = randomUUID();
+    const brandVoice = input.brandVoiceId ? this.brandVoicesService.get(input.brandVoiceId) : undefined;
+    const safetyEvaluation = this.safetyService.evaluateContent({
+      workspaceId: input.workspaceId,
+      text: input.brief,
+      source: "ai_generation",
+      sourceEntityId: generationId
+    });
+    const safetyCheck = safetyEvaluation.check;
 
     const variants = input.platforms.map((platform) =>
       this.createVariant({
         platform,
         brief: input.brief,
-        tone: input.tone ?? "professional",
-        objective: input.objective ?? "engagement"
+        tone: this.voiceTone(input.tone, brandVoice),
+        objective: input.objective ?? "engagement",
+        brandVoice
       })
     );
+    const brandEvaluations = brandVoice
+      ? variants.map((variant) => this.brandVoicesService.evaluateText(brandVoice, variant.text))
+      : [];
+    const brandFlags = brandEvaluations.flatMap((evaluation) =>
+      evaluation.bannedTerms.map((term) => `brand_voice_banned_term:${term}`)
+    );
+    const brandPenalty = brandEvaluations.some((evaluation) => evaluation.score < 75) ? 0.12 : 0;
+    const riskScore = Math.min(safetyCheck.riskScore + brandPenalty, 1);
+    const flags = [...safetyCheck.flags, ...brandFlags];
 
     return {
-      id: randomUUID(),
-      modelUsed: "model-router/local-deterministic-v1",
+      id: generationId,
+      modelUsed: brandVoice
+        ? `model-router/local-deterministic-v1:${brandVoice.name}:v${brandVoice.version}`
+        : "model-router/local-deterministic-v1",
       safety: {
-        blocked: riskScore >= 0.75,
+        blocked: safetyCheck.status === "blocked" || riskScore >= 0.75 || brandFlags.length > 0,
         riskScore,
-        flags
+        flags,
+        recommendations: safetyCheck.recommendations,
+        checkId: safetyCheck.id,
+        moderationItemId: safetyEvaluation.moderationItem?.id
       },
       variants,
-      qualityScore: Math.max(72, 96 - flags.length * 12),
+      qualityScore: Math.max(
+        60,
+        96 - safetyCheck.flags.length * 12 - brandFlags.length * 15 + brandEvaluations.length * 2
+      ),
       estimatedTokens: Math.ceil(input.brief.length / 3.8) + variants.length * 80
     };
   }
@@ -53,20 +76,22 @@ export class AiService {
     platform,
     brief,
     tone,
-    objective
+    objective,
+    brandVoice
   }: {
     platform: Platform;
     brief: string;
     tone: string;
     objective: string;
+    brandVoice?: BrandVoice;
   }) {
     const capability = supportedPlatformCapabilities[platform];
     const cleanBrief = brief.replace(/\s+/g, " ").trim();
     const hook = this.platformHook(platform);
-    const cta = objective.toLowerCase().includes("conversion")
-      ? "Start with the launch checklist today."
-      : "Save this for your next planning sprint.";
-    const text = `${hook} ${cleanBrief} Tone: ${tone}. ${cta}`.slice(0, capability.maxCharacters);
+    const cta = this.ctaFor(objective, brandVoice);
+    const vocabulary = brandVoice?.vocabulary.preferredTerms.slice(0, 2).join(" and ");
+    const voiceContext = vocabulary ? `Use ${vocabulary} as the shared language.` : `Tone: ${tone}.`;
+    const text = `${hook} ${cleanBrief} ${voiceContext} ${cta}`.slice(0, capability.maxCharacters);
 
     return {
       platform,
@@ -74,6 +99,25 @@ export class AiService {
       hashtags: this.hashtagsFor(platform),
       firstComment: platform === "instagram" || platform === "linkedin" ? cta : undefined
     };
+  }
+
+  private voiceTone(inputTone?: string, brandVoice?: BrandVoice) {
+    if (!brandVoice) {
+      return inputTone ?? "professional";
+    }
+    const primary = typeof brandVoice.tone.primary === "string" ? brandVoice.tone.primary : "professional";
+    const secondary = typeof brandVoice.tone.secondary === "string" ? brandVoice.tone.secondary : "clear";
+    return `${primary} and ${secondary}`;
+  }
+
+  private ctaFor(objective: string, brandVoice?: BrandVoice) {
+    const examples = brandVoice?.ctaPreferences.examples;
+    if (Array.isArray(examples) && examples.every((item) => typeof item === "string") && examples.length > 0) {
+      return examples[0] as string;
+    }
+    return objective.toLowerCase().includes("conversion")
+      ? "Start with the launch checklist today."
+      : "Save this for your next planning sprint.";
   }
 
   private platformHook(platform: Platform): string {
