@@ -5,6 +5,9 @@ import {
   campaignTypes,
   connectorEventSeverities,
   invitationStatuses,
+  notificationChannels,
+  notificationDeliveryStatuses,
+  notificationDigestFrequencies,
   mediaProcessingJobStatuses,
   mediaAssetTypes,
   notificationTypes,
@@ -288,6 +291,40 @@ export const notificationSchema = z.object({
   createdAt: isoDateTimeSchema
 });
 
+export const notificationPreferenceSchema = z.object({
+  id: idSchema,
+  userId: idSchema,
+  workspaceId: idSchema,
+  channelSettings: z.record(z.string(), z.boolean()).default({}),
+  digestFrequency: z.enum(notificationDigestFrequencies),
+  quietHours: z
+    .object({
+      enabled: z.boolean(),
+      start: z.string().regex(/^\d{2}:\d{2}$/),
+      end: z.string().regex(/^\d{2}:\d{2}$/),
+      timezone: z.string().min(1)
+    })
+    .optional(),
+  mutedTypes: z.array(z.enum(notificationTypes)).default([]),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
+export const notificationDeliveryAttemptSchema = z.object({
+  id: idSchema,
+  notificationId: idSchema,
+  workspaceId: idSchema,
+  userId: idSchema,
+  channel: z.enum(notificationChannels),
+  status: z.enum(notificationDeliveryStatuses),
+  provider: z.string().min(1),
+  destination: z.string().min(1),
+  errorMessage: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).default({}),
+  attemptedAt: isoDateTimeSchema,
+  deliveredAt: isoDateTimeSchema.optional()
+});
+
 export const auditLogSchema = z.object({
   id: idSchema,
   workspaceId: idSchema.optional(),
@@ -413,6 +450,8 @@ export type Trend = z.infer<typeof trendSchema>;
 export type MediaAsset = z.infer<typeof mediaAssetSchema>;
 export type MediaProcessingJob = z.infer<typeof mediaProcessingJobSchema>;
 export type Notification = z.infer<typeof notificationSchema>;
+export type NotificationPreference = z.infer<typeof notificationPreferenceSchema>;
+export type NotificationDeliveryAttempt = z.infer<typeof notificationDeliveryAttemptSchema>;
 export type AuditLog = z.infer<typeof auditLogSchema>;
 export type WebhookDelivery = z.infer<typeof webhookDeliverySchema>;
 export type WebhookEndpoint = z.infer<typeof webhookEndpointSchema>;

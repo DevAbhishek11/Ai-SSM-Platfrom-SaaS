@@ -19,6 +19,9 @@ import {
   campaignTypes,
   connectorEventSeverities,
   invitationStatuses,
+  notificationChannels,
+  notificationDeliveryStatuses,
+  notificationDigestFrequencies,
   mediaProcessingJobStatuses,
   platforms,
   plans,
@@ -60,6 +63,15 @@ export const campaignStatusEnum = pgEnum("campaign_status", [
 export const memberStatusEnum = pgEnum("member_status", ["active", "invited", "suspended"]);
 export const userStatusEnum = pgEnum("user_status", ["active", "suspended", "deleted"]);
 export const sentimentEnum = pgEnum("sentiment", sentimentLabels);
+export const notificationChannelEnum = pgEnum("notification_channel", notificationChannels);
+export const notificationDeliveryStatusEnum = pgEnum(
+  "notification_delivery_status",
+  notificationDeliveryStatuses
+);
+export const notificationDigestFrequencyEnum = pgEnum(
+  "notification_digest_frequency",
+  notificationDigestFrequencies
+);
 export const webhookStatusEnum = pgEnum("webhook_status", ["pending", "delivered", "failed"]);
 export const webhookEndpointStatusEnum = pgEnum("webhook_endpoint_status", webhookEndpointStatuses);
 export const publishingJobStatusEnum = pgEnum("publishing_job_status", publishingJobStatuses);
@@ -580,6 +592,66 @@ export const notifications = pgTable(
   (table) => ({
     userReadIdx: index("notifications_user_read_idx").on(table.userId, table.read),
     userCreatedIdx: index("notifications_user_created_idx").on(table.userId, table.createdAt)
+  })
+);
+
+export const notificationPreferences = pgTable(
+  "notification_preferences",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    channelSettings: jsonb("channel_settings").$type<Record<string, boolean>>().default({}).notNull(),
+    digestFrequency: notificationDigestFrequencyEnum("digest_frequency").default("instant").notNull(),
+    quietHours: jsonb("quiet_hours").$type<Record<string, unknown>>(),
+    mutedTypes: text("muted_types").array().default(sql`ARRAY[]::text[]`).notNull(),
+    ...timestamps
+  },
+  (table) => ({
+    userWorkspaceUnique: uniqueIndex("notification_preferences_user_workspace_unique").on(
+      table.userId,
+      table.workspaceId
+    ),
+    workspaceIdx: index("notification_preferences_workspace_idx").on(table.workspaceId)
+  })
+);
+
+export const notificationDeliveryAttempts = pgTable(
+  "notification_delivery_attempts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    notificationId: uuid("notification_id")
+      .notNull()
+      .references(() => notifications.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channel: notificationChannelEnum("channel").notNull(),
+    status: notificationDeliveryStatusEnum("status").default("pending").notNull(),
+    provider: text("provider").notNull(),
+    destination: text("destination").notNull(),
+    errorMessage: text("error_message"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+    attemptedAt: timestamp("attempted_at", { withTimezone: true }).defaultNow().notNull(),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true })
+  },
+  (table) => ({
+    notificationIdx: index("notification_delivery_attempts_notification_idx").on(table.notificationId),
+    workspaceStatusIdx: index("notification_delivery_attempts_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    ),
+    userChannelIdx: index("notification_delivery_attempts_user_channel_idx").on(
+      table.userId,
+      table.channel
+    )
   })
 );
 

@@ -20,3 +20,4 @@
 - Added workspace invitations, team-member access controls, scoped API key lifecycle, database migration, settings UI, audit hooks, runbooks, and tests.
 - Added `x-api-key` authentication, scoped service-account principals, permission-scope enforcement, CORS support, and tests for allowed/denied/revoked key behavior.
 - Added centralized billing entitlement checks, projected entitlement API, plan-limit enforcement for core mutations, Settings usage visibility, runbooks, and tests.
+- Added notification preferences, delivery attempt contracts, routing API, quiet-hour suppression, Settings routing UI, runbooks, and tests.

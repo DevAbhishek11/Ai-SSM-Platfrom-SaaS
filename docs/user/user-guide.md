@@ -29,6 +29,6 @@ Managers can view reach, impressions, engagement, clicks, conversions, and AI re
 
 ## Media And Settings
 
-The media page tracks reusable campaign assets, tags, and upload readiness. Settings groups billing usage, entitlement limits, team access, API keys, webhook delivery status, and operational controls that admins use before launch.
+The media page tracks reusable campaign assets, tags, and upload readiness. Settings groups billing usage, entitlement limits, team access, API keys, notification routing, webhook delivery status, and operational controls that admins use before launch.
 Media processing shows upload scan, format detection, optimization, thumbnail, AI tagging, storage, and CDN distribution progress.
 Settings also includes a Security audit panel for recent privileged actions and recovery events.

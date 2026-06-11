@@ -160,6 +160,23 @@ Actions:
 4. Upgrade the workspace plan or request an enterprise override.
 5. Retry the blocked operation after usage or plan changes are reflected.
 
+## Notification Delivery Issue
+
+Signals:
+
+- Delivery attempts show `failed` or unexpected `suppressed` states.
+- Users do not receive publishing, account, billing, or security alerts.
+- Quiet hours or muted event settings suppress high-priority operational alerts.
+
+Actions:
+
+1. Inspect `/api/notifications/deliveries` for the affected workspace, user, and channel.
+2. Check user preferences for disabled channels, muted event types, digest mode, and quiet hours.
+3. For urgent incidents, use a `critical` priority route to bypass quiet-hour suppression.
+4. Confirm provider configuration for email, Slack, Teams, SMS, push, or webhook destinations.
+5. Re-route the notification after preferences or provider configuration are corrected.
+6. Preserve failed delivery attempts for incident evidence.
+
 ## Media Processing Failure
 
 Signals:

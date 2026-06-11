@@ -18,6 +18,7 @@
 - Review audit logs for privileged actions.
 - Use Settings > Security audit to inspect login, workflow, connector, media, publishing, and webhook recovery events.
 - Configure notification channels for publishing failures and account issues.
+- Review notification routing preferences and delivery attempts for urgent operational alerts.
 - Monitor webhook retries and account-health alerts before campaign launch windows.
 - Keep database readiness in `metadata` mode locally and `strict` mode in production.
 

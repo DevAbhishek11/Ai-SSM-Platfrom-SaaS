@@ -62,6 +62,8 @@ describe("API application", () => {
     await request(app.getHttpServer()).get("/api/campaigns").expect(200);
     await request(app.getHttpServer()).get("/api/media/assets").expect(200);
     await request(app.getHttpServer()).get("/api/notifications").expect(200);
+    await request(app.getHttpServer()).get("/api/notifications/preferences").expect(200);
+    await request(app.getHttpServer()).get("/api/notifications/deliveries").expect(200);
     await request(app.getHttpServer()).get("/api/billing/plans").expect(200);
     await request(app.getHttpServer())
       .get("/api/billing/entitlements/check?capability=apiAccess")
@@ -266,5 +268,50 @@ describe("API application", () => {
       .get("/api/analytics/summary")
       .set("x-api-key", createdKey.body.secret)
       .expect(401);
+  });
+
+  it("updates notification preferences and routes channel deliveries", async () => {
+    const preferences = await request(app.getHttpServer())
+      .patch("/api/notifications/preferences")
+      .send({
+        channelSettings: {
+          in_app: true,
+          email: true,
+          slack: true
+        },
+        digestFrequency: "instant",
+        quietHours: {
+          enabled: true,
+          start: "22:00",
+          end: "07:00",
+          timezone: "Asia/Calcutta"
+        },
+        mutedTypes: ["performance_milestone"]
+      })
+      .expect(200);
+
+    expect(preferences.body.channelSettings.email).toBe(true);
+    expect(preferences.body.mutedTypes).toContain("performance_milestone");
+
+    const routed = await request(app.getHttpServer())
+      .post("/api/notifications/route")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        userId: "77777777-7777-4777-8777-777777777777",
+        type: "account_issue",
+        title: "Reconnect account",
+        body: "Instagram scopes need review.",
+        priority: "high",
+        metadata: { forceQuietHours: true }
+      })
+      .expect(201);
+
+    expect(routed.body.notification.type).toBe("account_issue");
+    expect(routed.body.attempts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ channel: "in_app", status: "sent" }),
+        expect.objectContaining({ channel: "email", status: "suppressed" })
+      ])
+    );
   });
 });

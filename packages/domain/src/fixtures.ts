@@ -6,6 +6,8 @@ import type {
   MediaAsset,
   MediaProcessingJob,
   Notification,
+  NotificationDeliveryAttempt,
+  NotificationPreference,
   Post,
   PostComment,
   PublishingJob,
@@ -453,6 +455,75 @@ export const demoNotifications: Notification[] = [
     metadata: { accountId: "55555555-5555-4555-8555-555555555555" },
     read: false,
     createdAt: "2026-06-10T04:45:00.000Z"
+  }
+];
+
+export const demoNotificationPreferences: NotificationPreference[] = [
+  {
+    id: "45454545-4545-4454-8454-454545454545",
+    userId: demoUser.id,
+    workspaceId: demoWorkspace.id,
+    channelSettings: {
+      in_app: true,
+      email: true,
+      push: false,
+      slack: true,
+      teams: false,
+      sms: true,
+      webhook: true
+    },
+    digestFrequency: "instant",
+    quietHours: {
+      enabled: true,
+      start: "22:00",
+      end: "07:00",
+      timezone: "Asia/Calcutta"
+    },
+    mutedTypes: ["performance_milestone"],
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+export const demoNotificationDeliveryAttempts: NotificationDeliveryAttempt[] = [
+  {
+    id: "46464646-4646-4464-8464-464646464646",
+    notificationId: "14141414-1414-4141-8141-141414141414",
+    workspaceId: demoWorkspace.id,
+    userId: demoUser.id,
+    channel: "in_app",
+    status: "sent",
+    provider: "ssm-in-app",
+    destination: demoUser.id,
+    metadata: { priority: "normal" },
+    attemptedAt: now,
+    deliveredAt: now
+  },
+  {
+    id: "47474747-4747-4474-8474-474747474747",
+    notificationId: "15151515-1515-4151-8151-151515151515",
+    workspaceId: demoWorkspace.id,
+    userId: demoUser.id,
+    channel: "email",
+    status: "sent",
+    provider: "resend-demo",
+    destination: demoUser.email,
+    metadata: { priority: "high" },
+    attemptedAt: "2026-06-10T04:45:00.000Z",
+    deliveredAt: "2026-06-10T04:45:02.000Z"
+  },
+  {
+    id: "48484848-4848-4484-8484-484848484848",
+    notificationId: "15151515-1515-4151-8151-151515151515",
+    workspaceId: demoWorkspace.id,
+    userId: demoUser.id,
+    channel: "slack",
+    status: "suppressed",
+    provider: "slack-demo",
+    destination: "#social-ops",
+    errorMessage: "Suppressed by quiet hours.",
+    metadata: { priority: "high", quietHours: true },
+    attemptedAt: "2026-06-10T04:45:00.000Z"
   }
 ];
 

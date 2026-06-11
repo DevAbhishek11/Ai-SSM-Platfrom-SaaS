@@ -136,6 +136,10 @@ API requests may authenticate with `x-api-key`. A global guard verifies the secr
 
 The billing module exposes a centralized entitlement check used by capacity-consuming workflows. Current enforcement covers member invitations, API key creation, social OAuth starts, AI generation, media upload intents, and post creation. Checks project the requested increment against the workspace plan before the mutation proceeds.
 
+## Notification Routing
+
+Notifications are created once and routed into delivery attempts per enabled channel. Preferences store channel opt-ins, digest mode, muted event types, and quiet-hour windows. The local router deterministically records sent or suppressed attempts for in-app, email, push, Slack, Teams, SMS, and webhook channels so later workers can replace the simulated providers without changing API contracts.
+
 ## Media Processing Pipeline
 
 ```mermaid

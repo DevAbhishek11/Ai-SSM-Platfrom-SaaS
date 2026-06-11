@@ -412,6 +412,78 @@ paths:
       responses:
         "200":
           description: Notifications
+  /notifications/preferences:
+    get:
+      tags: [notifications]
+      summary: Get notification preferences
+      parameters:
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: User notification preferences
+    patch:
+      tags: [notifications]
+      summary: Update notification preferences
+      parameters:
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNotificationPreferences"
+      responses:
+        "200":
+          description: Updated notification preferences
+  /notifications/deliveries:
+    get:
+      tags: [notifications]
+      summary: List notification delivery attempts
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Delivery attempts
+  /notifications/route:
+    post:
+      tags: [notifications]
+      summary: Create and route a notification through enabled channels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RouteNotification"
+      responses:
+        "201":
+          description: Notification and delivery attempts
   /notifications/{id}/read:
     patch:
       tags: [notifications]
@@ -1020,6 +1092,56 @@ components:
         expiresAt:
           type: string
           format: date-time
+    UpdateNotificationPreferences:
+      type: object
+      properties:
+        channelSettings:
+          type: object
+          additionalProperties:
+            type: boolean
+        digestFrequency:
+          type: string
+          enum: [instant, daily, weekly, muted]
+        quietHours:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            start:
+              type: string
+              example: "22:00"
+            end:
+              type: string
+              example: "07:00"
+            timezone:
+              type: string
+        mutedTypes:
+          type: array
+          items:
+            type: string
+    RouteNotification:
+      type: object
+      required: [workspaceId, userId, type, title, body]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [publishing_failure, approval_request, trend_alert, performance_milestone, account_issue, system_alert, billing_alert, security_alert, mention, scheduled_reminder]
+        title:
+          type: string
+        body:
+          type: string
+        priority:
+          type: string
+          enum: [low, normal, high, critical]
+        metadata:
+          type: object
+          additionalProperties: true
     GenerateContent:
       type: object
       required: [workspaceId, brief, platforms]

@@ -3,6 +3,8 @@
 ```mermaid
 erDiagram
   USERS ||--o{ TEAM_MEMBERS : joins
+  USERS ||--o{ NOTIFICATION_PREFERENCES : configures
+  USERS ||--o{ NOTIFICATION_DELIVERY_ATTEMPTS : receives
   ORGANIZATIONS ||--o{ WORKSPACES : owns
   WORKSPACES ||--o{ TEAM_MEMBERS : contains
   WORKSPACES ||--o{ WORKSPACE_INVITATIONS : invites
@@ -30,6 +32,7 @@ erDiagram
   POSTS ||--o{ POST_COMMENTS : discusses
   POSTS ||--o{ WORKFLOW_EVENTS : records
   USERS ||--o{ NOTIFICATIONS : receives
+  NOTIFICATIONS ||--o{ NOTIFICATION_DELIVERY_ATTEMPTS : routes
 
   USERS {
     uuid id PK
@@ -160,6 +163,33 @@ erDiagram
     timestamptz expires_at
     timestamptz revoked_at
   }
+
+  NOTIFICATION_PREFERENCES {
+    uuid id PK
+    uuid user_id FK
+    uuid workspace_id FK
+    jsonb channel_settings
+    notification_digest_frequency digest_frequency
+    jsonb quiet_hours
+    text[] muted_types
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  NOTIFICATION_DELIVERY_ATTEMPTS {
+    uuid id PK
+    uuid notification_id FK
+    uuid workspace_id FK
+    uuid user_id FK
+    notification_channel channel
+    notification_delivery_status status
+    text provider
+    text destination
+    text error_message
+    jsonb metadata
+    timestamptz attempted_at
+    timestamptz delivered_at
+  }
 ```
 
 ## Index Strategy
@@ -172,6 +202,7 @@ erDiagram
 - Audit and AI generation indexes by workspace and created timestamp.
 - Social connector indexes by workspace, account, OAuth state, rate-limit reset, and event timestamp.
 - Invitation indexes by workspace/email/status and token hash; API key indexes by workspace/status and prefix.
+- Notification preference unique index by user/workspace; delivery indexes by notification, workspace/status, and user/channel.
 
 ## Retention Strategy
 

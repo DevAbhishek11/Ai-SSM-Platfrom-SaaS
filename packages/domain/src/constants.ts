@@ -106,6 +106,23 @@ export const notificationTypes = [
 ] as const;
 export type NotificationType = (typeof notificationTypes)[number];
 
+export const notificationChannels = [
+  "in_app",
+  "email",
+  "push",
+  "slack",
+  "teams",
+  "sms",
+  "webhook"
+] as const;
+export type NotificationChannel = (typeof notificationChannels)[number];
+
+export const notificationDeliveryStatuses = ["pending", "sent", "failed", "suppressed"] as const;
+export type NotificationDeliveryStatus = (typeof notificationDeliveryStatuses)[number];
+
+export const notificationDigestFrequencies = ["instant", "daily", "weekly", "muted"] as const;
+export type NotificationDigestFrequency = (typeof notificationDigestFrequencies)[number];
+
 export const webhookStatuses = ["pending", "delivered", "failed"] as const;
 export type WebhookStatus = (typeof webhookStatuses)[number];
 
