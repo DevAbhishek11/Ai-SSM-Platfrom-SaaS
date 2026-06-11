@@ -97,6 +97,13 @@ describe("API application", () => {
     await request(app.getHttpServer()).get("/api/listening/monitors").expect(200);
     await request(app.getHttpServer()).get("/api/listening/mentions").expect(200);
     await request(app.getHttpServer()).get("/api/listening/alerts").expect(200);
+    await request(app.getHttpServer()).get("/api/reports/templates").expect(200);
+    await request(app.getHttpServer()).get("/api/reports/schedules").expect(200);
+    await request(app.getHttpServer()).get("/api/reports/exports").expect(200);
+    await request(app.getHttpServer()).get("/api/reports/share-links").expect(200);
+    await request(app.getHttpServer()).get("/api/identity/sso-connections").expect(200);
+    await request(app.getHttpServer()).get("/api/identity/sessions").expect(200);
+    await request(app.getHttpServer()).get("/api/identity/devices").expect(200);
     await request(app.getHttpServer())
       .get("/api/billing/entitlements/check?capability=unknown")
       .expect(400);
@@ -181,6 +188,133 @@ describe("API application", () => {
     expect(report.body.status).toBe("generated");
     expect(report.body.metrics.posts).toBeGreaterThanOrEqual(1);
     expect(report.body.insights.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("creates report templates, schedules, exports, and share links", async () => {
+    const template = await request(app.getHttpServer())
+      .post("/api/reports/templates")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        name: "Test executive export",
+        type: "executive",
+        format: "pdf",
+        filters: { includeListening: true },
+        branding: { primaryColor: "#0f766e" }
+      })
+      .expect(201);
+
+    expect(template.body).toMatchObject({
+      name: "Test executive export",
+      type: "executive",
+      format: "pdf"
+    });
+
+    const schedule = await request(app.getHttpServer())
+      .post("/api/reports/schedules")
+      .send({
+        templateId: template.body.id,
+        frequency: "weekly",
+        recipients: ["owner@acmegrowth.test"]
+      })
+      .expect(201);
+
+    expect(schedule.body).toMatchObject({
+      templateId: template.body.id,
+      frequency: "weekly",
+      active: true
+    });
+    expect(schedule.body.nextRunAt).toEqual(expect.any(String));
+
+    const reportExport = await request(app.getHttpServer())
+      .post("/api/reports/exports")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        templateId: template.body.id,
+        type: "executive",
+        format: "pdf"
+      })
+      .expect(201);
+
+    expect(reportExport.body).toMatchObject({
+      templateId: template.body.id,
+      status: "ready",
+      format: "pdf"
+    });
+    expect(reportExport.body.payload.analytics.impressions).toBeGreaterThan(0);
+
+    const shareLink = await request(app.getHttpServer())
+      .post(`/api/reports/exports/${reportExport.body.id}/share-links`)
+      .send({})
+      .expect(201);
+
+    expect(shareLink.body).toMatchObject({
+      exportId: reportExport.body.id,
+      status: "active"
+    });
+    expect(shareLink.body.token).toContain("rpt_");
+  });
+
+  it("manages enterprise identity controls", async () => {
+    const connection = await request(app.getHttpServer())
+      .post("/api/identity/sso-connections")
+      .send({
+        workspaceId: "11111111-1111-4111-8111-111111111111",
+        providerType: "okta",
+        domain: "test-sso.acmegrowth.test",
+        entityId: "https://test-sso.acmegrowth.test/app/ssm",
+        ssoUrl: "https://test-sso.acmegrowth.test/app/ssm/sso/saml",
+        certificateFingerprint: "SHA256:TEST-SSO-FINGERPRINT",
+        metadata: { jitProvisioning: true }
+      })
+      .expect(201);
+
+    expect(connection.body).toMatchObject({
+      domain: "test-sso.acmegrowth.test",
+      status: "draft"
+    });
+
+    const tested = await request(app.getHttpServer())
+      .post(`/api/identity/sso-connections/${connection.body.id}/test`)
+      .expect(201);
+
+    expect(tested.body).toMatchObject({
+      status: "active",
+      lastTestedAt: expect.any(String)
+    });
+
+    const disabled = await request(app.getHttpServer())
+      .post(`/api/identity/sso-connections/${connection.body.id}/disable`)
+      .expect(201);
+
+    expect(disabled.body.status).toBe("disabled");
+
+    const revokedSession = await request(app.getHttpServer())
+      .post("/api/identity/sessions/79797979-7979-4797-8797-797979797979/revoke")
+      .expect(201);
+
+    expect(revokedSession.body).toMatchObject({
+      status: "revoked",
+      revokedAt: expect.any(String)
+    });
+
+    const trustedDevice = await request(app.getHttpServer())
+      .post("/api/identity/devices/77777776-7776-4776-8776-777777767776/trust")
+      .send({ name: "Verified mobile browser" })
+      .expect(201);
+
+    expect(trustedDevice.body).toMatchObject({
+      name: "Verified mobile browser",
+      status: "trusted"
+    });
+
+    const revokedDevice = await request(app.getHttpServer())
+      .post("/api/identity/devices/77777776-7776-4776-8776-777777767776/revoke")
+      .expect(201);
+
+    expect(revokedDevice.body).toMatchObject({
+      status: "revoked",
+      revokedAt: expect.any(String)
+    });
   });
 
   it("enforces approval workflow transitions and exposes timeline", async () => {

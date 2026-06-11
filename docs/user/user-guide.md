@@ -32,10 +32,10 @@ The Accounts page supports starting an OAuth connection, simulating callback com
 ## Analytics And Listening
 
 Managers can view reach, impressions, engagement, clicks, conversions, and AI recommendations. Exports are plan-gated.
-The Analytics page also includes the Social listening command center for creating brand, keyword, hashtag, competitor, or influencer monitors; ingesting connector mentions; reviewing sentiment and reach; and resolving warning or critical alerts.
+The Analytics page includes report templates, scheduled stakeholder reports, on-demand exports, and secure share links. It also includes the Social listening command center for creating brand, keyword, hashtag, competitor, or influencer monitors; ingesting connector mentions; reviewing sentiment and reach; and resolving warning or critical alerts.
 
 ## Media And Settings
 
 The media page tracks reusable campaign assets, tags, and upload readiness. Settings groups billing usage, entitlement limits, team access, API keys, notification routing, webhook delivery status, and operational controls that admins use before launch.
 Media processing shows upload scan, format detection, optimization, thumbnail, AI tagging, storage, and CDN distribution progress.
-Settings also includes a Security audit panel for recent privileged actions and recovery events.
+Settings also includes identity security controls for enterprise SSO, active sessions, trusted devices, and a Security audit panel for recent privileged actions and recovery events.

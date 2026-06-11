@@ -233,6 +233,143 @@ paths:
       responses:
         "201":
           description: Revoked API key metadata
+  /identity/sso-connections:
+    get:
+      tags: [identity]
+      summary: List workspace SSO connections
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Workspace SSO connection list
+    post:
+      tags: [identity]
+      summary: Create an enterprise SSO connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSsoConnection"
+      responses:
+        "201":
+          description: Draft SSO connection
+  /identity/sso-connections/{id}/test:
+    post:
+      tags: [identity]
+      summary: Test and activate an SSO connection
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Activated SSO connection with test timestamp
+  /identity/sso-connections/{id}/disable:
+    post:
+      tags: [identity]
+      summary: Disable an SSO connection
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Disabled SSO connection
+  /identity/sessions:
+    get:
+      tags: [identity]
+      summary: List authentication sessions
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Authentication sessions
+  /identity/sessions/{id}/revoke:
+    post:
+      tags: [identity]
+      summary: Revoke an authentication session
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Revoked authentication session
+  /identity/devices:
+    get:
+      tags: [identity]
+      summary: List trusted devices
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Trusted and pending devices
+  /identity/devices/{id}/trust:
+    post:
+      tags: [identity]
+      summary: Trust a pending device
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrustDevice"
+      responses:
+        "201":
+          description: Trusted device
+  /identity/devices/{id}/revoke:
+    post:
+      tags: [identity]
+      summary: Revoke a device and active sessions for that device
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Revoked device
   /posts:
     get:
       tags: [posts]
@@ -438,6 +575,114 @@ paths:
       responses:
         "201":
           description: Generated campaign report with metrics and insights
+  /reports/templates:
+    get:
+      tags: [reports]
+      summary: List report templates
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Report templates
+    post:
+      tags: [reports]
+      summary: Create a report template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReportTemplate"
+      responses:
+        "201":
+          description: Created report template
+  /reports/schedules:
+    get:
+      tags: [reports]
+      summary: List scheduled reports
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Scheduled reports
+    post:
+      tags: [reports]
+      summary: Create a scheduled report delivery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScheduledReport"
+      responses:
+        "201":
+          description: Created scheduled report
+  /reports/exports:
+    get:
+      tags: [reports]
+      summary: List report exports
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Report exports
+    post:
+      tags: [reports]
+      summary: Create an on-demand report export
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReportExport"
+      responses:
+        "201":
+          description: Ready report export with payload metadata
+  /reports/share-links:
+    get:
+      tags: [reports]
+      summary: List report share links
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Active, revoked, and expired share links
+  /reports/exports/{exportId}/share-links:
+    post:
+      tags: [reports]
+      summary: Create a secure report share link
+      parameters:
+        - in: path
+          name: exportId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReportShareLink"
+      responses:
+        "201":
+          description: Created report share link
   /media/assets:
     get:
       tags: [media]
@@ -1570,6 +1815,37 @@ components:
         expiresAt:
           type: string
           format: date-time
+    CreateSsoConnection:
+      type: object
+      required: [workspaceId, providerType, domain, entityId, ssoUrl, certificateFingerprint]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        providerType:
+          type: string
+          enum: [saml, oidc, google_workspace, azure_ad, okta]
+        domain:
+          type: string
+          maxLength: 180
+        entityId:
+          type: string
+          maxLength: 500
+        ssoUrl:
+          type: string
+          format: uri
+        certificateFingerprint:
+          type: string
+          minLength: 8
+        metadata:
+          type: object
+          additionalProperties: true
+    TrustDevice:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 180
     CreateCampaignTask:
       type: object
       required: [title]
@@ -1623,6 +1899,65 @@ components:
         periodEnd:
           type: string
           format: date
+    CreateReportTemplate:
+      type: object
+      required: [workspaceId, name, type, format]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 180
+        type:
+          type: string
+          enum: [campaign, analytics, listening, executive]
+        format:
+          type: string
+          enum: [pdf, csv, xlsx, json]
+        filters:
+          type: object
+          additionalProperties: true
+        branding:
+          type: object
+          additionalProperties: true
+    CreateScheduledReport:
+      type: object
+      required: [templateId, frequency, recipients]
+      properties:
+        templateId:
+          type: string
+          format: uuid
+        frequency:
+          type: string
+          enum: [daily, weekly, monthly]
+        recipients:
+          type: array
+          items:
+            type: string
+            format: email
+    CreateReportExport:
+      type: object
+      required: [workspaceId, type, format]
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [campaign, analytics, listening, executive]
+        format:
+          type: string
+          enum: [pdf, csv, xlsx, json]
+        templateId:
+          type: string
+          format: uuid
+    CreateReportShareLink:
+      type: object
+      properties:
+        expiresAt:
+          type: string
+          format: date-time
     UpdateNotificationPreferences:
       type: object
       properties:

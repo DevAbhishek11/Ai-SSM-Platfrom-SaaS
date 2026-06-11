@@ -1,15 +1,19 @@
 import {
   demoApiKeys,
   demoAuditLogs,
+  demoAuthSessions,
   demoNotificationDeliveryAttempts,
   demoNotificationPreferences,
+  demoSsoConnections,
   demoTeamMembers,
+  demoTrustedDevices,
   demoWebhookDeliveries,
   demoWorkspaceInvitations
 } from "@ssm/domain";
 import { AppShell } from "@/components/app-shell";
 import { AuditLogPanel } from "@/components/audit-log-panel";
 import { BillingPanel } from "@/components/billing-panel";
+import { IdentitySecurityPanel } from "@/components/identity-security-panel";
 import { NotificationPreferencesPanel } from "@/components/notification-preferences-panel";
 import { TeamAccessPanel } from "@/components/team-access-panel";
 import { WebhookDeliveries } from "@/components/webhook-deliveries";
@@ -30,6 +34,12 @@ export default async function SettingsPage() {
           members={demoTeamMembers}
           invitations={demoWorkspaceInvitations}
           apiKeys={demoApiKeys}
+        />
+        <IdentitySecurityPanel
+          workspaceId={overview.workspace.id}
+          ssoConnections={demoSsoConnections}
+          sessions={demoAuthSessions}
+          devices={demoTrustedDevices}
         />
         <NotificationPreferencesPanel
           workspaceId={overview.workspace.id}

@@ -26,6 +26,7 @@ flowchart TB
   gateway --> scheduler[Scheduling Service]
   gateway --> media[Media Service]
   gateway --> analytics[Analytics Service]
+  gateway --> reports[Reporting Service]
   gateway --> ai[AI Service]
   gateway --> social[Social Connector Service]
   gateway --> listening[Listening Service]
@@ -35,6 +36,7 @@ flowchart TB
   content --> postgres[(PostgreSQL)]
   workspace --> postgres
   auth --> postgres
+  reports --> postgres
   analytics --> timescale[(TimescaleDB)]
   scheduler --> redis[(Redis)]
   scheduler --> queue[(BullMQ/RabbitMQ)]
@@ -97,6 +99,23 @@ flowchart LR
   budget --> reports
   analytics --> reports
 ```
+
+## Reporting, Exports, And Share Links
+
+The Reports module turns analytics, listening, campaign, and executive data into reusable report templates. A template defines type, output format, filters, and branding; scheduled reports bind templates to recipients and next-run metadata; exports materialize a ready payload and download URL; share links expose an export through a scoped token with expiry and revocation state.
+
+```mermaid
+flowchart LR
+  template[Report Template] --> schedule[Scheduled Report]
+  template --> export[Report Export]
+  analytics[Analytics Snapshots] --> export
+  campaigns[Campaign Data] --> export
+  listening[Listening Alerts] --> export
+  export --> link[Share Link]
+  link --> stakeholder[Stakeholder]
+```
+
+Report creation and share-link creation are gated by `analytics.export`; list/read routes require `analytics.view`. Production workers should replace the local synchronous export builder with background rendering, object storage, token hashing, and delivery retries while preserving the same API contract.
 
 ## Publishing Job Lifecycle
 
@@ -163,13 +182,19 @@ Listening monitors define brand, keyword, hashtag, competitor, or influencer que
 
 ## Audit Event Backbone
 
-Sensitive modules emit audit records through a shared audit service before the storage layer is swapped to Drizzle repositories. Covered actions include authentication success/failure, campaign task/budget/report operations, AI safety policy/check/moderation operations, workflow transitions, social connector lifecycle operations, listening monitor and alert operations, media upload/processing changes, publishing job state changes, and webhook replay. Records include actor, workspace, action, entity, old/new values, IP, user agent, and timestamp where available.
+Sensitive modules emit audit records through a shared audit service before the storage layer is swapped to Drizzle repositories. Covered actions include authentication success/failure, SSO connection changes, session and device revocation, report template/schedule/export/share-link operations, campaign task/budget/report operations, AI safety policy/check/moderation operations, workflow transitions, social connector lifecycle operations, listening monitor and alert operations, media upload/processing changes, publishing job state changes, and webhook replay. Records include actor, workspace, action, entity, old/new values, IP, user agent, and timestamp where available.
 
 ## Team Access And Service Credentials
 
 Admins manage human access through workspace invitations and role updates. Invitation tokens are stored only as hashes, expire by default, and every create/resend/revoke action emits audit records. API keys are scoped service credentials: the raw secret is returned once on creation, only a prefix and hash are stored, and revocation is auditable.
 
 API requests may authenticate with `x-api-key`. A global guard verifies the secret hash, rejects revoked/expired keys, updates last-used metadata, and creates an `api_service_account` principal whose permissions are limited to the key's stored scopes before the RBAC guard runs.
+
+## Enterprise Identity Controls
+
+Identity controls live beside team access because they protect the same workspace boundary. SSO connections store provider type, verified domain, entity id, SSO URL, certificate fingerprint, metadata, status, and last-tested timestamp. Sessions store user, status, device, IP, user agent, expiry, and revocation time. Trusted devices store fingerprint, owner, trust state, and last-seen metadata.
+
+Admins can create, test, activate, and disable SSO connections; revoke individual sessions; trust pending devices; and revoke devices. Revoking a trusted device also revokes active sessions tied to that device. All mutations require `workspace.manage` and emit `identity.*` audit records for incident response.
 
 ## Entitlement Enforcement
 
@@ -227,7 +252,7 @@ flowchart LR
 ## Tenancy Model
 
 - Organization owns billing and one or more workspaces.
-- Workspace is the primary tenant boundary for content, accounts, media, analytics, trends, listening monitors, social mentions, alerts, notifications, AI generations, webhooks, and audit logs.
+- Workspace is the primary tenant boundary for content, accounts, media, analytics, reports, identity controls, trends, listening monitors, social mentions, alerts, notifications, AI generations, webhooks, and audit logs.
 - API authorizes every request against role permissions.
 - PostgreSQL RLS uses `app.workspace_id` for database-layer isolation in production.
 

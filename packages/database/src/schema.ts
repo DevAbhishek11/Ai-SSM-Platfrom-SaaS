@@ -36,11 +36,20 @@ import {
   plans,
   postStatuses,
   publishingJobStatuses,
+  reportExportStatuses,
+  reportFormats,
+  reportScheduleFrequencies,
+  reportShareLinkStatuses,
+  reportTypes,
   roles,
   safetyPolicyStatuses,
   safetySeverities,
   sentimentLabels,
   socialOAuthStateStatuses,
+  authSessionStatuses,
+  ssoConnectionStatuses,
+  ssoProviderTypes,
+  trustedDeviceStatuses,
   webhookEndpointStatuses
 } from "@ssm/domain";
 
@@ -51,6 +60,10 @@ export const postStatusEnum = pgEnum("post_status", postStatuses);
 export const accountStatusEnum = pgEnum("account_status", accountStatuses);
 export const invitationStatusEnum = pgEnum("invitation_status", invitationStatuses);
 export const apiKeyStatusEnum = pgEnum("api_key_status", apiKeyStatuses);
+export const ssoProviderTypeEnum = pgEnum("sso_provider_type", ssoProviderTypes);
+export const ssoConnectionStatusEnum = pgEnum("sso_connection_status", ssoConnectionStatuses);
+export const authSessionStatusEnum = pgEnum("auth_session_status", authSessionStatuses);
+export const trustedDeviceStatusEnum = pgEnum("trusted_device_status", trustedDeviceStatuses);
 export const socialOAuthStateStatusEnum = pgEnum(
   "social_oauth_state_status",
   socialOAuthStateStatuses
@@ -78,6 +91,17 @@ export const campaignMilestoneStatusEnum = pgEnum(
 export const campaignTaskStatusEnum = pgEnum("campaign_task_status", campaignTaskStatuses);
 export const campaignTaskPriorityEnum = pgEnum("campaign_task_priority", campaignTaskPriorities);
 export const campaignReportStatusEnum = pgEnum("campaign_report_status", campaignReportStatuses);
+export const reportTypeEnum = pgEnum("report_type", reportTypes);
+export const reportFormatEnum = pgEnum("report_format", reportFormats);
+export const reportScheduleFrequencyEnum = pgEnum(
+  "report_schedule_frequency",
+  reportScheduleFrequencies
+);
+export const reportExportStatusEnum = pgEnum("report_export_status", reportExportStatuses);
+export const reportShareLinkStatusEnum = pgEnum(
+  "report_share_link_status",
+  reportShareLinkStatuses
+);
 export const memberStatusEnum = pgEnum("member_status", ["active", "invited", "suspended"]);
 export const userStatusEnum = pgEnum("user_status", ["active", "suspended", "deleted"]);
 export const sentimentEnum = pgEnum("sentiment", sentimentLabels);
@@ -256,6 +280,92 @@ export const apiKeys = pgTable(
   (table) => ({
     workspaceStatusIdx: index("api_keys_workspace_status_idx").on(table.workspaceId, table.status),
     keyPrefixUnique: uniqueIndex("api_keys_key_prefix_unique").on(table.keyPrefix)
+  })
+);
+
+export const ssoConnections = pgTable(
+  "sso_connections",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    providerType: ssoProviderTypeEnum("provider_type").notNull(),
+    status: ssoConnectionStatusEnum("status").default("draft").notNull(),
+    domain: text("domain").notNull(),
+    entityId: text("entity_id").notNull(),
+    ssoUrl: text("sso_url").notNull(),
+    certificateFingerprint: text("certificate_fingerprint").notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    lastTestedAt: timestamp("last_tested_at", { withTimezone: true }),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceStatusIdx: index("sso_connections_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    ),
+    workspaceDomainUnique: uniqueIndex("sso_connections_workspace_domain_unique").on(
+      table.workspaceId,
+      table.domain
+    )
+  })
+);
+
+export const trustedDevices = pgTable(
+  "trusted_devices",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    fingerprint: text("fingerprint").notNull(),
+    status: trustedDeviceStatusEnum("status").default("pending").notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true })
+  },
+  (table) => ({
+    userStatusIdx: index("trusted_devices_user_status_idx").on(table.userId, table.status),
+    workspaceFingerprintUnique: uniqueIndex("trusted_devices_workspace_fingerprint_unique").on(
+      table.workspaceId,
+      table.fingerprint
+    )
+  })
+);
+
+export const authSessions = pgTable(
+  "auth_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: authSessionStatusEnum("status").default("active").notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    deviceId: uuid("device_id").references(() => trustedDevices.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true })
+  },
+  (table) => ({
+    userStatusIdx: index("auth_sessions_user_status_idx").on(table.userId, table.status),
+    workspaceLastSeenIdx: index("auth_sessions_workspace_last_seen_idx").on(
+      table.workspaceId,
+      table.lastSeenAt
+    )
   })
 );
 
@@ -515,6 +625,118 @@ export const campaignReports = pgTable(
       table.generatedAt
     ),
     workspaceStatusIdx: index("campaign_reports_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    )
+  })
+);
+
+export const reportTemplates = pgTable(
+  "report_templates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    type: reportTypeEnum("type").notNull(),
+    format: reportFormatEnum("format").notNull(),
+    filters: jsonb("filters").$type<Record<string, unknown>>().default({}).notNull(),
+    branding: jsonb("branding").$type<Record<string, unknown>>().default({}).notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceTypeIdx: index("report_templates_workspace_type_idx").on(table.workspaceId, table.type)
+  })
+);
+
+export const scheduledReports = pgTable(
+  "scheduled_reports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    templateId: uuid("template_id")
+      .notNull()
+      .references(() => reportTemplates.id, { onDelete: "cascade" }),
+    frequency: reportScheduleFrequencyEnum("frequency").notNull(),
+    recipients: text("recipients").array().default(sql`ARRAY[]::text[]`).notNull(),
+    nextRunAt: timestamp("next_run_at", { withTimezone: true }).notNull(),
+    lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+    active: boolean("active").default(true).notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceNextRunIdx: index("scheduled_reports_workspace_next_run_idx").on(
+      table.workspaceId,
+      table.nextRunAt
+    ),
+    templateIdx: index("scheduled_reports_template_idx").on(table.templateId)
+  })
+);
+
+export const reportExports = pgTable(
+  "report_exports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    templateId: uuid("template_id").references(() => reportTemplates.id, { onDelete: "set null" }),
+    type: reportTypeEnum("type").notNull(),
+    format: reportFormatEnum("format").notNull(),
+    status: reportExportStatusEnum("status").default("queued").notNull(),
+    downloadUrl: text("download_url"),
+    payload: jsonb("payload").$type<Record<string, unknown>>().default({}).notNull(),
+    requestedBy: uuid("requested_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    readyAt: timestamp("ready_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true })
+  },
+  (table) => ({
+    workspaceStatusIdx: index("report_exports_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    ),
+    workspaceCreatedIdx: index("report_exports_workspace_created_idx").on(
+      table.workspaceId,
+      table.createdAt
+    )
+  })
+);
+
+export const reportShareLinks = pgTable(
+  "report_share_links",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    exportId: uuid("export_id")
+      .notNull()
+      .references(() => reportExports.id, { onDelete: "cascade" }),
+    token: text("token").notNull(),
+    status: reportShareLinkStatusEnum("status").default("active").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true })
+  },
+  (table) => ({
+    tokenUnique: uniqueIndex("report_share_links_token_unique").on(table.token),
+    exportIdx: index("report_share_links_export_idx").on(table.exportId),
+    workspaceStatusIdx: index("report_share_links_workspace_status_idx").on(
       table.workspaceId,
       table.status
     )
@@ -1170,12 +1392,19 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   members: many(teamMembers),
   invitations: many(workspaceInvitations),
   apiKeys: many(apiKeys),
+  ssoConnections: many(ssoConnections),
+  trustedDevices: many(trustedDevices),
+  authSessions: many(authSessions),
   socialAccounts: many(socialAccounts),
   campaigns: many(campaigns),
   campaignMilestones: many(campaignMilestones),
   campaignTasks: many(campaignTasks),
   campaignBudgetLines: many(campaignBudgetLines),
   campaignReports: many(campaignReports),
+  reportTemplates: many(reportTemplates),
+  scheduledReports: many(scheduledReports),
+  reportExports: many(reportExports),
+  reportShareLinks: many(reportShareLinks),
   safetyPolicies: many(safetyPolicies),
   contentSafetyChecks: many(contentSafetyChecks),
   moderationQueueItems: many(moderationQueueItems),
@@ -1183,6 +1412,44 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   socialMentions: many(socialMentions),
   listeningAlerts: many(listeningAlerts),
   posts: many(posts)
+}));
+
+export const ssoConnectionsRelations = relations(ssoConnections, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [ssoConnections.workspaceId],
+    references: [workspaces.id]
+  }),
+  creator: one(users, {
+    fields: [ssoConnections.createdBy],
+    references: [users.id]
+  })
+}));
+
+export const trustedDevicesRelations = relations(trustedDevices, ({ one, many }) => ({
+  workspace: one(workspaces, {
+    fields: [trustedDevices.workspaceId],
+    references: [workspaces.id]
+  }),
+  user: one(users, {
+    fields: [trustedDevices.userId],
+    references: [users.id]
+  }),
+  sessions: many(authSessions)
+}));
+
+export const authSessionsRelations = relations(authSessions, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [authSessions.workspaceId],
+    references: [workspaces.id]
+  }),
+  user: one(users, {
+    fields: [authSessions.userId],
+    references: [users.id]
+  }),
+  device: one(trustedDevices, {
+    fields: [authSessions.deviceId],
+    references: [trustedDevices.id]
+  })
 }));
 
 export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
@@ -1250,6 +1517,65 @@ export const campaignReportsRelations = relations(campaignReports, ({ one }) => 
   campaign: one(campaigns, {
     fields: [campaignReports.campaignId],
     references: [campaigns.id]
+  })
+}));
+
+export const reportTemplatesRelations = relations(reportTemplates, ({ one, many }) => ({
+  workspace: one(workspaces, {
+    fields: [reportTemplates.workspaceId],
+    references: [workspaces.id]
+  }),
+  creator: one(users, {
+    fields: [reportTemplates.createdBy],
+    references: [users.id]
+  }),
+  schedules: many(scheduledReports),
+  exports: many(reportExports)
+}));
+
+export const scheduledReportsRelations = relations(scheduledReports, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [scheduledReports.workspaceId],
+    references: [workspaces.id]
+  }),
+  template: one(reportTemplates, {
+    fields: [scheduledReports.templateId],
+    references: [reportTemplates.id]
+  }),
+  creator: one(users, {
+    fields: [scheduledReports.createdBy],
+    references: [users.id]
+  })
+}));
+
+export const reportExportsRelations = relations(reportExports, ({ one, many }) => ({
+  workspace: one(workspaces, {
+    fields: [reportExports.workspaceId],
+    references: [workspaces.id]
+  }),
+  template: one(reportTemplates, {
+    fields: [reportExports.templateId],
+    references: [reportTemplates.id]
+  }),
+  requester: one(users, {
+    fields: [reportExports.requestedBy],
+    references: [users.id]
+  }),
+  shareLinks: many(reportShareLinks)
+}));
+
+export const reportShareLinksRelations = relations(reportShareLinks, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [reportShareLinks.workspaceId],
+    references: [workspaces.id]
+  }),
+  export: one(reportExports, {
+    fields: [reportShareLinks.exportId],
+    references: [reportExports.id]
+  }),
+  creator: one(users, {
+    fields: [reportShareLinks.createdBy],
+    references: [users.id]
   })
 }));
 

@@ -21,6 +21,8 @@ This folder tracks implementation phases, sessions, decisions, validation result
 | 2026-06-11 | `phase-12-session-2026-06-11.md` | Social listening monitors, mentions, alerts, and command center | Complete |
 | 2026-06-11 | `phase-13-session-2026-06-11.md` | Campaign operations, budgets, tasks, milestones, and reports | Complete |
 | 2026-06-11 | `phase-14-session-2026-06-11.md` | AI safety policies, checks, moderation queue, and guardrails | Complete |
+| 2026-06-11 | `phase-15-session-2026-06-11.md` | Reporting templates, scheduled exports, and share links | Complete |
+| 2026-06-11 | `phase-16-session-2026-06-11.md` | Enterprise SSO, auth sessions, and trusted devices | Complete |
 
 ## Operating Rules
 

@@ -28,6 +28,7 @@ Supported flows:
 | Workspace settings | Yes | Yes | Yes | No | No | No | No | No |
 | Member management | Yes | Yes | Yes | No | No | No | No | No |
 | API keys/webhooks | Yes | Yes | Yes | No | No | No | No | Yes |
+| Enterprise identity | Yes | Yes | Yes | No | No | No | No | No |
 | Campaign management | Yes | Yes | Yes | Yes | No | No | No | No |
 | Create/edit posts | Yes | Yes | Yes | Yes | Yes | No | No | Yes |
 | Review posts | Yes | Yes | Yes | Yes | No | Yes | No | No |
@@ -46,6 +47,8 @@ Supported flows:
 - Audit logging for permission-sensitive actions.
 - `audit.view` gates `/api/audit/logs`, `/api/audit/summary`, `/api/audit/export`, and the Settings security audit panel.
 - `members.invite`, `members.manage`, and `api_keys.manage` gate invitation, role, suspension, and service credential workflows.
+- `workspace.manage` gates `/api/identity/sso-connections`, `/api/identity/sessions`, `/api/identity/devices`, and Settings identity security controls.
+- `analytics.view` gates report lists; `analytics.export` gates report template, schedule, export, and share-link creation.
 - API keys authenticate through `x-api-key` as `api_service_account` principals and can only use permissions included in their stored scopes.
 
 ## Security Controls
@@ -57,6 +60,8 @@ Supported flows:
 - Store all external webhook secrets hashed.
 - Store invitation tokens and API key secrets only as hashes; raw API key secrets are returned once.
 - Revoke API keys to immediately reject future `x-api-key` requests.
+- Revoke sessions and trusted devices to terminate suspicious browser/device access.
+- Store report share-link tokens hashed in production and enforce expiry/revocation before download.
 - Sign outbound webhooks with timestamped HMAC.
 - Record IP and user agent for security-relevant audit events.
-- Emit audit records for auth, workflow, connector, media, publishing, and webhook recovery actions.
+- Emit audit records for auth, identity, reports, workflow, connector, media, publishing, and webhook recovery actions.

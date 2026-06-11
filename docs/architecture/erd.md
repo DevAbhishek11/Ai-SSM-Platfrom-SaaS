@@ -9,6 +9,9 @@ erDiagram
   WORKSPACES ||--o{ TEAM_MEMBERS : contains
   WORKSPACES ||--o{ WORKSPACE_INVITATIONS : invites
   WORKSPACES ||--o{ API_KEYS : authenticates
+  WORKSPACES ||--o{ SSO_CONNECTIONS : federates
+  WORKSPACES ||--o{ TRUSTED_DEVICES : trusts
+  WORKSPACES ||--o{ AUTH_SESSIONS : tracks
   WORKSPACES ||--o{ SOCIAL_ACCOUNTS : connects
   WORKSPACES ||--o{ SOCIAL_OAUTH_STATES : authorizes
   WORKSPACES ||--o{ SOCIAL_CONNECTOR_EVENTS : audits
@@ -19,6 +22,13 @@ erDiagram
   CAMPAIGNS ||--o{ CAMPAIGN_TASKS : assigns
   CAMPAIGNS ||--o{ CAMPAIGN_BUDGET_LINES : funds
   CAMPAIGNS ||--o{ CAMPAIGN_REPORTS : summarizes
+  WORKSPACES ||--o{ REPORT_TEMPLATES : defines
+  WORKSPACES ||--o{ SCHEDULED_REPORTS : schedules
+  WORKSPACES ||--o{ REPORT_EXPORTS : exports
+  WORKSPACES ||--o{ REPORT_SHARE_LINKS : shares
+  REPORT_TEMPLATES ||--o{ SCHEDULED_REPORTS : drives
+  REPORT_TEMPLATES ||--o{ REPORT_EXPORTS : renders
+  REPORT_EXPORTS ||--o{ REPORT_SHARE_LINKS : exposes
   WORKSPACES ||--o{ POSTS : owns
   WORKSPACES ||--o{ MEDIA_ASSETS : stores
   WORKSPACES ||--o{ BRAND_VOICES : defines
@@ -36,6 +46,8 @@ erDiagram
   WORKSPACES ||--o{ WEBHOOK_DELIVERIES : emits
   CAMPAIGNS ||--o{ POSTS : groups
   USERS ||--o{ POSTS : authors
+  USERS ||--o{ AUTH_SESSIONS : signs_in
+  USERS ||--o{ TRUSTED_DEVICES : owns
   POSTS ||--o{ POST_PLATFORMS : targets
   SOCIAL_ACCOUNTS ||--o{ POST_PLATFORMS : publishes
   SOCIAL_ACCOUNTS ||--o{ ANALYTICS_SNAPSHOTS : reports
@@ -147,6 +159,59 @@ erDiagram
     jsonb metrics
     jsonb insights
     timestamptz generated_at
+  }
+
+  REPORT_TEMPLATES {
+    uuid id PK
+    uuid workspace_id FK
+    text name
+    report_type type
+    report_format format
+    jsonb filters
+    jsonb branding
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  SCHEDULED_REPORTS {
+    uuid id PK
+    uuid workspace_id FK
+    uuid template_id FK
+    report_schedule_frequency frequency
+    text[] recipients
+    timestamptz next_run_at
+    boolean active
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  REPORT_EXPORTS {
+    uuid id PK
+    uuid workspace_id FK
+    uuid template_id FK
+    report_type type
+    report_format format
+    report_export_status status
+    text download_url
+    jsonb payload
+    uuid requested_by FK
+    timestamptz created_at
+    timestamptz ready_at
+    timestamptz expires_at
+  }
+
+  REPORT_SHARE_LINKS {
+    uuid id PK
+    uuid workspace_id FK
+    uuid export_id FK
+    text token_hash
+    report_share_link_status status
+    timestamptz expires_at
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz revoked_at
   }
 
   SAFETY_POLICIES {
@@ -278,6 +343,48 @@ erDiagram
     timestamptz revoked_at
   }
 
+  SSO_CONNECTIONS {
+    uuid id PK
+    uuid workspace_id FK
+    sso_provider_type provider_type
+    sso_connection_status status
+    text domain
+    text entity_id
+    text sso_url
+    text certificate_fingerprint
+    jsonb metadata
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz updated_at
+    timestamptz last_tested_at
+  }
+
+  TRUSTED_DEVICES {
+    uuid id PK
+    uuid workspace_id FK
+    uuid user_id FK
+    text name
+    text fingerprint
+    trusted_device_status status
+    timestamptz last_seen_at
+    timestamptz created_at
+    timestamptz revoked_at
+  }
+
+  AUTH_SESSIONS {
+    uuid id PK
+    uuid workspace_id FK
+    uuid user_id FK
+    auth_session_status status
+    text ip_address
+    text user_agent
+    uuid device_id FK
+    timestamptz created_at
+    timestamptz last_seen_at
+    timestamptz expires_at
+    timestamptz revoked_at
+  }
+
   NOTIFICATION_PREFERENCES {
     uuid id PK
     uuid user_id FK
@@ -355,11 +462,13 @@ erDiagram
 - Composite account/status index on platform targets.
 - Unique brand voice name per workspace.
 - Campaign operations indexes by campaign due date, campaign/status, workspace/priority, workspace/status, and campaign/generated report time.
+- Reporting indexes by workspace/type, schedule next run, export status, export expiry, share token hash, and share expiry.
 - Safety indexes by workspace/status, workspace/created time, and safety check id for moderation review.
 - GIN indexes for post content and analytics metrics.
 - Audit and AI generation indexes by workspace and created timestamp.
 - Social connector indexes by workspace, account, OAuth state, rate-limit reset, and event timestamp.
 - Invitation indexes by workspace/email/status and token hash; API key indexes by workspace/status and prefix.
+- Enterprise identity indexes by workspace/domain, session status, session expiry, device fingerprint, and device status.
 - Notification preference unique index by user/workspace; delivery indexes by notification, workspace/status, and user/channel.
 - Listening monitor indexes by workspace/status and workspace/query; mention indexes by workspace/detected time, monitor/detected time, and sentiment; alert indexes by workspace/resolved and monitor/created time.
 
@@ -371,4 +480,6 @@ erDiagram
 - Analytics snapshots: 2 years hot query storage, then warehouse/archive.
 - Social mentions and listening alerts: 2 years hot storage, then warehouse/archive unless incident policy requires longer retention.
 - Campaign reports: 2 years hot storage, then archive with analytics snapshots.
+- Report exports and share links: expire by policy, retain metadata and audit records for 2 years.
+- Auth sessions and trusted device events: 1 year hot storage, then security archive; SSO connection history follows audit retention.
 - Media assets: until workspace deletion or explicit user deletion.

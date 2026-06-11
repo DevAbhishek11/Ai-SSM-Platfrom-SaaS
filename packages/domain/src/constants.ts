@@ -153,6 +153,33 @@ export type SafetySeverity = (typeof safetySeverities)[number];
 export const moderationStatuses = ["open", "approved", "rejected", "resolved"] as const;
 export type ModerationStatus = (typeof moderationStatuses)[number];
 
+export const reportTypes = ["campaign", "analytics", "listening", "executive"] as const;
+export type ReportType = (typeof reportTypes)[number];
+
+export const reportFormats = ["pdf", "csv", "xlsx", "json"] as const;
+export type ReportFormat = (typeof reportFormats)[number];
+
+export const reportScheduleFrequencies = ["daily", "weekly", "monthly"] as const;
+export type ReportScheduleFrequency = (typeof reportScheduleFrequencies)[number];
+
+export const reportExportStatuses = ["queued", "processing", "ready", "failed", "expired"] as const;
+export type ReportExportStatus = (typeof reportExportStatuses)[number];
+
+export const reportShareLinkStatuses = ["active", "revoked", "expired"] as const;
+export type ReportShareLinkStatus = (typeof reportShareLinkStatuses)[number];
+
+export const ssoProviderTypes = ["saml", "oidc", "google_workspace", "azure_ad", "okta"] as const;
+export type SsoProviderType = (typeof ssoProviderTypes)[number];
+
+export const ssoConnectionStatuses = ["draft", "active", "disabled", "error"] as const;
+export type SsoConnectionStatus = (typeof ssoConnectionStatuses)[number];
+
+export const authSessionStatuses = ["active", "revoked", "expired"] as const;
+export type AuthSessionStatus = (typeof authSessionStatuses)[number];
+
+export const trustedDeviceStatuses = ["trusted", "pending", "revoked"] as const;
+export type TrustedDeviceStatus = (typeof trustedDeviceStatuses)[number];
+
 export const notificationDigestFrequencies = ["instant", "daily", "weekly", "muted"] as const;
 export type NotificationDigestFrequency = (typeof notificationDigestFrequencies)[number];
 

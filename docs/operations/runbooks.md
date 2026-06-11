@@ -129,6 +129,23 @@ Actions:
 4. Create a new scoped key with the minimum required permissions.
 5. Review publishing jobs, webhooks, and API-side effects in the incident window.
 
+## SSO Or Session Security Incident
+
+Signals:
+
+- Unexpected `/api/identity/sessions` activity from unfamiliar IPs or user agents.
+- A trusted device is lost, stolen, or no longer under user control.
+- SSO test failures or disabled connections block enterprise login.
+
+Actions:
+
+1. Revoke suspicious sessions with `/api/identity/sessions/{id}/revoke`.
+2. Revoke affected devices with `/api/identity/devices/{id}/revoke`; verify active sessions for that device are also revoked.
+3. Disable a compromised or misconfigured SSO connection with `/api/identity/sso-connections/{id}/disable`.
+4. Export audit logs filtered by `identity.` actions and the affected user/workspace.
+5. Re-test SSO metadata and certificate fingerprint before re-enabling enterprise login.
+6. Notify workspace owners and require credential/device review for impacted users.
+
 ## Stale Or Incorrect Invitation
 
 Signals:
@@ -194,6 +211,23 @@ Actions:
 4. Update budget lines with current allocated and spent amounts before stakeholder reporting.
 5. Generate a fresh campaign report after task, budget, publishing, or analytics changes.
 6. Preserve audit records for task status, budget, milestone, and report changes tied to launch decisions.
+
+## Reporting Export Or Share-Link Issue
+
+Signals:
+
+- `/api/reports/exports` shows exports stuck outside `ready`.
+- Stakeholders cannot access a report share link or see expired/revoked link status.
+- Scheduled report recipients do not receive expected report deliveries.
+
+Actions:
+
+1. Confirm the report template type, format, filters, and branding in `/api/reports/templates`.
+2. Recreate the export with `/api/reports/exports` and verify payload metrics, expiry, and download URL.
+3. Create a fresh share link with `/api/reports/exports/{exportId}/share-links` if the existing link is expired or revoked.
+4. Check scheduled report recipients and next-run timestamp in `/api/reports/schedules`.
+5. Review `reports.*` audit events for template, schedule, export, and share-link changes.
+6. For production render failures, inspect object storage, renderer queues, and delivery provider logs before retrying at scale.
 
 ## AI Safety Block
 

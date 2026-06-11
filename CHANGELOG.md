@@ -25,3 +25,5 @@
 - Added social listening monitor, mention, and alert contracts, database migration, API lifecycle endpoints, Analytics command center UI, runbook, docs, and tests.
 - Added campaign milestone, task, budget line, and report contracts, database migration, API operations, Calendar command center UI, runbook, docs, and tests.
 - Added AI safety policy, content check, and moderation queue contracts, database migration, safety API, AI generation integration, AI Studio safety review UI, runbook, docs, and tests.
+- Added reporting templates, scheduled reports, export generation, share-link contracts, database migration, Reports API, Analytics reporting UI, runbook, docs, and tests.
+- Added enterprise identity controls for SSO connections, auth sessions, trusted devices, database migration, Identity API, Settings security UI, runbook, docs, and tests.

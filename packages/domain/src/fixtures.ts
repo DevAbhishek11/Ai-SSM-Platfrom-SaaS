@@ -20,6 +20,11 @@ import type {
   Post,
   PostComment,
   PublishingJob,
+  ReportExport,
+  ReportShareLink,
+  ReportTemplate,
+  ScheduledReport,
+  AuthSession,
   SocialConnectorEvent,
   SocialOAuthState,
   SocialRateLimitBucket,
@@ -27,6 +32,8 @@ import type {
   SocialAccount,
   SafetyPolicy,
   TeamMember,
+  SsoConnection,
+  TrustedDevice,
   Trend,
   User,
   WebhookDelivery,
@@ -106,6 +113,77 @@ export const demoApiKeys: ApiKey[] = [
     createdAt: now,
     lastUsedAt: "2026-06-11T05:40:00.000Z",
     expiresAt: "2026-09-11T05:45:00.000Z"
+  }
+];
+
+export const demoSsoConnections: SsoConnection[] = [
+  {
+    id: "75757575-7575-4757-8757-757575757575",
+    workspaceId: demoWorkspace.id,
+    providerType: "okta",
+    status: "active",
+    domain: "acmegrowth.test",
+    entityId: "https://acmegrowth.okta.example.com/app/ssm",
+    ssoUrl: "https://acmegrowth.okta.example.com/app/ssm/sso/saml",
+    certificateFingerprint: "SHA256:DEMO-OKTA-FINGERPRINT",
+    metadata: {
+      jitProvisioning: true,
+      enforcedForDomains: ["acmegrowth.test"]
+    },
+    createdBy: demoUser.id,
+    createdAt: now,
+    updatedAt: now,
+    lastTestedAt: now
+  }
+];
+
+export const demoTrustedDevices: TrustedDevice[] = [
+  {
+    id: "76767676-7676-4767-8767-767676767676",
+    workspaceId: demoWorkspace.id,
+    userId: demoUser.id,
+    name: "Mira Windows workstation",
+    fingerprint: "device_sha256_demo_windows",
+    status: "trusted",
+    lastSeenAt: now,
+    createdAt: "2026-06-01T09:00:00.000Z"
+  },
+  {
+    id: "77777776-7776-4776-8776-777777767776",
+    workspaceId: demoWorkspace.id,
+    userId: demoUser.id,
+    name: "Unverified mobile browser",
+    fingerprint: "device_sha256_demo_mobile",
+    status: "pending",
+    lastSeenAt: "2026-06-10T18:20:00.000Z",
+    createdAt: "2026-06-10T18:20:00.000Z"
+  }
+];
+
+export const demoAuthSessions: AuthSession[] = [
+  {
+    id: "78787878-7878-4787-8787-787878787878",
+    workspaceId: demoWorkspace.id,
+    userId: demoUser.id,
+    status: "active",
+    ipAddress: "127.0.0.1",
+    userAgent: "Chrome on Windows",
+    deviceId: "76767676-7676-4767-8767-767676767676",
+    createdAt: "2026-06-11T04:50:00.000Z",
+    lastSeenAt: now,
+    expiresAt: "2026-06-11T17:45:00.000Z"
+  },
+  {
+    id: "79797979-7979-4797-8797-797979797979",
+    workspaceId: demoWorkspace.id,
+    userId: demoUser.id,
+    status: "active",
+    ipAddress: "203.0.113.24",
+    userAgent: "Mobile Safari",
+    deviceId: "77777776-7776-4776-8776-777777767776",
+    createdAt: "2026-06-10T18:20:00.000Z",
+    lastSeenAt: "2026-06-10T18:20:00.000Z",
+    expiresAt: "2026-06-11T18:20:00.000Z"
   }
 ];
 
@@ -393,6 +471,93 @@ export const demoCampaignReports: CampaignReport[] = [
       "X account reconnection remains the highest operational risk before teaser publishing."
     ],
     generatedAt: now
+  }
+];
+
+export const demoReportTemplates: ReportTemplate[] = [
+  {
+    id: "70707070-7070-4707-8707-707070707070",
+    workspaceId: demoWorkspace.id,
+    name: "Executive launch report",
+    type: "executive",
+    format: "pdf",
+    filters: {
+      campaignId: "66666666-6666-4666-8666-666666666666",
+      includeListening: true,
+      includeBudget: true
+    },
+    branding: {
+      primaryColor: "#0f766e",
+      footerText: "Prepared for Acme Growth leadership"
+    },
+    createdBy: demoUser.id,
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "71717171-7171-4717-8717-717171717171",
+    workspaceId: demoWorkspace.id,
+    name: "Weekly analytics export",
+    type: "analytics",
+    format: "xlsx",
+    filters: { platforms: ["linkedin", "instagram", "x"] },
+    branding: {
+      primaryColor: "#0f766e",
+      footerText: "Weekly social performance"
+    },
+    createdBy: demoUser.id,
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+export const demoScheduledReports: ScheduledReport[] = [
+  {
+    id: "72727272-7272-4727-8727-727272727272",
+    workspaceId: demoWorkspace.id,
+    templateId: "70707070-7070-4707-8707-707070707070",
+    frequency: "weekly",
+    recipients: ["owner@acmegrowth.test", "growth@acmegrowth.test"],
+    nextRunAt: "2026-06-16T09:00:00.000Z",
+    lastRunAt: "2026-06-09T09:00:00.000Z",
+    active: true,
+    createdBy: demoUser.id,
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+export const demoReportExports: ReportExport[] = [
+  {
+    id: "73737373-7373-4737-8737-737373737373",
+    workspaceId: demoWorkspace.id,
+    templateId: "70707070-7070-4707-8707-707070707070",
+    type: "executive",
+    format: "pdf",
+    status: "ready",
+    downloadUrl: "https://cdn.example.com/workspaces/acme-growth-lab/reports/executive-launch.pdf",
+    payload: {
+      title: "Summer Product Launch executive report",
+      metrics: { impressions: 149000, engagements: 7400, conversions: 480 },
+      sections: ["campaign", "analytics", "listening", "budget"]
+    },
+    requestedBy: demoUser.id,
+    createdAt: now,
+    readyAt: now,
+    expiresAt: "2026-06-18T05:45:00.000Z"
+  }
+];
+
+export const demoReportShareLinks: ReportShareLink[] = [
+  {
+    id: "74747474-7474-4747-8747-747474747474",
+    workspaceId: demoWorkspace.id,
+    exportId: "73737373-7373-4737-8737-737373737373",
+    token: "report_share_demo_20260611",
+    status: "active",
+    expiresAt: "2026-06-18T05:45:00.000Z",
+    createdBy: demoUser.id,
+    createdAt: now
   }
 ];
 

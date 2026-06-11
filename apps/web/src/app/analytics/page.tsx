@@ -2,11 +2,16 @@ import {
   demoAnalytics,
   demoListeningAlerts,
   demoListeningMonitors,
+  demoReportExports,
+  demoReportShareLinks,
+  demoReportTemplates,
+  demoScheduledReports,
   demoSocialMentions
 } from "@ssm/domain";
 import { AnalyticsChart } from "@/components/analytics-chart";
 import { AppShell } from "@/components/app-shell";
 import { MetricCard } from "@/components/metric-card";
+import { ReportingPanel } from "@/components/reporting-panel";
 import { SocialListeningPanel } from "@/components/social-listening-panel";
 import { formatCompactNumber, formatPercent } from "@/lib/format";
 import { getDashboardOverview } from "@/lib/dashboard";
@@ -45,6 +50,13 @@ export default async function AnalyticsPage() {
           />
         </section>
         <AnalyticsChart data={chartData} />
+        <ReportingPanel
+          workspaceId={overview.workspace.id}
+          templates={demoReportTemplates}
+          schedules={demoScheduledReports}
+          exports={demoReportExports}
+          shareLinks={demoReportShareLinks}
+        />
         <SocialListeningPanel
           workspaceId={overview.workspace.id}
           monitors={demoListeningMonitors}

@@ -16,6 +16,7 @@ import { CampaignsModule } from "./modules/campaigns/campaigns.module.js";
 import { DashboardModule } from "./modules/dashboard/dashboard.module.js";
 import { DatabaseModule } from "./modules/database/database.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
+import { IdentityModule } from "./modules/identity/identity.module.js";
 import { ListeningModule } from "./modules/listening/listening.module.js";
 import { MediaModule } from "./modules/media/media.module.js";
 import { MembersModule } from "./modules/members/members.module.js";
@@ -23,6 +24,7 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
 import { PostsModule } from "./modules/posts/posts.module.js";
 import { PublishingModule } from "./modules/publishing/publishing.module.js";
 import { RepositoriesModule } from "./modules/repositories/repositories.module.js";
+import { ReportsModule } from "./modules/reports/reports.module.js";
 import { SafetyModule } from "./modules/safety/safety.module.js";
 import { SocialModule } from "./modules/social/social.module.js";
 import { WebhooksModule } from "./modules/webhooks/webhooks.module.js";
@@ -58,6 +60,8 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
     WorkflowModule,
     AiModule,
     AnalyticsModule,
+    ReportsModule,
+    IdentityModule,
     ListeningModule,
     SafetyModule,
     SocialModule

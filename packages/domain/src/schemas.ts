@@ -21,6 +21,11 @@ import {
   platforms,
   plans,
   postStatuses,
+  reportExportStatuses,
+  reportFormats,
+  reportScheduleFrequencies,
+  reportShareLinkStatuses,
+  reportTypes,
   roles,
   contentSafetyStatuses,
   moderationStatuses,
@@ -28,6 +33,10 @@ import {
   safetySeverities,
   sentimentLabels,
   socialOAuthStateStatuses,
+  authSessionStatuses,
+  ssoConnectionStatuses,
+  ssoProviderTypes,
+  trustedDeviceStatuses,
   publishingJobStatuses,
   webhookEndpointStatuses,
   webhookStatuses,
@@ -113,6 +122,48 @@ export const apiKeySchema = z.object({
   createdAt: isoDateTimeSchema,
   lastUsedAt: isoDateTimeSchema.optional(),
   expiresAt: isoDateTimeSchema.optional(),
+  revokedAt: isoDateTimeSchema.optional()
+});
+
+export const ssoConnectionSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  providerType: z.enum(ssoProviderTypes),
+  status: z.enum(ssoConnectionStatuses),
+  domain: z.string().min(1).max(180),
+  entityId: z.string().min(1).max(500),
+  ssoUrl: z.url(),
+  certificateFingerprint: z.string().min(8),
+  metadata: z.record(z.string(), z.unknown()).default({}),
+  createdBy: idSchema,
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema,
+  lastTestedAt: isoDateTimeSchema.optional()
+});
+
+export const authSessionSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  userId: idSchema,
+  status: z.enum(authSessionStatuses),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+  deviceId: idSchema.optional(),
+  createdAt: isoDateTimeSchema,
+  lastSeenAt: isoDateTimeSchema,
+  expiresAt: isoDateTimeSchema,
+  revokedAt: isoDateTimeSchema.optional()
+});
+
+export const trustedDeviceSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  userId: idSchema,
+  name: z.string().min(1).max(180),
+  fingerprint: z.string().min(8),
+  status: z.enum(trustedDeviceStatuses),
+  lastSeenAt: isoDateTimeSchema,
+  createdAt: isoDateTimeSchema,
   revokedAt: isoDateTimeSchema.optional()
 });
 
@@ -274,6 +325,66 @@ export const campaignReportSchema = z.object({
   insights: z.array(z.string()).default([]),
   generatedAt: isoDateTimeSchema,
   sharedAt: isoDateTimeSchema.optional()
+});
+
+export const reportTemplateSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  name: z.string().min(1).max(180),
+  type: z.enum(reportTypes),
+  format: z.enum(reportFormats),
+  filters: z.record(z.string(), z.unknown()).default({}),
+  branding: z
+    .object({
+      logoUrl: z.url().optional(),
+      primaryColor: z.string().min(1).default("#0f766e"),
+      footerText: z.string().max(240).optional()
+    })
+    .default({ primaryColor: "#0f766e" }),
+  createdBy: idSchema,
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
+export const scheduledReportSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  templateId: idSchema,
+  frequency: z.enum(reportScheduleFrequencies),
+  recipients: z.array(z.email()).default([]),
+  nextRunAt: isoDateTimeSchema,
+  lastRunAt: isoDateTimeSchema.optional(),
+  active: z.boolean(),
+  createdBy: idSchema,
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
+export const reportExportSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  templateId: idSchema.optional(),
+  type: z.enum(reportTypes),
+  format: z.enum(reportFormats),
+  status: z.enum(reportExportStatuses),
+  downloadUrl: z.url().optional(),
+  payload: z.record(z.string(), z.unknown()).default({}),
+  requestedBy: idSchema,
+  createdAt: isoDateTimeSchema,
+  readyAt: isoDateTimeSchema.optional(),
+  expiresAt: isoDateTimeSchema.optional()
+});
+
+export const reportShareLinkSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  exportId: idSchema,
+  token: z.string().min(16),
+  status: z.enum(reportShareLinkStatuses),
+  expiresAt: isoDateTimeSchema,
+  createdBy: idSchema,
+  createdAt: isoDateTimeSchema,
+  revokedAt: isoDateTimeSchema.optional()
 });
 
 export const brandVoiceSchema = z.object({
@@ -627,6 +738,9 @@ export type Workspace = z.infer<typeof workspaceSchema>;
 export type TeamMember = z.infer<typeof teamMemberSchema>;
 export type WorkspaceInvitation = z.infer<typeof workspaceInvitationSchema>;
 export type ApiKey = z.infer<typeof apiKeySchema>;
+export type SsoConnection = z.infer<typeof ssoConnectionSchema>;
+export type AuthSession = z.infer<typeof authSessionSchema>;
+export type TrustedDevice = z.infer<typeof trustedDeviceSchema>;
 export type SocialAccount = z.infer<typeof socialAccountSchema>;
 export type SocialOAuthState = z.infer<typeof socialOAuthStateSchema>;
 export type SocialRateLimitBucket = z.infer<typeof socialRateLimitBucketSchema>;
@@ -637,6 +751,10 @@ export type CampaignMilestone = z.infer<typeof campaignMilestoneSchema>;
 export type CampaignTask = z.infer<typeof campaignTaskSchema>;
 export type CampaignBudgetLine = z.infer<typeof campaignBudgetLineSchema>;
 export type CampaignReport = z.infer<typeof campaignReportSchema>;
+export type ReportTemplate = z.infer<typeof reportTemplateSchema>;
+export type ScheduledReport = z.infer<typeof scheduledReportSchema>;
+export type ReportExport = z.infer<typeof reportExportSchema>;
+export type ReportShareLink = z.infer<typeof reportShareLinkSchema>;
 export type BrandVoice = z.infer<typeof brandVoiceSchema>;
 export type AnalyticsSnapshot = z.infer<typeof analyticsSnapshotSchema>;
 export type Trend = z.infer<typeof trendSchema>;
