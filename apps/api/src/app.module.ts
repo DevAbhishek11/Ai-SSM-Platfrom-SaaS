@@ -15,6 +15,7 @@ import { HealthModule } from "./modules/health/health.module.js";
 import { MediaModule } from "./modules/media/media.module.js";
 import { NotificationsModule } from "./modules/notifications/notifications.module.js";
 import { PostsModule } from "./modules/posts/posts.module.js";
+import { PublishingModule } from "./modules/publishing/publishing.module.js";
 import { SocialModule } from "./modules/social/social.module.js";
 import { WebhooksModule } from "./modules/webhooks/webhooks.module.js";
 import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
@@ -39,6 +40,7 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
     NotificationsModule,
     BillingModule,
     WebhooksModule,
+    PublishingModule,
     AiModule,
     AnalyticsModule,
     SocialModule

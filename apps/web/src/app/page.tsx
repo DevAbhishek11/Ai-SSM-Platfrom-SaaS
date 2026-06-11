@@ -1,5 +1,5 @@
 import { CalendarClock, CheckCircle2, MousePointerClick, TrendingUp } from "lucide-react";
-import { demoAnalytics } from "@ssm/domain";
+import { demoAnalytics, demoPublishingJobs } from "@ssm/domain";
 import { AccountHealth } from "@/components/account-health";
 import { AiStudioPanel } from "@/components/ai-studio-panel";
 import { AnalyticsChart } from "@/components/analytics-chart";
@@ -7,6 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { ApprovalQueue } from "@/components/approval-queue";
 import { CalendarBoard } from "@/components/calendar-board";
 import { MetricCard } from "@/components/metric-card";
+import { PublishingQueue } from "@/components/publishing-queue";
 import { TrendList } from "@/components/trend-list";
 import { formatCompactNumber } from "@/lib/format";
 import { getDashboardOverview } from "@/lib/dashboard";
@@ -94,6 +95,8 @@ export default async function DashboardPage() {
           <ApprovalQueue posts={overview.posts} />
           <TrendList trends={overview.trends} />
         </section>
+
+        <PublishingQueue jobs={demoPublishingJobs} accounts={overview.socialAccounts} />
 
         <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
           <h3 className="text-base font-semibold">Live alerts</h3>

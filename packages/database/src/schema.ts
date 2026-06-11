@@ -19,8 +19,10 @@ import {
   platforms,
   plans,
   postStatuses,
+  publishingJobStatuses,
   roles,
-  sentimentLabels
+  sentimentLabels,
+  webhookEndpointStatuses
 } from "@ssm/domain";
 
 export const roleEnum = pgEnum("role", roles);
@@ -40,6 +42,8 @@ export const memberStatusEnum = pgEnum("member_status", ["active", "invited", "s
 export const userStatusEnum = pgEnum("user_status", ["active", "suspended", "deleted"]);
 export const sentimentEnum = pgEnum("sentiment", sentimentLabels);
 export const webhookStatusEnum = pgEnum("webhook_status", ["pending", "delivered", "failed"]);
+export const webhookEndpointStatusEnum = pgEnum("webhook_endpoint_status", webhookEndpointStatuses);
+export const publishingJobStatusEnum = pgEnum("publishing_job_status", publishingJobStatuses);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -446,6 +450,73 @@ export const webhookDeliveries = pgTable(
   })
 );
 
+export const webhookEndpoints = pgTable(
+  "webhook_endpoints",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    description: text("description"),
+    events: text("events").array().default(sql`ARRAY[]::text[]`).notNull(),
+    secretHash: text("secret_hash").notNull(),
+    status: webhookEndpointStatusEnum("status").default("active").notNull(),
+    failureCount: integer("failure_count").default(0).notNull(),
+    lastDeliveredAt: timestamp("last_delivered_at", { withTimezone: true }),
+    ...timestamps
+  },
+  (table) => ({
+    workspaceStatusIdx: index("webhook_endpoints_workspace_status_idx").on(
+      table.workspaceId,
+      table.status
+    ),
+    workspaceUrlUnique: uniqueIndex("webhook_endpoints_workspace_url_unique").on(
+      table.workspaceId,
+      table.url
+    )
+  })
+);
+
+export const publishingJobs = pgTable(
+  "publishing_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    socialAccountId: uuid("social_account_id")
+      .notNull()
+      .references(() => socialAccounts.id, { onDelete: "cascade" }),
+    platform: platformEnum("platform").notNull(),
+    status: publishingJobStatusEnum("status").default("queued").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
+    attempts: integer("attempts").default(0).notNull(),
+    maxAttempts: integer("max_attempts").default(5).notNull(),
+    lastError: text("last_error"),
+    nextRetryAt: timestamp("next_retry_at", { withTimezone: true }),
+    platformPostId: text("platform_post_id"),
+    platformPostUrl: text("platform_post_url"),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    ...timestamps
+  },
+  (table) => ({
+    idempotencyUnique: uniqueIndex("publishing_jobs_idempotency_unique").on(table.idempotencyKey),
+    workspaceStatusScheduledIdx: index("publishing_jobs_workspace_status_scheduled_idx").on(
+      table.workspaceId,
+      table.status,
+      table.scheduledFor
+    ),
+    retryIdx: index("publishing_jobs_retry_idx").on(table.status, table.nextRetryAt),
+    postIdx: index("publishing_jobs_post_idx").on(table.postId)
+  })
+);
+
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   workspaces: many(workspaces)
 }));
@@ -465,5 +536,18 @@ export const postsRelations = relations(posts, ({ one, many }) => ({
   workspace: one(workspaces, { fields: [posts.workspaceId], references: [workspaces.id] }),
   campaign: one(campaigns, { fields: [posts.campaignId], references: [campaigns.id] }),
   author: one(users, { fields: [posts.authorId], references: [users.id] }),
-  platformTargets: many(postPlatforms)
+  platformTargets: many(postPlatforms),
+  publishingJobs: many(publishingJobs)
+}));
+
+export const publishingJobsRelations = relations(publishingJobs, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [publishingJobs.workspaceId],
+    references: [workspaces.id]
+  }),
+  post: one(posts, { fields: [publishingJobs.postId], references: [posts.id] }),
+  socialAccount: one(socialAccounts, {
+    fields: [publishingJobs.socialAccountId],
+    references: [socialAccounts.id]
+  })
 }));

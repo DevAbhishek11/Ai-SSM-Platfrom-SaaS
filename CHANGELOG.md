@@ -12,3 +12,4 @@
 - Added Argon2/JWT auth endpoints, global RBAC permission guard, and database health wiring.
 - Added campaigns, media, notifications, billing, and webhooks API modules.
 - Added workflow routes for calendar, AI studio, approvals, analytics, accounts, media, and settings.
+- Added publishing job contracts, database migration, API endpoints, deterministic connectors, retry policy, and `/publishing` UI.

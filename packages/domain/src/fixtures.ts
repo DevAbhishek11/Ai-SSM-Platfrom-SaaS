@@ -4,10 +4,12 @@ import type {
   MediaAsset,
   Notification,
   Post,
+  PublishingJob,
   SocialAccount,
   Trend,
   User,
   WebhookDelivery,
+  WebhookEndpoint,
   Workspace
 } from "./schemas.js";
 
@@ -287,5 +289,68 @@ export const demoWebhookDeliveries: WebhookDelivery[] = [
     attempts: 2,
     nextRetryAt: "2026-06-11T06:15:00.000Z",
     createdAt: now
+  }
+];
+
+export const demoWebhookEndpoints: WebhookEndpoint[] = [
+  {
+    id: "18181818-1818-4181-8181-181818181818",
+    workspaceId: demoWorkspace.id,
+    url: "https://hooks.example.com/acme/social-events",
+    description: "Operations event sink",
+    events: ["post.scheduled", "post.published", "social_account.expired"],
+    secretHash: "sha256:demo-redacted",
+    status: "active",
+    failureCount: 0,
+    lastDeliveredAt: now,
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+export const demoPublishingJobs: PublishingJob[] = [
+  {
+    id: "19191919-1919-4191-8191-191919191919",
+    workspaceId: demoWorkspace.id,
+    postId: "88888888-8888-4888-8888-888888888888",
+    socialAccountId: "33333333-3333-4333-8333-333333333333",
+    platform: "instagram",
+    status: "queued",
+    idempotencyKey: "post-88888888-instagram-20260612T103000Z",
+    scheduledFor: "2026-06-12T10:30:00.000Z",
+    attempts: 0,
+    maxAttempts: 5,
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "20202020-2020-4202-8202-202020202020",
+    workspaceId: demoWorkspace.id,
+    postId: "88888888-8888-4888-8888-888888888888",
+    socialAccountId: "44444444-4444-4444-8444-444444444444",
+    platform: "linkedin",
+    status: "queued",
+    idempotencyKey: "post-88888888-linkedin-20260612T103000Z",
+    scheduledFor: "2026-06-12T10:30:00.000Z",
+    attempts: 0,
+    maxAttempts: 5,
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "21212121-2121-4212-8212-212121212121",
+    workspaceId: demoWorkspace.id,
+    postId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    socialAccountId: "55555555-5555-4555-8555-555555555555",
+    platform: "x",
+    status: "failed",
+    idempotencyKey: "post-aaaaaaaa-x-20260613T140000Z",
+    scheduledFor: "2026-06-13T14:00:00.000Z",
+    attempts: 2,
+    maxAttempts: 5,
+    lastError: "OAuth token expired before publish window.",
+    nextRetryAt: "2026-06-11T06:30:00.000Z",
+    createdAt: now,
+    updatedAt: now
   }
 ];

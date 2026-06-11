@@ -260,6 +260,89 @@ paths:
       responses:
         "200":
           description: Delivery queued for replay
+  /publishing/jobs:
+    get:
+      tags: [publishing]
+      summary: List publishing jobs
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Publishing jobs with retry and connector state
+  /publishing/jobs/enqueue:
+    post:
+      tags: [publishing]
+      summary: Create idempotent publishing jobs for a post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workspaceId, postId]
+              properties:
+                workspaceId:
+                  type: string
+                  format: uuid
+                postId:
+                  type: string
+                  format: uuid
+                socialAccountIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                publishAt:
+                  type: string
+                  format: date-time
+      responses:
+        "201":
+          description: Created or existing publishing jobs
+  /publishing/jobs/process-due:
+    post:
+      tags: [publishing]
+      summary: Process due queued and retrying publishing jobs
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Processed job results
+  /publishing/jobs/{id}/process:
+    post:
+      tags: [publishing]
+      summary: Process a single publishing job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Updated publishing job
+  /publishing/jobs/{id}/retry:
+    post:
+      tags: [publishing]
+      summary: Schedule a failed publishing job for retry
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Publishing job scheduled for retry
   /ai/generate:
     post:
       tags: [ai]

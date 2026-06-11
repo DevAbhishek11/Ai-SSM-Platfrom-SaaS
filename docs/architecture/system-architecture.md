@@ -79,6 +79,25 @@ sequenceDiagram
   Worker->>DB: Update post_platforms and audit log
 ```
 
+## Publishing Job Lifecycle
+
+```mermaid
+stateDiagram-v2
+  [*] --> queued
+  queued --> processing: due worker lease
+  processing --> succeeded: platform receipt
+  processing --> failed: permanent error
+  processing --> retrying: transient error
+  retrying --> processing: next_retry_at reached
+  failed --> retrying: manual retry
+  queued --> canceled: user cancels
+  retrying --> canceled: user cancels
+  succeeded --> [*]
+  canceled --> [*]
+```
+
+Every publishing job stores a unique idempotency key derived from post id, social account id, platform, and scheduled time. Workers must use this key for deduplication and platform correlation.
+
 ## Tenancy Model
 
 - Organization owns billing and one or more workspaces.

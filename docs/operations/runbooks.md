@@ -17,6 +17,22 @@ Actions:
 5. Requeue transient failures after recovery.
 6. Record incident timeline and action items.
 
+## Publishing Job Stuck In Processing
+
+Signals:
+
+- A job remains `processing` beyond the platform timeout window.
+- Queue depth is stable but completed count stops increasing.
+
+Actions:
+
+1. Confirm worker heartbeat and Redis connectivity.
+2. Check the job idempotency key and platform connector logs.
+3. If the platform request outcome is unknown, query the platform by idempotency key or external correlation id.
+4. Mark the job `succeeded` only with a confirmed platform post id.
+5. Otherwise move it to `retrying` with exponential backoff.
+6. Add an audit log entry with operator, reason, and observed platform response.
+
 ## Database Latency
 
 Signals:

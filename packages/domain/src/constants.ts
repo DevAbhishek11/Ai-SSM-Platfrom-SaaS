@@ -83,6 +83,19 @@ export type NotificationType = (typeof notificationTypes)[number];
 export const webhookStatuses = ["pending", "delivered", "failed"] as const;
 export type WebhookStatus = (typeof webhookStatuses)[number];
 
+export const webhookEndpointStatuses = ["active", "disabled", "failing"] as const;
+export type WebhookEndpointStatus = (typeof webhookEndpointStatuses)[number];
+
+export const publishingJobStatuses = [
+  "queued",
+  "processing",
+  "retrying",
+  "succeeded",
+  "failed",
+  "canceled"
+] as const;
+export type PublishingJobStatus = (typeof publishingJobStatuses)[number];
+
 export const planLimits: Record<
   Plan,
   {

@@ -43,6 +43,7 @@ Implemented dashboard routes:
 
 - `/` - command dashboard
 - `/calendar` - calendar and campaign portfolio
+- `/publishing` - publishing queue, idempotency, and retry visibility
 - `/ai-studio` - AI generation workflow
 - `/approvals` - review queue and notifications
 - `/analytics` - performance dashboard

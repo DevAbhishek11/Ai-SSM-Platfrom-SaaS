@@ -9,6 +9,8 @@ import {
   postStatuses,
   roles,
   sentimentLabels,
+  publishingJobStatuses,
+  webhookEndpointStatuses,
   webhookStatuses
 } from "./constants.js";
 
@@ -191,6 +193,41 @@ export const webhookDeliverySchema = z.object({
   createdAt: isoDateTimeSchema
 });
 
+export const webhookEndpointSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  url: z.url(),
+  description: z.string().max(500).optional(),
+  events: z.array(z.string().min(1)).min(1),
+  secretHash: z.string().min(1),
+  status: z.enum(webhookEndpointStatuses),
+  failureCount: z.number().int().nonnegative(),
+  lastDeliveredAt: isoDateTimeSchema.optional(),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
+export const publishingJobSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  postId: idSchema,
+  socialAccountId: idSchema,
+  platform: z.enum(platforms),
+  status: z.enum(publishingJobStatuses),
+  idempotencyKey: z.string().min(16),
+  scheduledFor: isoDateTimeSchema,
+  attempts: z.number().int().nonnegative(),
+  maxAttempts: z.number().int().positive(),
+  lastError: z.string().optional(),
+  nextRetryAt: isoDateTimeSchema.optional(),
+  platformPostId: z.string().optional(),
+  platformPostUrl: z.url().optional(),
+  lockedAt: isoDateTimeSchema.optional(),
+  completedAt: isoDateTimeSchema.optional(),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema
+});
+
 export const aiGenerationRequestSchema = z.object({
   workspaceId: idSchema,
   brief: z.string().min(10).max(5000),
@@ -225,5 +262,7 @@ export type Trend = z.infer<typeof trendSchema>;
 export type MediaAsset = z.infer<typeof mediaAssetSchema>;
 export type Notification = z.infer<typeof notificationSchema>;
 export type WebhookDelivery = z.infer<typeof webhookDeliverySchema>;
+export type WebhookEndpoint = z.infer<typeof webhookEndpointSchema>;
+export type PublishingJob = z.infer<typeof publishingJobSchema>;
 export type AiGenerationRequest = z.infer<typeof aiGenerationRequestSchema>;
 export type AiGenerationResponse = z.infer<typeof aiGenerationResponseSchema>;

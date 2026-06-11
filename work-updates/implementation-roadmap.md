@@ -14,6 +14,7 @@
 - Shared component library and accessibility baseline.
 - Core API services for workspaces, posts, AI generation, analytics, social accounts, campaigns, media, notifications, billing, and webhooks.
 - Platform connector interfaces and queue-backed publishing pipeline.
+- Publishing jobs with idempotency keys, retries, connector receipts, and stuck-job runbooks.
 
 ## Phase 3: Infrastructure
 

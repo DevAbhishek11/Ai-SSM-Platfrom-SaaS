@@ -64,5 +64,22 @@ describe("API application", () => {
     await request(app.getHttpServer()).get("/api/notifications").expect(200);
     await request(app.getHttpServer()).get("/api/billing/plans").expect(200);
     await request(app.getHttpServer()).get("/api/webhooks/deliveries").expect(200);
+    await request(app.getHttpServer()).get("/api/publishing/jobs").expect(200);
+  });
+
+  it("processes and retries publishing jobs", async () => {
+    const processed = await request(app.getHttpServer())
+      .post("/api/publishing/jobs/19191919-1919-4191-8191-191919191919/process")
+      .expect(201);
+
+    expect(processed.body.status).toBe("succeeded");
+    expect(processed.body.platformPostUrl).toContain("instagram");
+
+    const retry = await request(app.getHttpServer())
+      .post("/api/publishing/jobs/21212121-2121-4212-8212-212121212121/retry")
+      .expect(201);
+
+    expect(retry.body.status).toBe("retrying");
+    expect(retry.body.nextRetryAt).toEqual(expect.any(String));
   });
 });

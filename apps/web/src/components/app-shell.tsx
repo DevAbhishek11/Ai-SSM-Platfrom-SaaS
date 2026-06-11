@@ -15,10 +15,11 @@ import type { Workspace } from "@ssm/domain";
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Calendar", href: "/calendar", icon: CalendarDays },
+  { label: "Publishing", href: "/publishing", icon: Megaphone },
   { label: "AI Studio", href: "/ai-studio", icon: Sparkles },
   { label: "Approvals", href: "/approvals", icon: CheckCircle2 },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
-  { label: "Accounts", href: "/accounts", icon: Megaphone },
+  { label: "Accounts", href: "/accounts", icon: Users },
   { label: "Assets", href: "/media", icon: Library },
   { label: "Settings", href: "/settings", icon: Users }
 ];

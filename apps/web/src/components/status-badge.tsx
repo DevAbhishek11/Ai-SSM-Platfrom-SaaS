@@ -15,7 +15,12 @@ const statusLabels: Record<string, string> = {
   revoked: "Revoked",
   error: "Error",
   pending: "Pending",
-  delivered: "Delivered"
+  delivered: "Delivered",
+  queued: "Queued",
+  processing: "Processing",
+  retrying: "Retrying",
+  succeeded: "Succeeded",
+  canceled: "Canceled"
 };
 
 const toneClasses: Record<string, string> = {
@@ -33,7 +38,12 @@ const toneClasses: Record<string, string> = {
   revoked: "bg-red-50 text-red-800 border-red-200",
   error: "bg-red-50 text-red-800 border-red-200",
   pending: "bg-amber-50 text-amber-800 border-amber-200",
-  delivered: "bg-emerald-50 text-emerald-800 border-emerald-200"
+  delivered: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  queued: "bg-teal-50 text-teal-800 border-teal-200",
+  processing: "bg-sky-50 text-sky-800 border-sky-200",
+  retrying: "bg-amber-50 text-amber-800 border-amber-200",
+  succeeded: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  canceled: "bg-neutral-100 text-neutral-700 border-neutral-200"
 };
 
 export function StatusBadge({ status }: { status: PostStatus | string }) {
