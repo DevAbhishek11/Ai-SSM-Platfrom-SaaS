@@ -11,6 +11,7 @@ import {
   type Trend,
   type Workspace
 } from "@ssm/domain";
+import { serverApiBaseUrl } from "./api";
 
 export type DashboardOverview = {
   workspace: Workspace;
@@ -37,7 +38,7 @@ export type DashboardOverview = {
 };
 
 export async function getDashboardOverview(): Promise<DashboardOverview> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+  const baseUrl = serverApiBaseUrl;
 
   try {
     const response = await fetch(`${baseUrl}/dashboard/overview`, {

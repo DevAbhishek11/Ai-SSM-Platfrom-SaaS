@@ -15,8 +15,14 @@ async function bootstrap() {
       crossOriginResourcePolicy: { policy: "cross-origin" }
     })
   );
+  const corsOrigins = env.CORS_ALLOWED_ORIGINS
+    ? env.CORS_ALLOWED_ORIGINS.split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+    : [env.WEB_BASE_URL];
+
   app.enableCors({
-    origin: [env.WEB_BASE_URL],
+    origin: corsOrigins,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["content-type", "authorization", "x-api-key", "x-request-id", "x-workspace-id"]
@@ -62,7 +68,7 @@ async function bootstrap() {
     swaggerOptions: { persistAuthorization: true }
   });
 
-  await app.listen(env.API_PORT);
+  await app.listen(env.API_PORT, env.API_HOST);
   Logger.log(`API listening on ${env.API_BASE_URL}`, "Bootstrap");
 }
 

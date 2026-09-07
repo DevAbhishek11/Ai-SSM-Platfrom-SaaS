@@ -12,9 +12,17 @@ It also includes the workspace onboarding checklist so owners can finish profile
 3. Choose platforms.
 4. Select a brand voice profile when required.
 5. Review AI-generated variants, brand fit, safety metadata, and moderation recommendations.
+   Each result shows which model produced it (for example `anthropic/claude-3-5-sonnet-latest`),
+   how long it took, and whether a fallback provider was used.
 6. Use AI safety review for blocked or risky drafts.
 7. Edit platform-specific copy.
 8. Submit for review or schedule.
+
+### Model routing
+
+The AI Studio "Model routing" panel shows the active provider chain. If your workspace has
+no AI provider credentials configured, generation still works using the built-in
+deterministic composer, and results are marked with the `local` provider.
 
 ## Approvals
 

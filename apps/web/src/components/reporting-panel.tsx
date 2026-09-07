@@ -14,6 +14,7 @@ import {
 import { FileDown, Link2, Mail } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
+import { clientApiBaseUrl } from "@/lib/api";
 
 export function ReportingPanel({
   workspaceId,
@@ -39,7 +40,7 @@ export function ReportingPanel({
   const [message, setMessage] = useState<string | null>(null);
 
   async function requestJson<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}${path}`, {
+    const response = await fetch(`${clientApiBaseUrl}${path}`, {
       method: "POST",
       headers: {
         "content-type": "application/json",

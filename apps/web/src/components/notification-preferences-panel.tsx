@@ -12,6 +12,7 @@ import {
 } from "@ssm/domain";
 import { formatTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
+import { clientApiBaseUrl } from "@/lib/api";
 
 export function NotificationPreferencesPanel({
   workspaceId,
@@ -37,7 +38,7 @@ export function NotificationPreferencesPanel({
     setMessage(null);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}/notifications/preferences?workspaceId=${workspaceId}&userId=${userId}`,
+        `${clientApiBaseUrl}/notifications/preferences?workspaceId=${workspaceId}&userId=${userId}`,
         {
           method: "PATCH",
           headers: {
@@ -69,7 +70,7 @@ export function NotificationPreferencesPanel({
     setMessage(null);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}/notifications/route`,
+        `${clientApiBaseUrl}/notifications/route`,
         {
           method: "POST",
           headers: {

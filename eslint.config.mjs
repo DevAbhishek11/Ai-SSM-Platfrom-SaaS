@@ -16,15 +16,7 @@ export default tseslint.config(
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parserOptions: {
-        projectService: {
-          allowDefaultProject: [
-            "apps/api/test/*.ts",
-            "apps/web/*.config.ts",
-            "packages/database/*.config.ts",
-            "packages/database/src/*.test.ts",
-            "packages/domain/src/*.test.ts"
-          ]
-        },
+        projectService: true,
         tsconfigRootDir: import.meta.dirname
       }
     },

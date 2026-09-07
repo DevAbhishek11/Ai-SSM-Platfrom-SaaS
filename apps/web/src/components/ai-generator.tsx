@@ -9,6 +9,7 @@ import {
   type BrandVoice,
   type Platform
 } from "@ssm/domain";
+import { clientApiBaseUrl } from "@/lib/api";
 
 export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: BrandVoice[] }) {
   const [brief, setBrief] = useState(
@@ -23,7 +24,7 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
     setStatus("loading");
     setResult(null);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}/ai/generate`, {
+      const response = await fetch(`${clientApiBaseUrl}/ai/generate`, {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -121,6 +122,25 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
             <p className="mt-1 text-[var(--muted)]">
               {result.modelUsed} / safety risk {Math.round(result.safety.riskScore * 100)}%
             </p>
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+              <span className="rounded-md bg-[var(--accent-soft)] px-2 py-1 font-semibold text-[var(--accent)]">
+                {result.provider} / {result.providerModel}
+              </span>
+              <span className="text-[var(--muted)]">{result.routing.latencyMs}ms</span>
+              {result.routing.fallbackUsed ? (
+                <span className="rounded-md bg-amber-100 px-2 py-1 font-semibold text-amber-900">
+                  fallback used
+                </span>
+              ) : null}
+            </p>
+            {result.routing.attempts.length > 1 ? (
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Routing:{" "}
+                {result.routing.attempts
+                  .map((attempt) => `${attempt.provider}:${attempt.status}`)
+                  .join(" → ")}
+              </p>
+            ) : null}
             {result.safety.checkId ? (
               <p className="mt-1 text-[var(--muted)]">
                 Safety check {result.safety.checkId.slice(0, 8)}

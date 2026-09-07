@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.2.0 - 2026-09-07
+
+- Added a multi-provider AI model router: Ollama (self-hosted), Anthropic Claude, and OpenAI
+  activate from the credentials present, with a deterministic local composer as the guaranteed
+  fallback and automatic cascade on error, timeout, or unusable output.
+- Added `AI_PROVIDER`, `AI_PROVIDER_PRIORITY`, `AI_REQUEST_TIMEOUT_MS`, `AI_MAX_OUTPUT_TOKENS`,
+  `AI_TEMPERATURE`, and per-provider base URL/model/version configuration.
+- Added `GET /api/ai/providers` (configuration + optional reachability probe, never returns
+  credentials), `GET /api/ai/generations`, and `POST /api/ai/generations/:id/feedback`.
+- Added routing metadata (`provider`, `providerModel`, `routing.attempts`, latency, fallback)
+  to AI generation responses and the generation audit log with token and cost attribution.
+- Hardened model output handling: JSON fence/prose extraction, Zod validation, platform
+  filtering, per-platform character clamping, hashtag normalization, and deterministic repair.
+- Extended AI safety evaluation to cover generated variants in addition to the brief.
+- Added `0017_ai_provider_routing.sql`, Drizzle provider/routing columns, and the
+  `ai_provider_attempts` table with RLS.
+- Added the AI Studio "Model routing" panel and provider badges on generated results.
+- Fixed the API dev server: `tsx` does not emit decorator metadata, so every injected
+  dependency (including `Reflector` in the permissions guard) was undefined and all requests
+  returned 500. `npm run dev:api` now runs the `tsc --watch` + `node --watch` pipeline.
+- Fixed root `typecheck`/`test`/`build` scripts to build `@ssm/database` before dependents.
+- Routed browser API calls through a same-origin `/api` Next.js rewrite (`API_PROXY_TARGET`)
+  so the dashboard works behind reverse proxies and preview environments, bound the API to
+  `API_HOST` (default `0.0.0.0`), and added `CORS_ALLOWED_ORIGINS`.
+- Added 33 new tests covering provider selection, cascade/fallback, timeouts, credential
+  redaction, output repair, generation logging, feedback, and decorator-metadata emission
+  (56 tests total across the four workspaces).
+- Added `scripts/mock-ai-provider.mjs`, a local OpenAI/Anthropic/Ollama HTTP mock for
+  end-to-end routing verification without real credentials.
+- Fixed ESLint type-aware coverage: test files, `next.config.ts`, and `drizzle.config.ts`
+  now belong to real TypeScript projects instead of the default-project fallback, and the
+  API test suite is type-checked by `npm run typecheck`.
+- Fixed the API container image, which never installed or built `@ssm/database`; added the
+  AI routing environment to `docker-compose.yml` and the Kubernetes ConfigMap, and wired the
+  web container to the same-origin `/api` proxy.
+- Upgraded `next` to 16.3.4, `@nestjs/platform-express` to 11.2.3, `@nestjs/swagger` to
+  11.4.7, `concurrently` to 10.0.5, and the `esbuild`/`postcss` overrides; removed the unused
+  `tsx` dev dependency. `npm audit` now reports zero vulnerabilities.
+
 ## 0.1.0 - 2026-06-11
 
 - Added npm-workspaces monorepo.

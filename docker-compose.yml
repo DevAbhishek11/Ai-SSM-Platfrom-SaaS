@@ -34,10 +34,22 @@ services:
       dockerfile: apps/api/Dockerfile
     environment:
       API_PORT: 4000
+      API_HOST: 0.0.0.0
       WEB_BASE_URL: http://localhost:3000
       API_BASE_URL: http://localhost:4000/api
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
       DATABASE_URL: postgres://ssm:ssm@postgres:5432/ssm
       REDIS_URL: redis://redis:6379
+      # AI providers activate from whichever credentials are supplied.
+      AI_PROVIDER: ${AI_PROVIDER:-auto}
+      AI_PROVIDER_PRIORITY: ${AI_PROVIDER_PRIORITY:-ollama,anthropic,openai}
+      AI_REQUEST_TIMEOUT_MS: ${AI_REQUEST_TIMEOUT_MS:-20000}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-3-5-sonnet-latest}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
     ports:
       - "4000:4000"
     depends_on:
@@ -51,7 +63,9 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
+      NEXT_PUBLIC_API_URL: /api
+      API_PROXY_TARGET: http://api:4000
+      API_INTERNAL_URL: http://api:4000/api
     ports:
       - "3000:3000"
     depends_on:

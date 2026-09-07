@@ -1,6 +1,10 @@
 import { z } from "zod";
 import {
   accountStatuses,
+  aiGenerationFeedbackValues,
+  aiProviders,
+  aiProviderSelectionModes,
+  aiRoutingAttemptStatuses,
   campaignMilestoneStatuses,
   campaignReportStatuses,
   campaignTaskPriorities,
@@ -833,9 +837,53 @@ export const aiGenerationRequestSchema = z.object({
   brandVoiceId: idSchema.optional()
 });
 
+export const aiRoutingAttemptSchema = z.object({
+  provider: z.enum(aiProviders),
+  model: z.string(),
+  status: z.enum(aiRoutingAttemptStatuses),
+  latencyMs: z.number().int().nonnegative(),
+  error: z.string().optional()
+});
+
+export const aiRoutingSchema = z.object({
+  requestedMode: z.enum(aiProviderSelectionModes),
+  selectedProvider: z.enum(aiProviders),
+  selectedModel: z.string(),
+  fallbackUsed: z.boolean(),
+  latencyMs: z.number().int().nonnegative(),
+  attempts: z.array(aiRoutingAttemptSchema).default([])
+});
+
+export const aiProviderStatusSchema = z.object({
+  provider: z.enum(aiProviders),
+  label: z.string(),
+  configured: z.boolean(),
+  credentialSource: z.string(),
+  credentialPresent: z.boolean(),
+  model: z.string(),
+  baseUrl: z.string().optional(),
+  priority: z.number().int().nonnegative(),
+  reachable: z.enum(["yes", "no", "unknown"]).default("unknown"),
+  notes: z.string()
+});
+
+export const aiRouterStatusSchema = z.object({
+  mode: z.enum(aiProviderSelectionModes),
+  priority: z.array(z.enum(aiProviders)),
+  activeProvider: z.enum(aiProviders),
+  fallbackProvider: z.enum(aiProviders),
+  timeoutMs: z.number().int().positive(),
+  maxOutputTokens: z.number().int().positive(),
+  temperature: z.number().min(0).max(2),
+  providers: z.array(aiProviderStatusSchema)
+});
+
 export const aiGenerationResponseSchema = z.object({
   id: idSchema,
   modelUsed: z.string(),
+  provider: z.enum(aiProviders),
+  providerModel: z.string(),
+  routing: aiRoutingSchema,
   safety: z.object({
     blocked: z.boolean(),
     riskScore: z.number().min(0).max(1),
@@ -847,6 +895,40 @@ export const aiGenerationResponseSchema = z.object({
   variants: z.array(postContentVariantSchema),
   qualityScore: z.number().min(0).max(100),
   estimatedTokens: z.number().int().nonnegative()
+});
+
+export const aiGenerationLogSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  userId: idSchema.optional(),
+  provider: z.enum(aiProviders),
+  model: z.string(),
+  modelUsed: z.string(),
+  prompt: z.string(),
+  platforms: z.array(z.enum(platforms)),
+  tokensUsed: z.number().int().nonnegative(),
+  cost: z.number().nonnegative(),
+  latencyMs: z.number().int().nonnegative(),
+  fallbackUsed: z.boolean(),
+  qualityScore: z.number().min(0).max(100),
+  blocked: z.boolean(),
+  attempts: z.array(aiRoutingAttemptSchema).default([]),
+  feedback: z.enum(aiGenerationFeedbackValues).optional(),
+  createdAt: isoDateTimeSchema
+});
+
+/** Structured JSON contract that every remote model provider must return. */
+export const aiProviderCompletionSchema = z.object({
+  variants: z
+    .array(
+      z.object({
+        platform: z.enum(platforms),
+        text: z.string().min(1),
+        hashtags: z.array(z.string()).default([]),
+        firstComment: z.string().optional()
+      })
+    )
+    .min(1)
 });
 
 export type User = z.infer<typeof userSchema>;
@@ -866,6 +948,7 @@ export type SocialOAuthState = z.infer<typeof socialOAuthStateSchema>;
 export type SocialRateLimitBucket = z.infer<typeof socialRateLimitBucketSchema>;
 export type SocialConnectorEvent = z.infer<typeof socialConnectorEventSchema>;
 export type Post = z.infer<typeof postSchema>;
+export type PostContentVariant = z.infer<typeof postContentVariantSchema>;
 export type ContentTemplate = z.infer<typeof contentTemplateSchema>;
 export type Campaign = z.infer<typeof campaignSchema>;
 export type CampaignMilestone = z.infer<typeof campaignMilestoneSchema>;
@@ -900,3 +983,9 @@ export type PostComment = z.infer<typeof postCommentSchema>;
 export type WorkflowEvent = z.infer<typeof workflowEventSchema>;
 export type AiGenerationRequest = z.infer<typeof aiGenerationRequestSchema>;
 export type AiGenerationResponse = z.infer<typeof aiGenerationResponseSchema>;
+export type AiRoutingAttempt = z.infer<typeof aiRoutingAttemptSchema>;
+export type AiRouting = z.infer<typeof aiRoutingSchema>;
+export type AiProviderStatus = z.infer<typeof aiProviderStatusSchema>;
+export type AiRouterStatus = z.infer<typeof aiRouterStatusSchema>;
+export type AiGenerationLog = z.infer<typeof aiGenerationLogSchema>;
+export type AiProviderCompletion = z.infer<typeof aiProviderCompletionSchema>;

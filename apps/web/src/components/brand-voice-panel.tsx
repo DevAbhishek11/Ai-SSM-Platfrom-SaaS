@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { demoWorkspace, type BrandVoice } from "@ssm/domain";
+import { clientApiBaseUrl } from "@/lib/api";
 
 type BrandEvaluation = {
   brandVoiceId: string;
@@ -38,7 +39,7 @@ export function BrandVoicePanel({ brandVoices }: { brandVoices: BrandVoice[] }) 
     setMessage(null);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}/brand-voices/${selected.id}/evaluate`,
+        `${clientApiBaseUrl}/brand-voices/${selected.id}/evaluate`,
         {
           method: "POST",
           headers: {
@@ -63,7 +64,7 @@ export function BrandVoicePanel({ brandVoices }: { brandVoices: BrandVoice[] }) 
     setLoading("create");
     setMessage(null);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}/brand-voices`, {
+      const response = await fetch(`${clientApiBaseUrl}/brand-voices`, {
         method: "POST",
         headers: {
           "content-type": "application/json",

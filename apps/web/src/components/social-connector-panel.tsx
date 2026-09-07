@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { platforms, type Platform, type SocialAccount, type SocialOAuthState } from "@ssm/domain";
 import { StatusBadge } from "./status-badge";
+import { clientApiBaseUrl } from "@/lib/api";
 
 type OAuthAuthorizeResponse = SocialOAuthState & {
   expiresInSeconds: number;
@@ -43,7 +44,7 @@ export function SocialConnectorPanel({
   );
 
   async function requestJson<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}${path}`, {
+    const response = await fetch(`${clientApiBaseUrl}${path}`, {
       method: "POST",
       headers: {
         "content-type": "application/json",

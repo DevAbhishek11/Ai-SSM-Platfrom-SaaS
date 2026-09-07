@@ -90,6 +90,8 @@ describe("API application", () => {
     await request(app.getHttpServer()).get("/api/members/invitations").expect(200);
     await request(app.getHttpServer()).get("/api/api-keys").expect(200);
     await request(app.getHttpServer()).get("/api/brand-voices").expect(200);
+    await request(app.getHttpServer()).get("/api/ai/providers").expect(200);
+    await request(app.getHttpServer()).get("/api/ai/generations").expect(200);
     await request(app.getHttpServer()).get("/api/safety/policies").expect(200);
     await request(app.getHttpServer()).get("/api/safety/checks").expect(200);
     await request(app.getHttpServer()).get("/api/safety/moderation-queue").expect(200);

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { OnboardingStep } from "@ssm/domain";
 import { CheckCircle2, CircleDashed } from "lucide-react";
 import { StatusBadge } from "./status-badge";
+import { clientApiBaseUrl } from "@/lib/api";
 
 type ChecklistResponse = {
   workspaceId: string;
@@ -33,7 +34,7 @@ export function OnboardingChecklistPanel({
   }, [stepRows]);
 
   async function postJson(path: string, body: unknown): Promise<ChecklistResponse> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}${path}`, {
+    const response = await fetch(`${clientApiBaseUrl}${path}`, {
       method: "POST",
       headers: {
         "content-type": "application/json",

@@ -1,45 +1,65 @@
 import { randomUUID } from "node:crypto";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import {
-  supportedPlatformCapabilities,
+  aiProviderCompletionSchema,
+  aiProviderTokenCostPer1k,
+  demoWorkspace,
+  type AiGenerationLog,
   type AiGenerationResponse,
-  type BrandVoice,
-  type Platform
+  type AiRouterStatus,
+  type Platform,
+  type PostContentVariant
 } from "@ssm/domain";
-import { BrandVoicesService } from "../brand-voices/brand-voices.service.js";
+import type { Principal } from "../../common/principal.js";
 import { BillingService } from "../billing/billing.service.js";
+import { BrandVoicesService } from "../brand-voices/brand-voices.service.js";
 import { SafetyService } from "../safety/safety.service.js";
-import type { GenerateContentDto } from "./dto.js";
+import { ModelRouterService } from "./model-router.service.js";
+import { clampToPlatform, composeVariant, resolveTone } from "./providers/composer.js";
+import type { AiCompletionSpec } from "./providers/types.js";
+import type { GenerateContentDto, SubmitGenerationFeedbackDto } from "./dto.js";
+
+const MAX_GENERATION_LOG_ENTRIES = 200;
 
 @Injectable()
 export class AiService {
+  private readonly logger = new Logger(AiService.name);
+  private readonly generations: AiGenerationLog[] = [];
+
   constructor(
     private readonly billingService: BillingService,
     private readonly brandVoicesService: BrandVoicesService,
-    private readonly safetyService: SafetyService
+    private readonly safetyService: SafetyService,
+    private readonly modelRouter: ModelRouterService
   ) {}
 
-  generate(input: GenerateContentDto): AiGenerationResponse {
+  async generate(input: GenerateContentDto, actor?: Principal): Promise<AiGenerationResponse> {
     this.billingService.assertAllowed(input.workspaceId, "aiGenerations", 1);
+
     const generationId = randomUUID();
     const brandVoice = input.brandVoiceId ? this.brandVoicesService.get(input.brandVoiceId) : undefined;
-    const safetyEvaluation = this.safetyService.evaluateContent({
-      workspaceId: input.workspaceId,
-      text: input.brief,
-      source: "ai_generation",
-      sourceEntityId: generationId
-    });
+    const spec: AiCompletionSpec = {
+      brief: input.brief,
+      platforms: input.platforms,
+      tone: resolveTone(input.tone, brandVoice),
+      objective: input.objective ?? "engagement",
+      brandVoice
+    };
+
+    const routed = await this.routeWithFallback(spec);
+    const variants = routed.value;
+
+    const safetyEvaluation = this.safetyService.evaluateContent(
+      {
+        workspaceId: input.workspaceId,
+        text: [input.brief, ...variants.map((variant) => variant.text)].join("\n\n"),
+        source: "ai_generation",
+        sourceEntityId: generationId
+      },
+      actor
+    );
     const safetyCheck = safetyEvaluation.check;
 
-    const variants = input.platforms.map((platform) =>
-      this.createVariant({
-        platform,
-        brief: input.brief,
-        tone: this.voiceTone(input.tone, brandVoice),
-        objective: input.objective ?? "engagement",
-        brandVoice
-      })
-    );
     const brandEvaluations = brandVoice
       ? variants.map((variant) => this.brandVoicesService.evaluateText(brandVoice, variant.text))
       : [];
@@ -50,13 +70,57 @@ export class AiService {
     const riskScore = Math.min(safetyCheck.riskScore + brandPenalty, 1);
     const flags = [...safetyCheck.flags, ...brandFlags];
 
+    const qualityScore = Math.max(
+      0,
+      Math.min(
+        100,
+        96 - safetyCheck.flags.length * 12 - brandFlags.length * 15 + brandEvaluations.length * 2
+      )
+    );
+    const estimatedTokens =
+      (routed.inputTokens ?? Math.ceil(routed.prompt.length / 3.8)) +
+      (routed.outputTokens ??
+        Math.ceil(variants.reduce((total, variant) => total + variant.text.length, 0) / 3.8));
+
+    const modelUsed = brandVoice
+      ? `${routed.provider}/${routed.model}:${brandVoice.name}:v${brandVoice.version}`
+      : `${routed.provider}/${routed.model}`;
+    const blocked = safetyCheck.status === "blocked" || riskScore >= 0.75 || brandFlags.length > 0;
+
+    this.recordGeneration({
+      id: generationId,
+      workspaceId: input.workspaceId,
+      userId: actor?.userId,
+      provider: routed.provider,
+      model: routed.model,
+      modelUsed,
+      prompt: input.brief,
+      platforms: input.platforms,
+      tokensUsed: estimatedTokens,
+      cost: Number(((estimatedTokens / 1000) * aiProviderTokenCostPer1k[routed.provider]).toFixed(6)),
+      latencyMs: routed.latencyMs,
+      fallbackUsed: routed.fallbackUsed,
+      qualityScore,
+      blocked,
+      attempts: routed.attempts,
+      createdAt: new Date().toISOString()
+    });
+
     return {
       id: generationId,
-      modelUsed: brandVoice
-        ? `model-router/local-deterministic-v1:${brandVoice.name}:v${brandVoice.version}`
-        : "model-router/local-deterministic-v1",
+      modelUsed,
+      provider: routed.provider,
+      providerModel: routed.model,
+      routing: {
+        requestedMode: this.modelRouter.mode(),
+        selectedProvider: routed.provider,
+        selectedModel: routed.model,
+        fallbackUsed: routed.fallbackUsed,
+        latencyMs: routed.latencyMs,
+        attempts: routed.attempts
+      },
       safety: {
-        blocked: safetyCheck.status === "blocked" || riskScore >= 0.75 || brandFlags.length > 0,
+        blocked,
         riskScore,
         flags,
         recommendations: safetyCheck.recommendations,
@@ -64,87 +128,127 @@ export class AiService {
         moderationItemId: safetyEvaluation.moderationItem?.id
       },
       variants,
-      qualityScore: Math.max(
-        60,
-        96 - safetyCheck.flags.length * 12 - brandFlags.length * 15 + brandEvaluations.length * 2
-      ),
-      estimatedTokens: Math.ceil(input.brief.length / 3.8) + variants.length * 80
+      qualityScore,
+      estimatedTokens
     };
   }
 
-  private createVariant({
-    platform,
-    brief,
-    tone,
-    objective,
-    brandVoice
-  }: {
-    platform: Platform;
-    brief: string;
-    tone: string;
-    objective: string;
-    brandVoice?: BrandVoice;
-  }) {
-    const capability = supportedPlatformCapabilities[platform];
-    const cleanBrief = brief.replace(/\s+/g, " ").trim();
-    const hook = this.platformHook(platform);
-    const cta = this.ctaFor(objective, brandVoice);
-    const vocabulary = brandVoice?.vocabulary.preferredTerms.slice(0, 2).join(" and ");
-    const voiceContext = vocabulary ? `Use ${vocabulary} as the shared language.` : `Tone: ${tone}.`;
-    const text = `${hook} ${cleanBrief} ${voiceContext} ${cta}`.slice(0, capability.maxCharacters);
-
-    return {
-      platform,
-      text,
-      hashtags: this.hashtagsFor(platform),
-      firstComment: platform === "instagram" || platform === "linkedin" ? cta : undefined
-    };
+  providerStatus(probe = false): Promise<AiRouterStatus> {
+    return this.modelRouter.status(probe);
   }
 
-  private voiceTone(inputTone?: string, brandVoice?: BrandVoice) {
-    if (!brandVoice) {
-      return inputTone ?? "professional";
+  listGenerations(workspaceId = demoWorkspace.id): AiGenerationLog[] {
+    return this.generations.filter((generation) => generation.workspaceId === workspaceId);
+  }
+
+  submitFeedback(id: string, input: SubmitGenerationFeedbackDto): AiGenerationLog {
+    const generation = this.generations.find((entry) => entry.id === id);
+    if (!generation) {
+      throw new NotFoundException("AI generation not found");
     }
-    const primary = typeof brandVoice.tone.primary === "string" ? brandVoice.tone.primary : "professional";
-    const secondary = typeof brandVoice.tone.secondary === "string" ? brandVoice.tone.secondary : "clear";
-    return `${primary} and ${secondary}`;
+
+    generation.feedback = input.feedback;
+    return generation;
   }
 
-  private ctaFor(objective: string, brandVoice?: BrandVoice) {
-    const examples = brandVoice?.ctaPreferences.examples;
-    if (Array.isArray(examples) && examples.every((item) => typeof item === "string") && examples.length > 0) {
-      return examples[0] as string;
+  /**
+   * Routes through the configured provider chain. If even the deterministic
+   * provider output cannot be parsed, compose variants inline so callers always
+   * receive a usable response.
+   */
+  private async routeWithFallback(spec: AiCompletionSpec) {
+    try {
+      return await this.modelRouter.route(spec, (text) => this.parseVariants(text, spec));
+    } catch (error) {
+      this.logger.error(
+        `AI routing exhausted every provider: ${error instanceof Error ? error.message : "unknown error"}`
+      );
+
+      return {
+        value: spec.platforms.map((platform) => composeVariant(platform, spec)),
+        provider: "local" as const,
+        model: "local-deterministic-v1",
+        fallbackUsed: true,
+        latencyMs: 0,
+        attempts: [],
+        inputTokens: undefined,
+        outputTokens: undefined,
+        prompt: spec.brief
+      };
     }
-    return objective.toLowerCase().includes("conversion")
-      ? "Start with the launch checklist today."
-      : "Save this for your next planning sprint.";
   }
 
-  private platformHook(platform: Platform): string {
-    const hooks: Record<Platform, string> = {
-      x: "Here is the sharper way to ship social campaigns:",
-      instagram: "Behind every calm launch is a tighter content workflow.",
-      facebook: "Your launch plan deserves one organized home.",
-      linkedin: "Teams move faster when strategy, approvals, and analytics share one workflow.",
-      youtube: "In this walkthrough, we break down the modern social launch stack.",
-      tiktok: "POV: your content calendar finally works with your team.",
-      reddit: "For teams managing launches, this workflow has been saving review cycles.",
-      pinterest: "Plan your next campaign with a smarter social content board.",
-      threads: "A better launch rhythm starts with better social ops.",
-      mastodon: "Social publishing can be open, organized, and measurable.",
-      bluesky: "A practical social workflow for teams that need speed and clarity."
-    };
+  /**
+   * Parses provider output into validated variants. Model output is untrusted:
+   * fenced JSON is unwrapped, unknown platforms are dropped, missing platforms are
+   * composed deterministically, and every variant is clamped to platform limits.
+   */
+  private parseVariants(rawText: string, spec: AiCompletionSpec): PostContentVariant[] {
+    const parsed = aiProviderCompletionSchema.parse(JSON.parse(extractJsonObject(rawText)));
+    const byPlatform = new Map<Platform, PostContentVariant>();
 
-    return hooks[platform];
-  }
+    for (const variant of parsed.variants) {
+      if (!spec.platforms.includes(variant.platform) || byPlatform.has(variant.platform)) {
+        continue;
+      }
 
-  private hashtagsFor(platform: Platform): string[] {
-    if (platform === "linkedin") {
-      return ["B2BMarketing", "SocialOps", "AIContent"];
+      const text = clampToPlatform(variant.platform, variant.text);
+      if (text.length === 0) {
+        continue;
+      }
+
+      byPlatform.set(variant.platform, {
+        platform: variant.platform,
+        text,
+        hashtags: normalizeHashtags(variant.hashtags),
+        firstComment: variant.firstComment?.trim() || undefined
+      });
     }
-    if (platform === "instagram" || platform === "tiktok") {
-      return ["SocialMedia", "ContentStrategy", "LaunchPlan"];
+
+    if (byPlatform.size === 0) {
+      throw new Error("Provider returned no usable variants");
     }
-    return ["SocialOps", "AI", "Marketing"];
+
+    return spec.platforms.map(
+      (platform) => byPlatform.get(platform) ?? composeVariant(platform, spec)
+    );
   }
+
+  private recordGeneration(entry: AiGenerationLog): void {
+    this.generations.unshift(entry);
+    if (this.generations.length > MAX_GENERATION_LOG_ENTRIES) {
+      this.generations.length = MAX_GENERATION_LOG_ENTRIES;
+    }
+  }
+}
+
+/** Strips markdown fences or surrounding prose from a model response. */
+export function extractJsonObject(rawText: string): string {
+  const withoutFences = rawText
+    .replace(/^\s*```(?:json)?/i, "")
+    .replace(/```\s*$/, "")
+    .trim();
+
+  if (withoutFences.startsWith("{")) {
+    return withoutFences;
+  }
+
+  const start = withoutFences.indexOf("{");
+  const end = withoutFences.lastIndexOf("}");
+
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("Provider response did not contain a JSON object");
+  }
+
+  return withoutFences.slice(start, end + 1);
+}
+
+function normalizeHashtags(hashtags: string[]): string[] {
+  return [
+    ...new Set(
+      hashtags
+        .map((tag) => tag.trim().replace(/^#+/, "").replace(/\s+/g, ""))
+        .filter((tag) => tag.length > 0)
+    )
+  ].slice(0, 8);
 }

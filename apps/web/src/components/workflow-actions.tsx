@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Post } from "@ssm/domain";
+import { clientApiBaseUrl } from "@/lib/api";
 
 const actions = [
   { label: "Approve", endpoint: "approve", role: "reviewer" },
@@ -19,7 +20,7 @@ export function WorkflowActions({ post }: { post: Post }) {
     setResult(null);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}/workflow/posts/${post.id}/${endpoint}`,
+        `${clientApiBaseUrl}/workflow/posts/${post.id}/${endpoint}`,
         {
           method: "POST",
           headers: {

@@ -17,6 +17,7 @@ import {
 } from "@ssm/domain";
 import { Globe2, Languages } from "lucide-react";
 import { StatusBadge } from "./status-badge";
+import { clientApiBaseUrl } from "@/lib/api";
 
 export function LocalizationSettingsPanel({
   workspaceId,
@@ -35,7 +36,7 @@ export function LocalizationSettingsPanel({
   const [message, setMessage] = useState<string | null>(null);
 
   async function patchJson<T>(path: string, body: unknown): Promise<T> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}${path}`, {
+    const response = await fetch(`${clientApiBaseUrl}${path}`, {
       method: "PATCH",
       headers: {
         "content-type": "application/json",

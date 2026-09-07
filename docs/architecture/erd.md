@@ -52,6 +52,7 @@ erDiagram
   SOCIAL_MENTIONS ||--o{ LISTENING_ALERTS : triggers
   WORKSPACES ||--o{ AUDIT_LOGS : records
   WORKSPACES ||--o{ AI_GENERATIONS : audits
+  AI_GENERATIONS ||--o{ AI_PROVIDER_ATTEMPTS : routes
   WORKSPACES ||--o{ WEBHOOK_DELIVERIES : emits
   CAMPAIGNS ||--o{ POSTS : groups
   USERS ||--o{ POSTS : authors
@@ -576,6 +577,7 @@ erDiagram
 - Safety indexes by workspace/status, workspace/created time, and safety check id for moderation review.
 - GIN indexes for post content and analytics metrics.
 - Audit and AI generation indexes by workspace and created timestamp.
+- AI provider routing indexes by workspace/provider/created timestamp and by generation/attempt order.
 - Social connector indexes by workspace, account, OAuth state, rate-limit reset, and event timestamp.
 - Invitation indexes by workspace/email/status and token hash; API key indexes by workspace/status and prefix.
 - Enterprise identity indexes by workspace/domain, session status, session expiry, device fingerprint, and device status.
@@ -586,7 +588,7 @@ erDiagram
 ## Retention Strategy
 
 - Audit logs: 7 years, monthly partitions before production cutover.
-- AI generation logs: 90 days unless compliance plan requires longer.
+- AI generation logs and provider routing attempts: 90 days unless compliance plan requires longer.
 - Content safety checks and moderation items: 2 years hot storage, or 7 years for regulated workspaces.
 - Analytics snapshots: 2 years hot query storage, then warehouse/archive.
 - Social mentions and listening alerts: 2 years hot storage, then warehouse/archive unless incident policy requires longer retention.

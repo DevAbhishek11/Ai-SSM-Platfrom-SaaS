@@ -19,6 +19,12 @@
 - Store audit logs for privileged actions and expose scoped compliance export.
 - Support GDPR export and deletion workflows.
 - Avoid storing unnecessary AI prompts beyond retention policy.
+- Keep AI provider credentials in environment/secret storage only; never return them from
+  `GET /api/ai/providers`, log them, or persist them with generation records.
+- Treat model output as untrusted input: validate, clamp, and safety-scan before storage or
+  publishing.
+- Bound outbound model calls with timeouts and provider fallbacks so a provider incident
+  cannot stall request threads.
 
 ## Infrastructure
 
