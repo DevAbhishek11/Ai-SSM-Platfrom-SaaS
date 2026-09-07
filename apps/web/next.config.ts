@@ -12,6 +12,18 @@ const allowedDevOrigins = (process.env.NEXT_ALLOWED_DEV_ORIGINS ?? "*.e2b.app,lo
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+/**
+ * Server Actions are POSTed to the same origin, and Next.js rejects requests whose
+ * `Origin` does not match the forwarded host. Preview/proxy hosts therefore have to be
+ * allowlisted explicitly, which is also the CSRF boundary for cookie-based mutations.
+ */
+const allowedServerActionOrigins = (
+  process.env.NEXT_ALLOWED_SERVER_ACTION_ORIGINS ?? allowedDevOrigins.join(",")
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const nextConfig: NextConfig = {
   output: "standalone",
   allowedDevOrigins,
@@ -19,6 +31,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   transpilePackages: ["@ssm/domain"],
   typedRoutes: true,
+  experimental: {
+    serverActions: {
+      allowedOrigins: allowedServerActionOrigins
+    }
+  },
   async headers() {
     return [
       {
