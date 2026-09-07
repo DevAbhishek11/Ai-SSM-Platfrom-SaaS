@@ -75,9 +75,45 @@ review comments that do not move the post.
   firing while the user is typing, with a `?` reference sheet. The shell now
   owns the global key handler; the topbar's ad-hoc ⌘K listener is gone.
 
+## Reporting
+
+`GET /analytics/insights` replaces a static two-row chart with a real report:
+period comparison, gap-filled daily series with a window-independent trend line,
+anomaly detection, per-network breakdown, best-time-to-post buckets and post
+leaderboards — all from one response so no two panels can describe different
+windows. The maths is pure and shared (`packages/domain/src/analytics-insights.ts`).
+
+Design points that carry their own tests:
+
+- Growth from a zero baseline is `null` ("New"), not `+Infinity%`.
+- Missing days are explicit zeroes; a chart that skips them lies by drawing a
+  flat line across the gap.
+- The trend line takes a week of lead-in from before the window, so a day draws
+  at the same height whichever range is selected.
+- Anomaly detection needs both a z-score *and* a relative-change floor. Without
+  the second condition, 13 against a mean of 11 scores 2.4 sigma and every
+  quiet account alerts constantly.
+- "Best time to post" requires an explicit IANA zone and marks thin buckets
+  provisional.
+- Rate leaderboards apply an impressions floor, or a post seen twice tops the
+  table at a 50% engagement rate.
+
+Two defects the tests found:
+
+1. The telemetry generator walked a pseudo-random sequence from the start of the
+   requested window, so overlapping reports disagreed about a shared day.
+   Seeding per `(workspace, platform, date)` makes a day's numbers a property of
+   the day.
+2. `posts` returned raw rows while the client type promised derived rates. SSR
+   threw, the error boundary swallowed it and half the page silently vanished —
+   caught by loading the page rather than by a unit test, then pinned with one.
+
+Post fixtures gained a back-catalogue positioned relative to today, because
+demo data pinned to a literal date ages into an empty-looking product.
+
 ## Testing
 
-`178 → 362 tests` across 30 files.
+`178 → 466 tests` across 33 files.
 
 | New suite | Tests |
 | --- | --- |
@@ -89,12 +125,15 @@ review comments that do not move the post.
 | `apps/web/src/lib/composer.test.ts` | 26 |
 | `apps/web/src/lib/table.test.ts` | 31 |
 | `apps/web/src/lib/shortcuts.test.ts` | 32 |
+| `packages/domain/src/analytics-insights.test.ts` | 46 |
+| `apps/api/test/insights.spec.ts` | 30 |
+| `apps/web/src/lib/insights.test.ts` | 28 |
 
 `navigation.test.ts` now derives the owner's permissions from `rolePermissions`
 instead of a hand-written list, so adding a nav entry cannot make it pass for
 the wrong reason.
 
-Gate: typecheck clean · 362 tests · eslint 0 problems · both builds OK (15 web
+Gate: typecheck clean · 466 tests · eslint 0 problems · both builds OK (15 web
 routes) · `npm audit` 0 vulnerabilities.
 
 Live verification through the browser proxy: create 201, edit 200, stale edit

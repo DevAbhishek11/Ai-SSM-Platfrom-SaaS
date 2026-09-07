@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  demoAnalytics,
   demoListeningAlerts,
   demoListeningMonitors,
   demoReportExports,
@@ -9,23 +8,26 @@ import {
   demoScheduledReports,
   demoSocialMentions
 } from "@ssm/domain";
-import { AnalyticsChart } from "@/components/analytics-chart";
 import { AppShell } from "@/components/shell/app-shell";
-import { MetricCard } from "@/components/metric-card";
+import { InsightsExplorer } from "@/components/analytics/insights-explorer";
 import { ReportingPanel } from "@/components/reporting-panel";
 import { SocialListeningPanel } from "@/components/social-listening-panel";
-import { formatCompactNumber, formatPercent } from "@/lib/format";
+import { DISPLAY_TIME_ZONE } from "@/lib/format";
 import { getDashboardOverview } from "@/lib/dashboard";
-import { CheckCircle2, MousePointerClick, TrendingUp, Download, Share2 } from "lucide-react";
+import { presetRange } from "@/lib/insights";
+import { getInsights } from "@/lib/insights.server";
+import { Download, Share2 } from "lucide-react";
 
 export default async function AnalyticsPage() {
-  const overview = await getDashboardOverview();
-  const chartData = demoAnalytics.map((snapshot) => ({
-    name: snapshot.platform,
-    impressions: snapshot.metrics.impressions,
-    engagements: snapshot.metrics.engagements
-  }));
-  const engagementRate = overview.metrics.engagements / Math.max(overview.metrics.impressions, 1);
+  const [overview, insights] = await Promise.all([
+    getDashboardOverview(),
+    getInsights({
+      ...presetRange(28, new Date()),
+      timeZone: DISPLAY_TIME_ZONE,
+      metric: "engagements",
+      limit: 5
+    })
+  ]);
 
   return (
     <AppShell
@@ -46,27 +48,7 @@ export default async function AnalyticsPage() {
       }
     >
       <div className="grid gap-5">
-        <section className="grid gap-4 md:grid-cols-3">
-          <MetricCard
-            label="Impressions"
-            value={formatCompactNumber(overview.metrics.impressions)}
-            delta="+12.8%"
-            icon={TrendingUp}
-          />
-          <MetricCard
-            label="Engagement rate"
-            value={formatPercent(engagementRate)}
-            delta="+1.6pp"
-            icon={MousePointerClick}
-          />
-          <MetricCard
-            label="Conversions"
-            value={formatCompactNumber(overview.metrics.conversions)}
-            delta="+5.1%"
-            icon={CheckCircle2}
-          />
-        </section>
-        <AnalyticsChart data={chartData} />
+        <InsightsExplorer initial={insights} timeZone={DISPLAY_TIME_ZONE} />
         <ReportingPanel
           workspaceId={overview.workspace.id}
           templates={demoReportTemplates}

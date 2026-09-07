@@ -191,3 +191,51 @@ checkbox for a typing context. `?` opens a generated reference sheet.
 | `apps/web/src/lib/shortcuts.test.ts` | 32 |
 
 Suite total moved from 178 to 362.
+
+---
+
+## 8. Reporting
+
+`GET /analytics/insights` returns everything the reporting page needs for one
+window — **in one response**. Separate calls per panel drift the moment a filter
+changes, and a report whose headline and chart disagree is worse than no report.
+
+### What it computes
+
+All of it lives in `packages/domain/src/analytics-insights.ts` as pure
+functions, shared with the browser:
+
+| Piece | Behaviour worth knowing |
+| --- | --- |
+| Totals and rates | Every denominator is guarded. A workspace with no delivery reports 0%, never `NaN`. |
+| Period comparison | Against the equally long window immediately before. Growth from a zero baseline returns `null`, rendered as **"New"** rather than a fabricated percentage. A `flatThreshold` stops a 3-impression move on a 200k base painting a green arrow. |
+| Daily series | One point per day, gaps filled with explicit zeroes — a chart that omits a silent day draws a flat line across it, which reads as "steady". |
+| Trend line | A 7-day trailing average computed with lead-in from *before* the window, so the same day draws at the same height whatever range you pick. |
+| Anomalies | Z-score against the preceding window, so a sustained shift stops alerting once it is the new normal. Backed by a relative-change floor: 13 against a mean of 11 is 2.4σ and operationally meaningless. |
+| Best time to post | Buckets by local weekday and hour. The time zone is **required**, not defaulted — "best time" is a claim about the audience's clock. Thin buckets are returned but flagged `confident: false`, so one lucky 3am post never becomes a recommendation. |
+| Leaderboards | Top and bottom by any metric or rate. Rate rankings apply an impressions floor: two impressions and one engagement is a 50% engagement rate and makes the table useless. |
+
+### Determinism
+
+Until the warehouse lands the figures come from `telemetry.ts`, seeded from a
+hash of `(workspace, platform, date)` rather than `Math.random()`. Two
+consequences, both tested: a refresh never changes the numbers, and two
+overlapping windows always agree about a day they share. The first version
+walked a sequence from the start of the window, so 6 May depended on whether the
+report began on the 1st or the 5th — the overlap test caught it.
+
+### Window rules
+
+Defaults to the last 28 days. Inverted ranges are `400 invalid_range`, ranges
+over a year are `400 range_too_large`, and an unresolvable IANA zone is
+`400 invalid_time_zone` rather than the `RangeError` 500 that `Intl` would
+otherwise produce. The post leaderboard is filtered to the same window as the
+headline.
+
+### Demo data
+
+Post fixtures now include a back-catalogue positioned *relative to the current
+date* rather than pinned to a literal, spread across weekdays, hours and
+networks. Seed data that ages out makes the calendar, the library and every
+report look broken — reviewers conclude the feature is empty rather than that
+the fixtures are three months old.
