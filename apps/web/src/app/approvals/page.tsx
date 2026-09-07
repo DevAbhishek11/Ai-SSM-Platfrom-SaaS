@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { CheckCheck, MessageSquare } from "lucide-react";
 import { AppShell } from "@/components/shell/app-shell";
 import { ApprovalQueue } from "@/components/approval-queue";
 import { NotificationCenter } from "@/components/notification-center";
@@ -16,6 +18,18 @@ export default async function ApprovalsPage() {
       activePath="/approvals"
       title="Approvals"
       description="Review queue, workflow timeline, and notification routing."
+      actions={
+        <>
+          <Link href="/calendar" className="btn-secondary">
+            <MessageSquare size={15} aria-hidden="true" />
+            Comment thread
+          </Link>
+          <Link href="/publishing" className="btn-primary">
+            <CheckCheck size={15} aria-hidden="true" />
+            Approve and schedule
+          </Link>
+        </>
+      }
     >
       <div className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
         <div className="grid gap-5">

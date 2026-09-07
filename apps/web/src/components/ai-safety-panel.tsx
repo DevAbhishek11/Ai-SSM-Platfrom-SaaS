@@ -99,7 +99,7 @@ export function AiSafetyPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">AI safety review</h3>
@@ -114,7 +114,7 @@ export function AiSafetyPanel({
       </div>
 
       {activePolicy ? (
-        <div className="mt-4 rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+        <div className="mt-4 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <p className="text-sm font-semibold">{activePolicy.name}</p>

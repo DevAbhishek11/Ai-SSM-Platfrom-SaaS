@@ -100,7 +100,7 @@ export function NotificationPreferencesPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Notification routing</h3>
@@ -130,7 +130,7 @@ export function NotificationPreferencesPanel({
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_0.8fr]">
         <div className="grid gap-3">
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <p className="text-sm font-semibold">Channels</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {notificationChannels.map((channel) => {
@@ -162,7 +162,7 @@ export function NotificationPreferencesPanel({
             </div>
           </div>
 
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <label className="grid gap-2 text-sm font-semibold">
               Digest mode
               <select
@@ -185,7 +185,7 @@ export function NotificationPreferencesPanel({
             ) : null}
           </div>
 
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <p className="text-sm font-semibold">Muted event types</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {notificationTypes.slice(0, 8).map((type) => {
@@ -213,7 +213,7 @@ export function NotificationPreferencesPanel({
         <div className="grid gap-3">
           <h4 className="text-sm font-semibold">Recent delivery attempts</h4>
           {deliveries.slice(0, 5).map((attempt) => (
-            <article key={attempt.id} className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+            <article key={attempt.id} className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{attempt.channel.replace("_", " ")}</p>

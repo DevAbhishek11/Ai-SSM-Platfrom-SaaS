@@ -111,7 +111,7 @@ export function TeamAccessPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Team access</h3>
@@ -125,7 +125,7 @@ export function TeamAccessPanel({
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+        <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
           <h4 className="text-sm font-semibold">Invite member</h4>
           <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_150px_auto]">
             <input
@@ -159,7 +159,7 @@ export function TeamAccessPanel({
           </div>
         </div>
 
-        <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+        <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
           <h4 className="text-sm font-semibold">Create API key</h4>
           <div className="mt-3 grid gap-3">
             <input

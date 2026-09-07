@@ -60,12 +60,12 @@ export function Topbar({
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--surface-blur)] backdrop-blur">
-        <div className="flex items-center gap-3 px-4 py-3 md:px-6">
+        <div className="flex items-center gap-2.5 px-4 py-2.5 md:px-6">
           <button
             type="button"
             onClick={onOpenMobileNav}
             aria-label="Open navigation"
-            className="grid size-9 shrink-0 place-items-center rounded-lg border border-[var(--border)] bg-[var(--panel)] lg:hidden"
+            className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-xs)] lg:hidden"
           >
             <Menu size={18} aria-hidden="true" />
           </button>
@@ -81,17 +81,19 @@ export function Topbar({
                 ))}
               </ol>
             </nav>
-            <h1 className="truncate text-lg font-semibold leading-tight md:text-xl">{title}</h1>
+            <h1 className="truncate text-[17px] font-semibold leading-tight tracking-tight md:text-lg">
+              {title}
+            </h1>
           </div>
 
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="hidden h-9 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--panel)] px-3 text-sm text-[var(--muted)] hover:text-[var(--foreground)] md:flex"
+            className="hidden h-9 w-56 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel)] px-3 text-sm text-[var(--muted)] shadow-[var(--shadow-xs)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--foreground)] lg:flex"
           >
             <Search size={15} aria-hidden="true" />
-            <span>Search</span>
-            <kbd className="rounded border border-[var(--border)] px-1 text-[10px]">⌘K</kbd>
+            <span>Search or jump to…</span>
+            <kbd className="kbd ml-auto">⌘K</kbd>
           </button>
 
           <div className="relative" ref={bellRef}>
@@ -100,23 +102,23 @@ export function Topbar({
               onClick={() => setBellOpen((value) => !value)}
               aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
               aria-expanded={bellOpen}
-              className="relative grid size-9 place-items-center rounded-lg border border-[var(--border)] bg-[var(--panel)] text-[var(--muted)] hover:text-[var(--foreground)]"
+              className="relative grid size-9 place-items-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel)] text-[var(--muted)] shadow-[var(--shadow-xs)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--foreground)]"
             >
               <Bell size={16} aria-hidden="true" />
               {unread > 0 ? (
-                <span className="absolute -right-1 -top-1 grid min-w-[18px] place-items-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-semibold text-white">
+                <span className="pulse-ring absolute -right-1 -top-1 grid min-w-[18px] place-items-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-semibold text-white">
                   {unread}
                 </span>
               ) : null}
             </button>
 
             {bellOpen ? (
-              <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-80 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--panel)] shadow-lg">
+              <div className="animate-in absolute right-0 top-[calc(100%+8px)] z-50 w-80 overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-pop)]">
                 <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2.5">
                   <p className="text-sm font-semibold">Notifications</p>
                   <span className="text-xs text-[var(--muted)]">{unread} unread</span>
                 </div>
-                <ul className="max-h-80 overflow-y-auto">
+                <ul className="scroll-thin max-h-80 overflow-y-auto">
                   {notifications.length === 0 ? (
                     <li className="px-4 py-6 text-center text-sm text-[var(--muted)]">
                       You are all caught up.
@@ -163,7 +165,7 @@ export function Topbar({
         </div>
 
         {(description || actions) && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-2.5 md:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-2 md:px-6">
             {description ? (
               <p className="max-w-3xl text-sm text-[var(--muted)]">{description}</p>
             ) : (

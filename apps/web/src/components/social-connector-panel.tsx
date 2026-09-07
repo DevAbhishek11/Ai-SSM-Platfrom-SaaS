@@ -134,7 +134,7 @@ export function SocialConnectorPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Connector lifecycle</h3>
@@ -161,7 +161,7 @@ export function SocialConnectorPanel({
           </select>
         </label>
 
-        <div className="grid gap-2 rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+        <div className="grid gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
           <p className="text-sm font-medium">Requested scopes</p>
           <div className="flex flex-wrap gap-2">
             {scopeOptions.map((scope) => {
@@ -215,7 +215,7 @@ export function SocialConnectorPanel({
       </div>
 
       {oauthState ? (
-        <div className="mt-4 rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
+        <div className="mt-4 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-medium">OAuth state</span>
             <StatusBadge status={oauthState.status} />

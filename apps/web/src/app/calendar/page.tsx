@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { PlusCircle, Sparkles } from "lucide-react";
 import {
   demoCampaignBudgetLines,
   demoCampaignMilestones,
@@ -23,6 +25,18 @@ export default async function CalendarPage() {
       activePath="/calendar"
       title="Content calendar"
       description="Campaign portfolio, reusable templates, and smart scheduling recommendations."
+      actions={
+        <>
+          <Link href="/ai-studio" className="btn-secondary">
+            <Sparkles size={15} aria-hidden="true" />
+            Draft with AI
+          </Link>
+          <Link href="/calendar" className="btn-primary">
+            <PlusCircle size={15} aria-hidden="true" />
+            New post
+          </Link>
+        </>
+      }
     >
       <div className="grid gap-5">
         <div className="grid gap-5 xl:grid-cols-[1.3fr_0.8fr]">

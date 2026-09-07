@@ -71,7 +71,7 @@ export async function AccountSecurityPanel({ session }: { session: Session }) {
             </p>
           </div>
         </div>
-        <span className="rounded-full border border-[var(--border)] px-2.5 py-1 text-xs font-medium capitalize text-[var(--muted)]">
+        <span className="chip capitalize">
           {session.role.replace(/_/g, " ")} · {session.workspace.workspaceName}
         </span>
       </header>
@@ -98,9 +98,7 @@ export async function AccountSecurityPanel({ session }: { session: Session }) {
       <div className="grid gap-3">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
           <MonitorSmartphone size={15} aria-hidden="true" /> Active sessions
-          <span className="rounded-full bg-[var(--panel-soft)] px-2 py-0.5 text-xs font-medium text-[var(--muted)]">
-            {sessions.length}
-          </span>
+          <span className="badge badge-plain">{sessions.length}</span>
         </h3>
 
         {sessions.length === 0 ? (
@@ -125,26 +123,20 @@ export async function AccountSecurityPanel({ session }: { session: Session }) {
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{describeClient(item.userAgent)}</span>
-                        {item.current ? (
-                          <span className="rounded-full bg-[var(--success)]/12 px-2 py-0.5 text-xs font-medium text-[var(--success)]">
-                            This device
-                          </span>
-                        ) : null}
+                        {item.current ? <span className="badge badge-success">This device</span> : null}
                       </div>
                       <p className="text-xs capitalize text-[var(--muted)]">
                         {item.role.replace(/_/g, " ")} · started {formatTime(item.createdAt)}
                       </p>
                     </td>
-                    <td className="px-3 py-2.5 text-[var(--muted)]">{item.ipAddress ?? "—"}</td>
-                    <td className="px-3 py-2.5 text-[var(--muted)]">
-                      {formatRelativeTime(item.lastUsedAt)}
-                    </td>
-                    <td className="px-3 py-2.5 text-[var(--muted)]">{formatTime(item.expiresAt)}</td>
-                    <td className="px-3 py-2.5 text-right">
+                    <td className="text-[var(--muted)]">{item.ipAddress ?? "—"}</td>
+                    <td className="text-[var(--muted)]">{formatRelativeTime(item.lastUsedAt)}</td>
+                    <td className="text-[var(--muted)]">{formatTime(item.expiresAt)}</td>
+                    <td className="text-right">
                       <form action={revokeSession}>
                         <input type="hidden" name="sessionId" value={item.id} />
                         <input type="hidden" name="current" value={String(item.current)} />
-                        <button type="submit" className="btn-ghost text-[var(--danger)]">
+                        <button type="submit" className="btn-danger btn-sm">
                           <LogOut size={14} aria-hidden="true" />
                           {item.current ? "Sign out" : "Revoke"}
                         </button>

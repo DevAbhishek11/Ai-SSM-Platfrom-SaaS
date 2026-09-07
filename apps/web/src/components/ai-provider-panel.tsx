@@ -15,7 +15,7 @@ export function AiProviderPanel({ status }: { status: AiRouterStatus }) {
   const chain = status.priority.join(" → ");
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex items-start gap-3">
         <span className="grid size-10 place-items-center rounded-md bg-[var(--accent-soft)] text-[var(--accent)]">
           <Cpu size={19} aria-hidden="true" />
@@ -54,7 +54,7 @@ export function AiProviderPanel({ status }: { status: AiRouterStatus }) {
         {status.providers.map((provider) => (
           <li
             key={provider.provider}
-            className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3"
+            className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
@@ -64,13 +64,7 @@ export function AiProviderPanel({ status }: { status: AiRouterStatus }) {
                   {provider.baseUrl ? ` / ${provider.baseUrl}` : ""} / {reachabilityLabel(provider.reachable)}
                 </p>
               </div>
-              <span
-                className={`rounded-md px-2 py-1 text-xs font-semibold ${
-                  provider.configured
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-[var(--panel)] text-[var(--muted)]"
-                }`}
-              >
+              <span className={provider.configured ? "badge badge-success" : "badge"}>
                 {provider.configured ? "configured" : "inactive"}
               </span>
             </div>

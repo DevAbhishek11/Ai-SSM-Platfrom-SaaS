@@ -101,7 +101,7 @@ export function BrandVoicePanel({ brandVoices }: { brandVoices: BrandVoice[] }) 
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Brand voice engine</h3>
@@ -130,7 +130,7 @@ export function BrandVoicePanel({ brandVoices }: { brandVoices: BrandVoice[] }) 
               ))}
             </select>
           </label>
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
             <p className="font-semibold">{selected.name}</p>
             <p className="mt-2 text-[var(--muted)]">
               Tone: {String(selected.tone.primary ?? "professional")} /{" "}
@@ -144,7 +144,7 @@ export function BrandVoicePanel({ brandVoices }: { brandVoices: BrandVoice[] }) 
               Banned: {selected.vocabulary.bannedTerms.join(", ")}
             </p>
           </div>
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <label className="grid gap-2 text-sm font-medium">
               New profile name
               <input
@@ -182,7 +182,7 @@ export function BrandVoicePanel({ brandVoices }: { brandVoices: BrandVoice[] }) 
             {loading === "evaluate" ? "Checking" : "Evaluate"}
           </button>
           {evaluation ? (
-            <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
+            <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="font-semibold">Fit score {evaluation.score}/100</p>
                 <span className="text-xs text-[var(--muted)]">v{evaluation.version}</span>

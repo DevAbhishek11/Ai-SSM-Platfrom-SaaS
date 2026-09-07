@@ -2,7 +2,7 @@ import type { Campaign } from "@ssm/domain";
 
 export function CampaignPortfolio({ campaigns }: { campaigns: Campaign[] }) {
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <h3 className="text-base font-semibold">Campaign portfolio</h3>
       <div className="mt-4 grid gap-3">
         {campaigns.map((campaign) => (

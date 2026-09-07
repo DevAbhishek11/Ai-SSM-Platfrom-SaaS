@@ -193,7 +193,7 @@ export function CampaignOperationsPanel({
 
   if (!selectedCampaign) {
     return (
-      <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+      <section className="card p-4">
         <h3 className="text-base font-semibold">Campaign operations</h3>
         <p className="mt-2 text-sm text-[var(--muted)]">No campaigns are available.</p>
       </section>
@@ -201,7 +201,7 @@ export function CampaignOperationsPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Campaign operations</h3>
@@ -261,7 +261,7 @@ export function CampaignOperationsPanel({
 
         <div className="grid gap-3">
           <PanelHeader icon={ClipboardList} title="Tasks" />
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <div className="grid gap-2 sm:grid-cols-[1fr_130px_auto]">
               <input
                 value={taskTitle}
@@ -317,7 +317,7 @@ export function CampaignOperationsPanel({
       <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
         <div className="grid gap-3">
           <PanelHeader icon={DollarSign} title="Budget pacing" />
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <div className="grid gap-2 sm:grid-cols-[1fr_110px_110px_auto]">
               <input
                 value={budgetCategory}
@@ -412,7 +412,7 @@ export function CampaignOperationsPanel({
 
 function CampaignStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+    <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
       <p className="text-xs font-medium uppercase text-[var(--muted)]">{label}</p>
       <p className="mt-1 text-lg font-semibold">{value}</p>
     </div>

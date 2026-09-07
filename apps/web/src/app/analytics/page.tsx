@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   demoAnalytics,
   demoListeningAlerts,
@@ -15,7 +16,7 @@ import { ReportingPanel } from "@/components/reporting-panel";
 import { SocialListeningPanel } from "@/components/social-listening-panel";
 import { formatCompactNumber, formatPercent } from "@/lib/format";
 import { getDashboardOverview } from "@/lib/dashboard";
-import { CheckCircle2, MousePointerClick, TrendingUp } from "lucide-react";
+import { CheckCircle2, MousePointerClick, TrendingUp, Download, Share2 } from "lucide-react";
 
 export default async function AnalyticsPage() {
   const overview = await getDashboardOverview();
@@ -31,6 +32,18 @@ export default async function AnalyticsPage() {
       activePath="/analytics"
       title="Analytics"
       description="Cross-channel performance, social listening, and executive reporting."
+      actions={
+        <>
+          <Link href="/settings" className="btn-secondary">
+            <Share2 size={15} aria-hidden="true" />
+            Share report
+          </Link>
+          <Link href="/analytics" className="btn-primary">
+            <Download size={15} aria-hidden="true" />
+            Export
+          </Link>
+        </>
+      }
     >
       <div className="grid gap-5">
         <section className="grid gap-4 md:grid-cols-3">

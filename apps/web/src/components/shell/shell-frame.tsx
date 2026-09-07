@@ -32,7 +32,7 @@ export function ShellFrame({
   const closeMobileNav = useCallback(() => setMobileNavOpen(false), []);
 
   return (
-    <div className="flex min-h-screen bg-[var(--background)]">
+    <div className="flex min-h-screen">
       <SidebarNav
         permissions={permissions}
         workspaces={workspaces}
@@ -51,12 +51,18 @@ export function ShellFrame({
           user={user}
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
-        <main id="main-content" className="flex-1 px-4 py-5 md:px-6 md:py-6">
+        {/* Capped measure keeps line lengths readable on ultrawide displays. */}
+        <main id="main-content" className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-5 md:px-6 md:py-6">
           {children}
         </main>
-        <footer className="border-t border-[var(--border)] px-4 py-3 text-xs text-[var(--muted)] md:px-6">
-          AI SSM Platform · workspace data is scoped to your active membership and every action is
-          written to the audit log.
+        <footer className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-2 text-xs text-[var(--muted)] md:px-6">
+          <div className="hairline flex flex-wrap items-center justify-between gap-2 pt-3">
+            <span>
+              Workspace data is scoped to your active membership; every action is written to the
+              audit log.
+            </span>
+            <span className="chip">AI SSM Platform</span>
+          </div>
         </footer>
       </div>
     </div>

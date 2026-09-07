@@ -83,7 +83,7 @@ export function OnboardingChecklistPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-[var(--accent)]">Workspace activation</p>
@@ -104,7 +104,7 @@ export function OnboardingChecklistPanel({
 
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {stepRows.slice(0, 4).map((step) => (
-          <article key={step.id} className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <article key={step.id} className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <div className="flex items-start justify-between gap-3">
               {step.status === "completed" ? (
                 <CheckCircle2 className="mt-0.5 size-4 text-[var(--accent)]" />

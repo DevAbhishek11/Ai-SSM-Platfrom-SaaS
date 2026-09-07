@@ -49,7 +49,7 @@ export function WorkflowActions({ post }: { post: Post }) {
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <h3 className="text-base font-semibold">Reviewer actions</h3>
       <label className="mt-4 block text-sm font-medium" htmlFor="workflow-comment">
         Comment

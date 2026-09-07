@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { LifeBuoy } from "lucide-react";
 import {
   demoApiKeys,
   demoAuditLogs,
@@ -32,6 +34,12 @@ export default async function SettingsPage() {
       activePath="/settings"
       title="Settings"
       description="Security, billing, team access, localization, and integrations."
+      actions={
+        <Link href="/settings" className="btn-secondary">
+          <LifeBuoy size={15} aria-hidden="true" />
+          Contact support
+        </Link>
+      }
     >
       <div className="grid gap-5">
         {session ? <AccountSecurityPanel session={session} /> : null}

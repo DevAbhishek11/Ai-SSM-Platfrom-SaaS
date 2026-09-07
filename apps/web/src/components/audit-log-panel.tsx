@@ -13,7 +13,7 @@ export function AuditLogPanel({ logs }: { logs: AuditLog[] }) {
   }, {});
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Security audit</h3>
@@ -43,7 +43,7 @@ export function AuditLogPanel({ logs }: { logs: AuditLog[] }) {
 
       <div className="mt-4 grid gap-3">
         {ordered.map((log) => (
-          <article key={log.id} className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <article key={log.id} className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{log.action}</p>

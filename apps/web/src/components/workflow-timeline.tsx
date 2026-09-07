@@ -15,7 +15,7 @@ export function WorkflowTimeline({
   ].sort((a, b) => b.at.localeCompare(a.at));
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <h3 className="text-base font-semibold">Workflow timeline</h3>
       <div className="mt-4 grid gap-3">
         {items.map((item) =>
@@ -31,7 +31,7 @@ export function WorkflowTimeline({
               <time className="mt-2 block text-xs text-[var(--muted)]">{formatTime(item.event.createdAt)}</time>
             </article>
           ) : (
-            <article key={item.comment.id} className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+            <article key={item.comment.id} className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
               <p className="text-sm">{item.comment.body}</p>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <time className="text-xs text-[var(--muted)]">{formatTime(item.comment.createdAt)}</time>

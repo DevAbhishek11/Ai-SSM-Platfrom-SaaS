@@ -27,7 +27,12 @@ const highlights = [
 export default function AuthLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
-      <aside className="relative hidden overflow-hidden bg-[var(--sidebar)] px-10 py-12 text-[var(--sidebar-foreground)] lg:flex lg:flex-col lg:justify-between">
+      <aside
+        style={{
+          background: "linear-gradient(160deg, var(--sidebar-accent) 0%, var(--sidebar) 55%)"
+        }}
+        className="relative hidden overflow-hidden px-10 py-12 text-[var(--sidebar-foreground)] lg:flex lg:flex-col lg:justify-between"
+      >
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -left-24 -top-24 size-[26rem] rounded-full bg-[var(--accent)] opacity-25 blur-3xl"
@@ -39,11 +44,14 @@ export default function AuthLayout({ children }: Readonly<{ children: ReactNode 
 
         <div className="relative">
           <div className="flex items-center gap-3">
-            <span className="grid size-11 place-items-center rounded-xl bg-[var(--accent)] text-lg font-bold text-white">
-              S
+            <span
+              className="grid size-11 place-items-center rounded-[var(--radius-md)] text-base font-bold text-white shadow-[var(--shadow-raised)]"
+              style={{ background: "var(--accent-gradient)" }}
+            >
+              SSM
             </span>
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--accent-soft)]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
                 AI SSM
               </p>
               <p className="text-lg font-semibold">Social Management Platform</p>
@@ -61,7 +69,7 @@ export default function AuthLayout({ children }: Readonly<{ children: ReactNode 
         <ul className="relative mt-12 grid gap-5">
           {highlights.map((highlight) => (
             <li key={highlight.title} className="flex gap-3">
-              <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg bg-white/10 text-[var(--accent-soft)]">
+              <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-[var(--radius-sm)] border border-[var(--sidebar-border)] bg-white/[0.06] text-[var(--accent)]">
                 <highlight.icon size={18} aria-hidden="true" />
               </span>
               <div>
@@ -78,7 +86,7 @@ export default function AuthLayout({ children }: Readonly<{ children: ReactNode 
       </aside>
 
       <main className="flex items-center justify-center px-5 py-10 sm:px-8">
-        <div className="w-full max-w-md">{children}</div>
+        <div className="animate-in w-full max-w-md">{children}</div>
       </main>
     </div>
   );

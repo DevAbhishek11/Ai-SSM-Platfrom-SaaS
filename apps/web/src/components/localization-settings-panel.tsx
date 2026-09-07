@@ -109,7 +109,7 @@ export function LocalizationSettingsPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Localization and region</h3>
@@ -124,7 +124,7 @@ export function LocalizationSettingsPanel({
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+        <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Languages className="size-4" />
             User locale
@@ -221,7 +221,7 @@ export function LocalizationSettingsPanel({
           </button>
         </div>
 
-        <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+        <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Globe2 className="size-4" />
             Regional compliance

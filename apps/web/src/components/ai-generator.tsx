@@ -57,7 +57,7 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <h3 className="text-base font-semibold">Generate content variants</h3>
       <label className="mt-4 block text-sm font-medium" htmlFor="brief">
         Campaign brief
@@ -105,31 +105,32 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
         type="button"
         onClick={generate}
         disabled={status === "loading" || selectedPlatforms.length === 0}
-        className="mt-4 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+        className="btn-primary mt-4"
       >
         {status === "loading" ? "Generating" : "Generate variants"}
       </button>
       {status === "error" ? (
-        <p className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+        <p
+          role="alert"
+          className="mt-3 rounded-[var(--radius-sm)] border border-[var(--danger-border)] bg-[var(--danger-soft)] p-3 text-sm text-[var(--danger)]"
+        >
           Could not reach the API. Start `npm run dev:api` and try again.
         </p>
       ) : null}
       {result ? (
         <div className="mt-4 grid gap-3">
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
             <p className="font-semibold">Quality {result.qualityScore}/100</p>
             <p className="mt-1 text-[var(--muted)]">
               {result.modelUsed} / safety risk {Math.round(result.safety.riskScore * 100)}%
             </p>
             <p className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-              <span className="rounded-md bg-[var(--accent-soft)] px-2 py-1 font-semibold text-[var(--accent)]">
+              <span className="badge badge-accent">
                 {result.provider} / {result.providerModel}
               </span>
               <span className="text-[var(--muted)]">{result.routing.latencyMs}ms</span>
               {result.routing.fallbackUsed ? (
-                <span className="rounded-md bg-amber-100 px-2 py-1 font-semibold text-amber-900">
-                  fallback used
-                </span>
+                <span className="badge badge-warning">fallback used</span>
               ) : null}
             </p>
             {result.routing.attempts.length > 1 ? (

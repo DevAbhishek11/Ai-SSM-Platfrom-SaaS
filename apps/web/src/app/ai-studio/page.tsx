@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Cpu } from "lucide-react";
 import {
   demoBrandVoices,
   demoContentSafetyChecks,
@@ -22,6 +24,12 @@ export default async function AiStudioPage() {
       activePath="/ai-studio"
       title="AI Studio"
       description="Generate on-brand variants with multi-provider model routing and safety review."
+      actions={
+        <Link href="/settings" className="btn-secondary">
+          <Cpu size={15} aria-hidden="true" />
+          Model settings
+        </Link>
+      }
     >
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-5">

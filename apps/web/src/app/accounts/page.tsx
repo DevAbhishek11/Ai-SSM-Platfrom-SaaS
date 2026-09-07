@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Plug, RefreshCw } from "lucide-react";
 import { demoSocialConnectorEvents, demoSocialRateLimitBuckets } from "@ssm/domain";
 import { AccountHealth } from "@/components/account-health";
 import { AppShell } from "@/components/shell/app-shell";
@@ -14,6 +16,18 @@ export default async function AccountsPage() {
       activePath="/accounts"
       title="Connected accounts"
       description="Network connections, OAuth scopes, rate-limit budgets, and connector events."
+      actions={
+        <>
+          <Link href="/settings" className="btn-secondary">
+            <RefreshCw size={15} aria-hidden="true" />
+            Sync all
+          </Link>
+          <Link href="/accounts" className="btn-primary">
+            <Plug size={15} aria-hidden="true" />
+            Connect account
+          </Link>
+        </>
+      }
     >
       <div className="grid gap-5">
         <SocialConnectorPanel workspaceId={overview.workspace.id} accounts={overview.socialAccounts} />
