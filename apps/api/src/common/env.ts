@@ -22,6 +22,19 @@ const envSchema = z.object({
    * limits the blast radius of a stolen refresh token on a shared machine.
    */
   SESSION_IDLE_TIMEOUT_MINUTES: z.coerce.number().int().positive().max(43_200).default(720),
+  /**
+   * Grace period during which re-presenting a just-rotated refresh token
+   * returns the *same* replacement instead of being treated as theft.
+   *
+   * Rotation is single-use, but a browser legitimately fires several requests
+   * at once -- two tabs waking up, a link prefetch racing a navigation, three
+   * panels loading in parallel. Without a grace window the first request
+   * rotates the token and the rest look like a replay attack, so the family is
+   * revoked and the user is signed out for doing nothing wrong. Replays after
+   * this window still trip detection, which is what actually catches a stolen
+   * token. Set to 0 to disable the grace entirely.
+   */
+  REFRESH_ROTATION_GRACE_SECONDS: z.coerce.number().int().min(0).max(300).default(30),
   /** Concurrent live sessions per user; the oldest is evicted past this bound. */
   SESSION_MAX_PER_USER: z.coerce.number().int().positive().max(100).default(10),
   /** Consecutive failed sign-ins before an account is temporarily locked. */

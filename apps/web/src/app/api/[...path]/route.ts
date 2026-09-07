@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { serverApiBaseUrl } from "@/lib/api";
 import { CSRF_COOKIE, CSRF_HEADER, isSafeMethod, isSameOrigin, timingSafeEquals } from "@/lib/csrf";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/session";
+import { renewSession } from "@/lib/session-renewal";
 
 /**
  * Authenticated same-origin API proxy.
@@ -37,12 +38,6 @@ const HOP_BY_HOP = new Set([
 
 /** Headers a client must never be able to inject into the upstream request. */
 const STRIPPED_REQUEST_HEADERS = new Set(["cookie", "authorization", "x-api-key", "x-forwarded-host"]);
-
-type RefreshResult = {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-};
 
 const errorResponse = (status: number, code: string, message: string) =>
   NextResponse.json(
@@ -120,26 +115,6 @@ const csrfRejection = (request: NextRequest): NextResponse | undefined => {
   }
 
   return undefined;
-};
-
-const refreshTokens = async (refreshToken: string): Promise<RefreshResult | undefined> => {
-  try {
-    const response = await fetch(`${serverApiBaseUrl}/auth/refresh`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS)
-    });
-
-    if (!response.ok) {
-      return undefined;
-    }
-
-    return (await response.json()) as RefreshResult;
-  } catch {
-    return undefined;
-  }
 };
 
 const toNextResponse = async (upstream: Response): Promise<NextResponse> => {
@@ -220,13 +195,24 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     return toNextResponse(upstream);
   }
 
-  const refreshed = await refreshTokens(refreshToken);
-  if (!refreshed) {
+  // Shared with the route-protection proxy, so a page navigation and the panel
+  // fetches it triggers rotate the single-use token once between them rather
+  // than racing each other into a reuse-detection lockout.
+  const renewal = await renewSession(serverApiBaseUrl, refreshToken, UPSTREAM_TIMEOUT_MS);
+
+  if (renewal.status !== "renewed") {
     const response = await toNextResponse(upstream);
-    response.cookies.delete(ACCESS_TOKEN_COOKIE);
-    response.cookies.delete(REFRESH_TOKEN_COOKIE);
+    if (renewal.status === "rejected") {
+      // Only drop the cookies when the API actually rejected the token. An
+      // unreachable API says nothing about whether the session is still good,
+      // and clearing them would force a needless sign-in.
+      response.cookies.delete(ACCESS_TOKEN_COOKIE);
+      response.cookies.delete(REFRESH_TOKEN_COOKIE);
+    }
     return response;
   }
+
+  const refreshed = renewal;
 
   let retried: Response;
   try {

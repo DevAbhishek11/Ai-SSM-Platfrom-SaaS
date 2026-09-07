@@ -65,6 +65,21 @@ const TOKEN_BYTES = 32;
 export class SessionsService {
   private readonly logger = new Logger(SessionsService.name);
   private readonly sessions = new Map<string, RefreshSession>();
+  /**
+   * Replacements handed out very recently, keyed by the digest of the token
+   * that was rotated.
+   *
+   * A browser routinely presents the same refresh token from several requests
+   * at once -- two tabs waking after the access cookie expired, a prefetch
+   * racing the navigation it belongs to. Treating the losers of that race as
+   * token theft signs the user out for doing nothing wrong, so within the grace
+   * window the same replacement is returned to all of them and the tabs
+   * converge on one session. Outside the window a replay is still theft.
+   */
+  private readonly recentRotations = new Map<
+    string,
+    { outcome: IssuedRefreshToken; expiresAt: number }
+  >();
 
   issue(input: {
     userId: string;
@@ -108,6 +123,18 @@ export class SessionsService {
     token: string,
     context: { ipAddress?: string; userAgent?: string } = {}
   ): RotationOutcome {
+    const tokenHash = this.hashToken(token);
+    const replay = this.recentRotations.get(tokenHash);
+    if (replay) {
+      // Only honour the replay while the window is open *and* the replacement
+      // is still usable: a logout or an admin revoke during the grace period
+      // must not be undone by a straggling request.
+      if (replay.expiresAt > Date.now() && this.validate(replay.outcome.session.id) === "active") {
+        return replay.outcome;
+      }
+      this.recentRotations.delete(tokenHash);
+    }
+
     const session = this.findByToken(token);
 
     if (!session) {
@@ -131,7 +158,7 @@ export class SessionsService {
     session.revokedAt = new Date().toISOString();
     session.revokedReason = "rotated";
 
-    return this.issue({
+    const issued = this.issue({
       userId: session.userId,
       workspaceId: session.workspaceId,
       role: session.role,
@@ -139,6 +166,13 @@ export class SessionsService {
       userAgent: context.userAgent ?? session.userAgent,
       familyId: session.familyId
     });
+
+    const graceMs = this.rotationGraceMs();
+    if (graceMs > 0) {
+      this.recentRotations.set(tokenHash, { outcome: issued, expiresAt: Date.now() + graceMs });
+    }
+
+    return issued;
   }
 
   /**
@@ -219,6 +253,13 @@ export class SessionsService {
       if (session.familyId === familyId && !session.revokedAt) {
         session.revokedAt = new Date().toISOString();
         session.revokedReason = reason;
+      }
+    }
+
+    // Do not keep a usable credential for a family that has just been killed.
+    for (const [hash, entry] of this.recentRotations) {
+      if (entry.outcome.session.familyId === familyId) {
+        this.recentRotations.delete(hash);
       }
     }
   }
@@ -303,6 +344,15 @@ export class SessionsService {
   }
 
   private pruneExpired(): void {
+    // Grace entries hold a live credential, so they are dropped the moment they
+    // lapse rather than being left to age out with the sessions.
+    const nowMs = Date.now();
+    for (const [hash, entry] of this.recentRotations) {
+      if (entry.expiresAt <= nowMs) {
+        this.recentRotations.delete(hash);
+      }
+    }
+
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
     for (const [id, session] of this.sessions) {
       const expired = Date.parse(session.expiresAt) < cutoff;
@@ -315,6 +365,10 @@ export class SessionsService {
 
   private absoluteTtlMs(): number {
     return getEnv().REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
+  }
+
+  private rotationGraceMs(): number {
+    return getEnv().REFRESH_ROTATION_GRACE_SECONDS * 1000;
   }
 
   private idleTimeoutMs(): number {

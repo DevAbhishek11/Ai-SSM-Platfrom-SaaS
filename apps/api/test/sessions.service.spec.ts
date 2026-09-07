@@ -4,6 +4,7 @@ process.env.NODE_ENV ??= "test";
 process.env.SESSION_IDLE_TIMEOUT_MINUTES = "30";
 process.env.SESSION_MAX_PER_USER = "3";
 process.env.REFRESH_TOKEN_TTL_DAYS = "7";
+process.env.REFRESH_ROTATION_GRACE_SECONDS = "30";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isRotationFailure, SessionsService } from "../src/modules/auth/sessions.service.js";
@@ -50,16 +51,108 @@ describe("SessionsService", () => {
     expect(service.validate(rotated.session.id)).toBe("active");
   });
 
-  it("kills the whole family when a rotated token is replayed", () => {
+  it("kills the whole family when a rotated token is replayed after the grace window", () => {
     const first = issue(service);
     const second = service.rotate(first.token);
     if (isRotationFailure(second)) throw new Error("expected rotation to succeed");
 
+    // Past the grace window a repeat presentation is theft, not a racing tab.
+    vi.advanceTimersByTime(31 * 1000);
     const replay = service.rotate(first.token);
 
     expect(replay).toEqual({ reason: "reuse_detected" });
     expect(service.validate(second.session.id)).toBe("revoked");
     expect(service.findById(second.session.id)?.revokedReason).toBe("refresh_token_reuse_detected");
+  });
+
+  describe("concurrent refresh (the two-tabs case)", () => {
+    it("hands both racers the same replacement instead of revoking the family", () => {
+      // Two tabs wake up after the access cookie expired and present the same
+      // refresh token milliseconds apart. Neither of them has done anything
+      // wrong, so neither may be signed out.
+      const first = issue(service);
+
+      const tabA = service.rotate(first.token);
+      const tabB = service.rotate(first.token);
+
+      if (isRotationFailure(tabA) || isRotationFailure(tabB)) {
+        throw new Error("neither tab should have failed");
+      }
+      expect(tabB.token).toBe(tabA.token);
+      expect(tabB.session.id).toBe(tabA.session.id);
+      expect(service.validate(tabA.session.id)).toBe("active");
+    });
+
+    it("leaves the replacement usable after a racing replay", () => {
+      // The original bug: the loser of the race tripped reuse detection, which
+      // revoked the family and killed the winner's brand-new token too.
+      const first = issue(service);
+      const winner = service.rotate(first.token);
+      if (isRotationFailure(winner)) throw new Error("expected rotation to succeed");
+
+      service.rotate(first.token);
+
+      expect(service.validate(winner.session.id)).toBe("active");
+      expect(isRotationFailure(service.rotate(winner.token))).toBe(false);
+    });
+
+    it("survives a burst of simultaneous refreshes", () => {
+      const first = issue(service);
+      const outcomes = Array.from({ length: 8 }, () => service.rotate(first.token));
+
+      expect(outcomes.every((outcome) => !isRotationFailure(outcome))).toBe(true);
+      const tokens = new Set(
+        outcomes.map((outcome) => (isRotationFailure(outcome) ? "fail" : outcome.token))
+      );
+      expect(tokens.size).toBe(1);
+    });
+
+    it("does not extend the grace window with each replay", () => {
+      // Otherwise a token replayed on a timer would stay alive indefinitely.
+      const first = issue(service);
+      service.rotate(first.token);
+
+      vi.advanceTimersByTime(20 * 1000);
+      expect(isRotationFailure(service.rotate(first.token))).toBe(false);
+
+      vi.advanceTimersByTime(11 * 1000);
+      expect(service.rotate(first.token)).toEqual({ reason: "reuse_detected" });
+    });
+
+    it("stops replaying once the replacement has been revoked", () => {
+      // Signing out during the grace window must not be undone by a straggler.
+      const first = issue(service);
+      const winner = service.rotate(first.token);
+      if (isRotationFailure(winner)) throw new Error("expected rotation to succeed");
+
+      service.revoke(winner.session.id, "logout");
+
+      expect(service.rotate(first.token)).toEqual({ reason: "reuse_detected" });
+    });
+
+    it("does not resurrect a family that a genuine replay already killed", () => {
+      const first = issue(service);
+      const second = service.rotate(first.token);
+      if (isRotationFailure(second)) throw new Error("expected rotation to succeed");
+
+      vi.advanceTimersByTime(31 * 1000);
+      expect(service.rotate(first.token)).toEqual({ reason: "reuse_detected" });
+
+      // The successor is dead, and presenting it must not mint a new one.
+      expect(isRotationFailure(service.rotate(second.token))).toBe(true);
+    });
+
+    it("keeps rotation single-use for the replacement itself", () => {
+      const first = issue(service);
+      const second = service.rotate(first.token);
+      if (isRotationFailure(second)) throw new Error("expected rotation to succeed");
+
+      const third = service.rotate(second.token);
+      if (isRotationFailure(third)) throw new Error("expected rotation to succeed");
+
+      expect(third.token).not.toBe(second.token);
+      expect(service.validate(second.session.id)).toBe("revoked");
+    });
   });
 
   it("rejects unknown and malformed tokens without throwing", () => {

@@ -6,6 +6,7 @@ vi.mock("next/headers", () => ({
 
 const { NextRequest } = await import("next/server");
 const { GET, POST } = await import("./route");
+const { resetSingleFlight } = await import("@/lib/session-renewal");
 
 /**
  * The proxy is the only place a cookie-authenticated request is turned into a
@@ -54,6 +55,7 @@ const upstreamOk = (body: unknown = { ok: true }, status = 200) =>
 describe("API proxy CSRF enforcement", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    resetSingleFlight();
   });
 
   it("forwards a write that carries a matching token and same-origin header", async () => {
@@ -139,6 +141,7 @@ describe("API proxy CSRF enforcement", () => {
 describe("API proxy request handling", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    resetSingleFlight();
   });
 
   it("never forwards the browser's cookies or a caller-supplied authorization header", async () => {
@@ -246,6 +249,58 @@ describe("API proxy request handling", () => {
     expect(response.status).toBe(401);
     expect(setCookie).toMatch(/ssm_at=;/);
     expect(setCookie).toMatch(/ssm_rt=;/);
+  });
+
+  it("keeps the session cookies when the refresh call cannot reach the API", async () => {
+    // A blip during renewal is not proof the session ended. Clearing the
+    // cookies here forces a needless sign-in and loses the refresh token.
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith("/auth/refresh")) {
+        throw new TypeError("fetch failed");
+      }
+      return new Response(JSON.stringify({ message: "Unauthorized" }), {
+        status: 401,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(buildRequest(), params(["posts"]));
+    const setCookie = response.headers.getSetCookie().join("\n");
+
+    expect(response.status).toBe(401);
+    expect(setCookie).not.toMatch(/ssm_at=;/);
+    expect(setCookie).not.toMatch(/ssm_rt=;/);
+  });
+
+  it("refreshes once for a burst of parallel requests", async () => {
+    // A page that fires four fetches on mount must not rotate a single-use
+    // refresh token four times; the losers would look like a replay attack.
+    let refreshCalls = 0;
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith("/auth/refresh")) {
+        refreshCalls += 1;
+        return new Response(
+          JSON.stringify({ accessToken: "fresh", refreshToken: "fresh-rt", expiresIn: 900 }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      }
+      const authorization = "";
+      return new Response(JSON.stringify({ ok: authorization }), {
+        status: 401,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await Promise.all([
+      GET(buildRequest({ method: "GET", body: null }), params(["posts"])),
+      GET(buildRequest({ method: "GET", body: null }), params(["campaigns"])),
+      GET(buildRequest({ method: "GET", body: null }), params(["media"])),
+      GET(buildRequest({ method: "GET", body: null }), params(["accounts"]))
+    ]);
+
+    expect(refreshCalls).toBe(1);
   });
 
   it("does not relay upstream Set-Cookie headers to the browser", async () => {

@@ -154,7 +154,7 @@ describe("Authentication and session lifecycle", () => {
     expect(JSON.stringify(containsEmail.body.message)).toMatch(/email address/);
   });
 
-  it("rotates refresh tokens and detects replay of a consumed token", async () => {
+  it("rotates refresh tokens", async () => {
     const login = await request(server())
       .post("/api/auth/login")
       .send({ email: DEMO_EMAIL, password: DEMO_PASSWORD })
@@ -167,17 +167,40 @@ describe("Authentication and session lifecycle", () => {
 
     expect(rotated.body.refreshToken).not.toBe(login.body.refreshToken);
     expect(rotated.body.accessToken).toEqual(expect.any(String));
+  });
 
-    // The consumed token must be dead, and replaying it kills the family.
+  it("keeps the session alive when two tabs refresh at the same moment", async () => {
+    // The browser does this constantly: the access cookie lapses, then a
+    // prefetch, a navigation and a couple of panel fetches all present the same
+    // refresh token within milliseconds. Signing the user out for that is a bug.
+    const login = await request(server())
+      .post("/api/auth/login")
+      .send({ email: DEMO_EMAIL, password: DEMO_PASSWORD })
+      .expect(201);
+
+    const [tabA, tabB, tabC] = await Promise.all([
+      request(server()).post("/api/auth/refresh").send({ refreshToken: login.body.refreshToken }),
+      request(server()).post("/api/auth/refresh").send({ refreshToken: login.body.refreshToken }),
+      request(server()).post("/api/auth/refresh").send({ refreshToken: login.body.refreshToken })
+    ]);
+
+    expect([tabA.status, tabB.status, tabC.status]).toEqual([200, 200, 200]);
+    // All three converge on one replacement, so whichever response lands last
+    // leaves the browser holding a token that works.
+    expect(tabB.body.refreshToken).toBe(tabA.body.refreshToken);
+    expect(tabC.body.refreshToken).toBe(tabA.body.refreshToken);
+
+    // And the survivor is genuinely usable, rather than a token from a family
+    // that has already been revoked.
+    await request(server())
+      .get("/api/auth/me")
+      .set("authorization", `Bearer ${tabA.body.accessToken}`)
+      .expect(200);
+
     await request(server())
       .post("/api/auth/refresh")
-      .send({ refreshToken: login.body.refreshToken })
-      .expect(401);
-
-    await request(server())
-      .post("/api/auth/refresh")
-      .send({ refreshToken: rotated.body.refreshToken })
-      .expect(401);
+      .send({ refreshToken: tabA.body.refreshToken })
+      .expect(200);
   });
 
   it("revokes the session on logout so its access token stops working", async () => {

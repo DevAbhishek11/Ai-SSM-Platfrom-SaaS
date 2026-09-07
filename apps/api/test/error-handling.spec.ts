@@ -223,20 +223,22 @@ describe("Error envelope and hardening", () => {
     }
   });
 
-  it("rejects a refresh token that was already rotated, and reports it as a session failure", async () => {
-    const session = await login();
-
-    await request(server())
+  it("reports a refresh failure as a session failure with the standard envelope", async () => {
+    // Reuse detection itself is exercised in refresh-reuse.spec.ts, which runs
+    // with the concurrency grace window disabled. What matters here is the
+    // shape of the answer.
+    const rejected = await request(server())
       .post("/api/auth/refresh")
-      .send({ refreshToken: session.refreshToken })
-      .expect(200);
-
-    const replay = await request(server())
-      .post("/api/auth/refresh")
-      .send({ refreshToken: session.refreshToken })
+      .send({ refreshToken: "ssm_rt_this-token-was-never-issued-at-all" })
       .expect(401);
 
-    expect(replay.body.code).toBe("session_expired");
-    expect(replay.body.message).toBe("Invalid or expired refresh token");
+    expect(rejected.body.code).toBe("session_expired");
+    expect(rejected.body.message).toBe("Invalid or expired refresh token");
+    expect(rejected.body).toMatchObject({
+      requestId: expect.any(String),
+      timestamp: expect.any(String),
+      path: "/api/auth/refresh",
+      statusCode: 401
+    });
   });
 });
