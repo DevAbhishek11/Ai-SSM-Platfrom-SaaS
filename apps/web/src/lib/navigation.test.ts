@@ -1,3 +1,4 @@
+import { permissions, rolePermissions } from "@ssm/domain";
 import { describe, expect, it } from "vitest";
 import { allNavItems, findNavItem, navGroups, visibleGroups } from "./navigation";
 
@@ -26,16 +27,20 @@ describe("navigation model", () => {
   });
 
   it("shows everything to an owner", () => {
-    const ownerPermissions = [
-      "analytics.view",
-      "ai.generate",
-      "posts.view",
-      "media.manage",
-      "social_accounts.manage"
-    ];
+    // Derived from the real role map rather than a hand-written list, so adding
+    // a nav entry cannot make this pass for the wrong reason.
+    const ownerPermissions: string[] = [...rolePermissions.owner];
     expect(visibleGroups(ownerPermissions).flatMap((group) => group.items)).toHaveLength(
       allNavItems.length
     );
+  });
+
+  it("gates every permissioned entry behind a real permission", () => {
+    for (const item of allNavItems) {
+      if (item.permission) {
+        expect(permissions, item.label).toContain(item.permission);
+      }
+    }
   });
 
   it("resolves the active item for exact and nested paths", () => {

@@ -3,9 +3,11 @@ import {
   BarChart3,
   CalendarDays,
   CheckCircle2,
+  FileText,
   LayoutDashboard,
   Library,
   Megaphone,
+  PenSquare,
   Settings,
   Sparkles,
   Users,
@@ -48,6 +50,20 @@ export const navGroups: NavGroup[] = [
   {
     label: "Create",
     items: [
+      {
+        label: "Compose",
+        href: "/composer",
+        icon: PenSquare,
+        description: "Write once, tailor per network, validate before it ships",
+        permission: "posts.create"
+      },
+      {
+        label: "Content",
+        href: "/posts",
+        icon: FileText,
+        description: "Every draft, scheduled post and archive",
+        permission: "posts.view"
+      },
       {
         label: "AI Studio",
         href: "/ai-studio",

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Bell, Menu, Search } from "lucide-react";
-import { CommandPalette } from "./command-palette";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 
@@ -22,7 +21,8 @@ export function Topbar({
   actions,
   notifications,
   user,
-  onOpenMobileNav
+  onOpenMobileNav,
+  onOpenSearch
 }: {
   title: string;
   description?: string;
@@ -31,22 +31,12 @@ export function Topbar({
   notifications: TopbarNotification[];
   user: { name: string; email: string; role: string; initials: string };
   onOpenMobileNav: () => void;
+  /** Opens the command palette, which the shell owns so shortcuts can reach it. */
+  onOpenSearch: () => void;
 }) {
-  const [paletteOpen, setPaletteOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
   const unread = notifications.filter((notification) => !notification.read).length;
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setPaletteOpen((value) => !value);
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
 
   useEffect(() => {
     if (!bellOpen) return;
@@ -88,7 +78,7 @@ export function Topbar({
 
           <button
             type="button"
-            onClick={() => setPaletteOpen(true)}
+            onClick={onOpenSearch}
             className="hidden h-9 w-56 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel)] px-3 text-sm text-[var(--muted)] shadow-[var(--shadow-xs)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--foreground)] lg:flex"
           >
             <Search size={15} aria-hidden="true" />
@@ -176,7 +166,6 @@ export function Topbar({
         )}
       </header>
 
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </>
   );
 }

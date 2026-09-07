@@ -14,7 +14,7 @@ export class DashboardService {
 
   getOverview(workspaceId: string) {
     const analytics = this.analyticsService.getSummary(workspaceId);
-    const posts = this.postsService.list({ workspaceId });
+    const posts = this.postsService.listAll(workspaceId);
     const accountHealth = this.socialService.getAccountHealth(workspaceId);
     const scheduledPosts = posts.filter((post) => post.status === "scheduled").length;
     const reviewQueue = posts.filter((post) =>

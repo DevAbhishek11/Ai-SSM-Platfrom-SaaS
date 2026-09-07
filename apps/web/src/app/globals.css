@@ -503,6 +503,35 @@ td {
   color: var(--muted-strong);
 }
 
+.chip-accent {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+button.chip {
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+button.chip:hover {
+  border-color: var(--border-strong);
+}
+
+/* Horizontal scroll container for wide tables on narrow viewports. */
+.data-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  background: var(--panel);
+}
+
+.data-table tbody tr[data-selected] td {
+  background: var(--accent-soft);
+}
+
 /* ------------------------------------------------------------------------ */
 /* Data display                                                              */
 /* ------------------------------------------------------------------------ */

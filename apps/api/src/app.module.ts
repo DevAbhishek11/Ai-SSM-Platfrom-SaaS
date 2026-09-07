@@ -31,6 +31,7 @@ import { MembersModule } from "./modules/members/members.module.js";
 import { NotificationsModule } from "./modules/notifications/notifications.module.js";
 import { OnboardingModule } from "./modules/onboarding/onboarding.module.js";
 import { PostsModule } from "./modules/posts/posts.module.js";
+import { SearchModule } from "./modules/search/search.module.js";
 import { PublishingModule } from "./modules/publishing/publishing.module.js";
 import { RepositoriesModule } from "./modules/repositories/repositories.module.js";
 import { ReportsModule } from "./modules/reports/reports.module.js";
@@ -60,6 +61,7 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
     MembersModule,
     ApiKeysModule,
     PostsModule,
+    SearchModule,
     ContentModule,
     CampaignsModule,
     MediaModule,
