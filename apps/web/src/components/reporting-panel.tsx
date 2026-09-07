@@ -14,7 +14,7 @@ import {
 import { FileDown, Link2, Mail } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
-import { clientApiBaseUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/client-api";
 
 export function ReportingPanel({
   workspaceId,
@@ -40,20 +40,7 @@ export function ReportingPanel({
   const [message, setMessage] = useState<string | null>(null);
 
   async function requestJson<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${clientApiBaseUrl}${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorBody?.message ?? "Reporting action failed");
-    }
-
-    return (await response.json()) as T;
+    return apiRequest<T>(path, { method: "POST", body });
   }
 
   async function createTemplate() {

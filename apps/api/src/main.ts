@@ -1,6 +1,7 @@
 import "reflect-metadata";
-import { Logger, ValidationPipe } from "@nestjs/common";
+import { Logger } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
 import { AppModule } from "./app.module.js";
@@ -8,13 +9,36 @@ import { getEnv } from "./common/env.js";
 
 async function bootstrap() {
   const env = getEnv();
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const isProduction = env.NODE_ENV === "production";
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+
+  // Trust the first hop so `req.ip` (used for rate limiting and audit records)
+  // reflects the client rather than the load balancer.
+  app.set("trust proxy", 1);
+  app.disable("x-powered-by");
 
   app.use(
     helmet({
-      crossOriginResourcePolicy: { policy: "cross-origin" }
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+      frameguard: { action: "deny" },
+      // The API returns JSON, never markup: lock the CSP down to nothing so an
+      // accidentally reflected payload has no execution context.
+      contentSecurityPolicy: {
+        directives: {
+          "default-src": ["'none'"],
+          "frame-ancestors": ["'none'"],
+          "base-uri": ["'none'"],
+          "form-action": ["'none'"]
+        }
+      },
+      hsts: isProduction ? { maxAge: 31_536_000, includeSubDomains: true, preload: true } : false
     })
   );
+
+  // Bounded bodies: an unbounded parser is a trivial memory-exhaustion vector.
+  app.useBodyParser("json", { limit: env.REQUEST_BODY_LIMIT });
+  app.useBodyParser("urlencoded", { limit: env.REQUEST_BODY_LIMIT, extended: true });
   const corsOrigins = env.CORS_ALLOWED_ORIGINS
     ? env.CORS_ALLOWED_ORIGINS.split(",")
         .map((origin) => origin.trim())
@@ -28,13 +52,9 @@ async function bootstrap() {
     allowedHeaders: ["content-type", "authorization", "x-api-key", "x-request-id", "x-workspace-id"]
   });
   app.setGlobalPrefix("api");
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true
-    })
-  );
+  // Validation, error shaping and request timeouts are registered as global
+  // providers in AppModule so tests exercise the same behaviour as production.
+  app.enableShutdownHooks();
 
   const openApiConfig = new DocumentBuilder()
     .setTitle("AI Social Media Management Platform API")
@@ -70,6 +90,17 @@ async function bootstrap() {
 
   await app.listen(env.API_PORT, env.API_HOST);
   Logger.log(`API listening on ${env.API_BASE_URL}`, "Bootstrap");
+
+  for (const signal of ["SIGTERM", "SIGINT"] as const) {
+    process.once(signal, () => {
+      Logger.log(`Received ${signal}, draining connections`, "Bootstrap");
+      void app.close().then(() => process.exit(0));
+    });
+  }
 }
 
-void bootstrap();
+// A rejected bootstrap must not leave a half-initialised process listening.
+void bootstrap().catch((error: unknown) => {
+  Logger.error("Failed to start API", error instanceof Error ? error.stack : String(error), "Bootstrap");
+  process.exit(1);
+});

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Post } from "@ssm/domain";
-import { clientApiBaseUrl } from "@/lib/api";
+import { apiPost } from "@/lib/client-api";
 
 /**
  * The API authorises each transition from the caller's real session role, so the
@@ -23,23 +23,9 @@ export function WorkflowActions({ post }: { post: Post }) {
     setLoading(endpoint);
     setResult(null);
     try {
-      const response = await fetch(
-        `${clientApiBaseUrl}/workflow/posts/${post.id}/${endpoint}`,
-        {
-          method: "POST",
-          headers: {
-            "content-type": "application/json"
-          },
-          body: JSON.stringify({ comment: message })
-        }
-      );
-
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(body?.message ?? "Workflow action failed");
-      }
-
-      const body = (await response.json()) as { post: Post };
+      const body = await apiPost<{ post: Post }>(`/workflow/posts/${post.id}/${endpoint}`, {
+        comment: message
+      });
       setResult(`Post is now ${body.post.status.replace(/_/g, " ")}.`);
     } catch (error) {
       setResult(error instanceof Error ? error.message : "Workflow action failed");

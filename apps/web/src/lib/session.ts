@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { serverApiBaseUrl } from "./api";
+import { CSRF_COOKIE, generateCsrfToken } from "./csrf";
 
 export const ACCESS_TOKEN_COOKIE = "ssm_at";
 export const REFRESH_TOKEN_COOKIE = "ssm_rt";
@@ -41,6 +42,12 @@ export type TokenPair = {
 
 const isProduction = process.env.NODE_ENV === "production";
 
+/**
+ * Server-side reads must never hang: a wedged API would otherwise hold an SSR
+ * render open until the platform's own request timeout kills the whole page.
+ */
+const SERVER_FETCH_TIMEOUT_MS = Number(process.env.API_SERVER_TIMEOUT_MS ?? 10_000);
+
 const baseCookieOptions = {
   httpOnly: true,
   sameSite: "lax",
@@ -51,6 +58,10 @@ const baseCookieOptions = {
 /**
  * Session tokens live in httpOnly cookies: never in localStorage, and never in
  * a JS-readable cookie, so an XSS bug cannot exfiltrate a usable credential.
+ *
+ * The CSRF token is the deliberate exception - it *must* be readable by our own
+ * JavaScript so it can be echoed back in a header. It is not a credential on its
+ * own: it only proves the request was made by a page on this origin.
  */
 export async function persistTokens(tokens: TokenPair): Promise<void> {
   const store = await cookies();
@@ -62,12 +73,20 @@ export async function persistTokens(tokens: TokenPair): Promise<void> {
     ...baseCookieOptions,
     maxAge: 60 * 60 * 24 * 30
   });
+  store.set(CSRF_COOKIE, generateCsrfToken(), {
+    httpOnly: false,
+    sameSite: "lax",
+    secure: isProduction,
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30
+  });
 }
 
 export async function clearTokens(): Promise<void> {
   const store = await cookies();
   store.delete(ACCESS_TOKEN_COOKIE);
   store.delete(REFRESH_TOKEN_COOKIE);
+  store.delete(CSRF_COOKIE);
 }
 
 export async function readAccessToken(): Promise<string | undefined> {
@@ -93,7 +112,8 @@ export const getSession = cache(async (): Promise<Session | undefined> => {
   try {
     const response = await fetch(`${serverApiBaseUrl}/auth/me`, {
       headers: { authorization: `Bearer ${accessToken}` },
-      cache: "no-store"
+      cache: "no-store",
+      signal: AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS)
     });
 
     if (!response.ok) {
@@ -102,6 +122,8 @@ export const getSession = cache(async (): Promise<Session | undefined> => {
 
     return (await response.json()) as Session;
   } catch {
+    // Unreachable API, timeout, or malformed payload: treat as "no session" so
+    // the caller redirects to login instead of rendering a broken shell.
     return undefined;
   }
 });
@@ -117,7 +139,8 @@ export async function authorizedFetch(path: string, init: RequestInit = {}): Pro
   return fetch(`${serverApiBaseUrl}${path.startsWith("/") ? path : `/${path}`}`, {
     ...init,
     headers,
-    cache: init.cache ?? "no-store"
+    cache: init.cache ?? "no-store",
+    signal: init.signal ?? AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS)
   });
 }
 

@@ -24,6 +24,31 @@ const allowedServerActionOrigins = (
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+/**
+ * Content Security Policy.
+ *
+ * `'unsafe-inline'` for styles is required by Next's inlined critical CSS, and
+ * the theme bootstrap in the root layout is an inline script - hence
+ * `'unsafe-inline'` on script-src for the non-nonce path. Everything else is
+ * locked to same-origin: no third-party script host, no framing, no plugins,
+ * and form posts can only go back to us.
+ */
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "style-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
+  "connect-src 'self'",
+  "manifest-src 'self'",
+  "worker-src 'self' blob:",
+  "upgrade-insecure-requests"
+].join("; ");
+
 const nextConfig: NextConfig = {
   output: "standalone",
   allowedDevOrigins,
@@ -51,8 +76,40 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()"
-          }
+            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+          },
+          {
+            key: "Content-Security-Policy",
+            value: contentSecurityPolicy
+          },
+          {
+            key: "X-Frame-Options",
+            value: "DENY"
+          },
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin"
+          },
+          {
+            key: "X-DNS-Prefetch-Control",
+            value: "off"
+          },
+          ...(process.env.NODE_ENV === "production"
+            ? [
+                {
+                  key: "Strict-Transport-Security",
+                  value: "max-age=31536000; includeSubDomains; preload"
+                }
+              ]
+            : [])
+        ]
+      },
+      {
+        // Authenticated JSON must never be cached by a shared proxy.
+        source: "/api/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private" },
+          { key: "Pragma", value: "no-cache" }
         ]
       }
     ];

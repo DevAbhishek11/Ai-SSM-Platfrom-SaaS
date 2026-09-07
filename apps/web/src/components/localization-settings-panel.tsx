@@ -17,7 +17,7 @@ import {
 } from "@ssm/domain";
 import { Globe2, Languages } from "lucide-react";
 import { StatusBadge } from "./status-badge";
-import { clientApiBaseUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/client-api";
 
 export function LocalizationSettingsPanel({
   workspaceId,
@@ -36,20 +36,7 @@ export function LocalizationSettingsPanel({
   const [message, setMessage] = useState<string | null>(null);
 
   async function patchJson<T>(path: string, body: unknown): Promise<T> {
-    const response = await fetch(`${clientApiBaseUrl}${path}`, {
-      method: "PATCH",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorBody?.message ?? "Localization action failed");
-    }
-
-    return (await response.json()) as T;
+    return apiRequest<T>(path, { method: "PATCH", body });
   }
 
   async function savePreference() {

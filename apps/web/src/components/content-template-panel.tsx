@@ -13,7 +13,7 @@ import {
 import { ClipboardPlus, WandSparkles } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
-import { clientApiBaseUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/client-api";
 
 type UseTemplateResponse = {
   template: ContentTemplate;
@@ -42,20 +42,7 @@ export function ContentTemplatePanel({
   const [message, setMessage] = useState<string | null>(null);
 
   async function postJson<T>(path: string, body: unknown): Promise<T> {
-    const response = await fetch(`${clientApiBaseUrl}${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorBody?.message ?? "Content template action failed");
-    }
-
-    return (await response.json()) as T;
+    return apiRequest<T>(path, { method: "POST", body });
   }
 
   async function createTemplate() {

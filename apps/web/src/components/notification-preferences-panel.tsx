@@ -12,7 +12,7 @@ import {
 } from "@ssm/domain";
 import { formatTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
-import { clientApiBaseUrl } from "@/lib/api";
+import { apiPost, apiPatch } from "@/lib/client-api";
 
 export function NotificationPreferencesPanel({
   workspaceId,
@@ -37,25 +37,15 @@ export function NotificationPreferencesPanel({
     setLoading("preferences");
     setMessage(null);
     try {
-      const response = await fetch(
-        `${clientApiBaseUrl}/notifications/preferences?workspaceId=${workspaceId}&userId=${userId}`,
+      await apiPatch(
+        `/notifications/preferences?workspaceId=${workspaceId}&userId=${userId}`,
         {
-          method: "PATCH",
-          headers: {
-            "content-type": "application/json"
-          },
-          body: JSON.stringify({
-            channelSettings,
-            digestFrequency,
-            mutedTypes,
-            quietHours: preferences.quietHours
-          })
+          channelSettings,
+          digestFrequency,
+          mutedTypes,
+          quietHours: preferences.quietHours
         }
       );
-
-      if (!response.ok) {
-        throw new Error("Could not update notification preferences");
-      }
       setMessage("Notification preferences updated.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not update preferences");
@@ -68,29 +58,18 @@ export function NotificationPreferencesPanel({
     setLoading("route");
     setMessage(null);
     try {
-      const response = await fetch(
-        `${clientApiBaseUrl}/notifications/route`,
+      const body = await apiPost<{ attempts: NotificationDeliveryAttempt[] }>(
+        "/notifications/route",
         {
-          method: "POST",
-          headers: {
-            "content-type": "application/json"
-          },
-          body: JSON.stringify({
-            workspaceId,
-            userId,
-            type: "system_alert",
-            title: "Notification route test",
-            body: "This test alert follows your channel and quiet-hour settings.",
-            priority: "high",
-            metadata: { forceQuietHours: true }
-          })
+          workspaceId,
+          userId,
+          type: "system_alert",
+          title: "Notification route test",
+          body: "This test alert follows your channel and quiet-hour settings.",
+          priority: "high",
+          metadata: { forceQuietHours: true }
         }
       );
-
-      if (!response.ok) {
-        throw new Error("Could not route test notification");
-      }
-      const body = (await response.json()) as { attempts: NotificationDeliveryAttempt[] };
       setMessage(`Routed ${body.attempts.length} channel attempt(s).`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not route test alert");

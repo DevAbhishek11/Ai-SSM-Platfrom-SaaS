@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { OnboardingStep } from "@ssm/domain";
 import { CheckCircle2, CircleDashed } from "lucide-react";
 import { StatusBadge } from "./status-badge";
-import { clientApiBaseUrl } from "@/lib/api";
+import { apiPost } from "@/lib/client-api";
 
 type ChecklistResponse = {
   workspaceId: string;
@@ -34,20 +34,7 @@ export function OnboardingChecklistPanel({
   }, [stepRows]);
 
   async function postJson(path: string, body: unknown): Promise<ChecklistResponse> {
-    const response = await fetch(`${clientApiBaseUrl}${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorBody?.message ?? "Onboarding action failed");
-    }
-
-    return (await response.json()) as ChecklistResponse;
+    return apiPost<ChecklistResponse>(path, body);
   }
 
   async function complete(step: OnboardingStep) {

@@ -9,7 +9,8 @@ import {
   type BrandVoice,
   type Platform
 } from "@ssm/domain";
-import { clientApiBaseUrl } from "@/lib/api";
+import { friendlyMessage } from "@/lib/api-error";
+import { apiPost } from "@/lib/client-api";
 
 export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: BrandVoice[] }) {
   const [brief, setBrief] = useState(
@@ -19,17 +20,15 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
   const [brandVoiceId, setBrandVoiceId] = useState(brandVoices[0]?.id ?? "");
   const [result, setResult] = useState<AiGenerationResponse | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
 
   async function generate() {
     setStatus("loading");
     setResult(null);
+    setError(null);
     try {
-      const response = await fetch(`${clientApiBaseUrl}/ai/generate`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
+      setResult(
+        await apiPost<AiGenerationResponse>("/ai/generate", {
           workspaceId: demoWorkspace.id,
           brief,
           platforms: selectedPlatforms,
@@ -37,15 +36,10 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
           objective: "engagement",
           brandVoiceId: brandVoiceId || undefined
         })
-      });
-
-      if (!response.ok) {
-        throw new Error("Generation failed");
-      }
-
-      setResult((await response.json()) as AiGenerationResponse);
+      );
       setStatus("idle");
-    } catch {
+    } catch (caught) {
+      setError(friendlyMessage(caught));
       setStatus("error");
     }
   }
@@ -114,7 +108,7 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
           role="alert"
           className="mt-3 rounded-[var(--radius-sm)] border border-[var(--danger-border)] bg-[var(--danger-soft)] p-3 text-sm text-[var(--danger)]"
         >
-          Could not reach the API. Start `npm run dev:api` and try again.
+          {error ?? "Could not reach the API. Start `npm run dev:api` and try again."}
         </p>
       ) : null}
       {result ? (

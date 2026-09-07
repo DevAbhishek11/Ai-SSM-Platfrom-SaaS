@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { Injectable, Logger } from "@nestjs/common";
 import type { Role } from "@ssm/domain";
 import { getEnv } from "../../common/env.js";
@@ -34,16 +34,32 @@ export type SessionSummary = {
   createdAt: string;
   lastUsedAt: string;
   expiresAt: string;
+  idleExpiresAt: string;
   current: boolean;
 };
 
+/** Why a session cannot be used. `active` is the only usable state. */
+export type SessionState = "active" | "unknown" | "revoked" | "expired" | "idle";
+
+export type RotationFailure = {
+  reason: "unknown" | "reuse_detected" | "expired" | "idle";
+};
+
+export type RotationOutcome = IssuedRefreshToken | RotationFailure;
+
+export const isRotationFailure = (outcome: RotationOutcome): outcome is RotationFailure =>
+  "reason" in outcome;
+
 const REFRESH_TOKEN_PREFIX = "ssm_rt_";
+const TOKEN_BYTES = 32;
 
 /**
- * Refresh-token session store with rotation and reuse detection.
+ * Refresh-token session store with rotation, reuse detection, idle expiry and a
+ * concurrency bound.
  *
  * Tokens are opaque random strings; only their SHA-256 digest is retained, so a
- * dump of this store cannot be replayed against the API.
+ * dump of this store cannot be replayed against the API. Lookups compare digests
+ * in constant time to keep the map from becoming a timing oracle.
  */
 @Injectable()
 export class SessionsService {
@@ -60,7 +76,7 @@ export class SessionsService {
   }): IssuedRefreshToken {
     this.pruneExpired();
 
-    const token = `${REFRESH_TOKEN_PREFIX}${randomBytes(32).toString("base64url")}`;
+    const token = `${REFRESH_TOKEN_PREFIX}${randomBytes(TOKEN_BYTES).toString("base64url")}`;
     const now = new Date();
     const session: RefreshSession = {
       id: randomUUID(),
@@ -73,26 +89,29 @@ export class SessionsService {
       userAgent: input.userAgent?.slice(0, 300),
       createdAt: now.toISOString(),
       lastUsedAt: now.toISOString(),
-      expiresAt: new Date(now.getTime() + this.ttlMs()).toISOString()
+      expiresAt: new Date(now.getTime() + this.absoluteTtlMs()).toISOString()
     };
 
     this.sessions.set(session.id, session);
+    this.enforceConcurrencyLimit(input.userId, session.id);
     return { token, session };
   }
 
   /**
    * Consumes a refresh token and issues its replacement.
    *
-   * Returns `undefined` for unknown, expired, or revoked tokens. Presenting an
-   * already-rotated token revokes the whole family, since that is the signature
-   * of a stolen token being replayed.
+   * Presenting an already-rotated token revokes the whole family, since that is
+   * the signature of a stolen token being replayed. The caller gets a reason so
+   * it can log precisely without leaking the distinction to the client.
    */
-  rotate(token: string, context: { ipAddress?: string; userAgent?: string } = {}): IssuedRefreshToken | undefined {
-    const tokenHash = this.hashToken(token);
-    const session = [...this.sessions.values()].find((entry) => entry.tokenHash === tokenHash);
+  rotate(
+    token: string,
+    context: { ipAddress?: string; userAgent?: string } = {}
+  ): RotationOutcome {
+    const session = this.findByToken(token);
 
     if (!session) {
-      return undefined;
+      return { reason: "unknown" };
     }
 
     if (session.revokedAt) {
@@ -100,12 +119,13 @@ export class SessionsService {
       this.logger.warn(
         `Refresh token reuse detected for user ${session.userId}; revoked session family ${session.familyId}`
       );
-      return undefined;
+      return { reason: "reuse_detected" };
     }
 
-    if (this.isExpired(session)) {
-      this.revoke(session.id, "expired");
-      return undefined;
+    const state = this.stateOf(session);
+    if (state !== "active") {
+      this.revoke(session.id, state === "idle" ? "idle_timeout" : "expired");
+      return { reason: state === "idle" ? "idle" : "expired" };
     }
 
     session.revokedAt = new Date().toISOString();
@@ -121,9 +141,47 @@ export class SessionsService {
     });
   }
 
+  /**
+   * State of a session id carried by an access token.
+   *
+   * Access tokens are self-contained, so without this check a logout or an idle
+   * timeout would not take effect until the token expired on its own.
+   */
+  validate(sessionId: string): SessionState {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return "unknown";
+    }
+    if (session.revokedAt) {
+      return "revoked";
+    }
+    return this.stateOf(session);
+  }
+
+  /**
+   * Records activity against a session, sliding its idle window forward.
+   * Returns false when the session is no longer usable.
+   */
+  touch(sessionId: string): boolean {
+    const state = this.validate(sessionId);
+    if (state !== "active") {
+      if (state === "idle") {
+        this.revoke(sessionId, "idle_timeout");
+      }
+      return false;
+    }
+
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return false;
+    }
+
+    session.lastUsedAt = new Date().toISOString();
+    return true;
+  }
+
   revokeByToken(token: string, reason = "logout"): RefreshSession | undefined {
-    const tokenHash = this.hashToken(token);
-    const session = [...this.sessions.values()].find((entry) => entry.tokenHash === tokenHash);
+    const session = this.findByToken(token);
     if (!session || session.revokedAt) {
       return undefined;
     }
@@ -144,10 +202,10 @@ export class SessionsService {
     return session;
   }
 
-  revokeAllForUser(userId: string, reason = "revoked_all"): number {
+  revokeAllForUser(userId: string, reason = "revoked_all", options: { except?: string } = {}): number {
     let revoked = 0;
     for (const session of this.sessions.values()) {
-      if (session.userId === userId && !session.revokedAt) {
+      if (session.userId === userId && !session.revokedAt && session.id !== options.except) {
         session.revokedAt = new Date().toISOString();
         session.revokedReason = reason;
         revoked += 1;
@@ -168,7 +226,7 @@ export class SessionsService {
   listForUser(userId: string, currentSessionId?: string): SessionSummary[] {
     this.pruneExpired();
     return [...this.sessions.values()]
-      .filter((session) => session.userId === userId && !session.revokedAt && !this.isExpired(session))
+      .filter((session) => session.userId === userId && this.stateOf(session) === "active" && !session.revokedAt)
       .sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt))
       .map((session) => ({
         id: session.id,
@@ -179,6 +237,7 @@ export class SessionsService {
         createdAt: session.createdAt,
         lastUsedAt: session.lastUsedAt,
         expiresAt: session.expiresAt,
+        idleExpiresAt: new Date(Date.parse(session.lastUsedAt) + this.idleTimeoutMs()).toISOString(),
         current: session.id === currentSessionId
       }));
   }
@@ -187,8 +246,60 @@ export class SessionsService {
     return this.sessions.get(sessionId);
   }
 
-  private isExpired(session: RefreshSession): boolean {
-    return Date.parse(session.expiresAt) <= Date.now();
+  /** Test/ops hook: number of sessions currently held, live or tombstoned. */
+  size(): number {
+    return this.sessions.size;
+  }
+
+  private stateOf(session: RefreshSession): SessionState {
+    if (Date.parse(session.expiresAt) <= Date.now()) {
+      return "expired";
+    }
+    if (Date.parse(session.lastUsedAt) + this.idleTimeoutMs() <= Date.now()) {
+      return "idle";
+    }
+    return "active";
+  }
+
+  /**
+   * Constant-time digest comparison, so the store cannot be probed by measuring
+   * how long a lookup for a near-miss token takes.
+   */
+  private findByToken(token: string): RefreshSession | undefined {
+    if (typeof token !== "string" || !token.startsWith(REFRESH_TOKEN_PREFIX)) {
+      return undefined;
+    }
+
+    const candidate = Buffer.from(this.hashToken(token), "hex");
+    let match: RefreshSession | undefined;
+    for (const session of this.sessions.values()) {
+      const stored = Buffer.from(session.tokenHash, "hex");
+      if (stored.length === candidate.length && timingSafeEqual(stored, candidate)) {
+        match = session;
+      }
+    }
+    return match;
+  }
+
+  /** Keeps a user's live session count bounded, evicting the least recently used. */
+  private enforceConcurrencyLimit(userId: string, keepSessionId: string): void {
+    const limit = getEnv().SESSION_MAX_PER_USER;
+    const live = [...this.sessions.values()]
+      .filter((session) => session.userId === userId && !session.revokedAt && this.stateOf(session) === "active")
+      .sort((a, b) => a.lastUsedAt.localeCompare(b.lastUsedAt));
+
+    let excess = live.length - limit;
+    for (const session of live) {
+      if (excess <= 0) {
+        break;
+      }
+      if (session.id === keepSessionId) {
+        continue;
+      }
+      session.revokedAt = new Date().toISOString();
+      session.revokedReason = "concurrent_session_limit";
+      excess -= 1;
+    }
   }
 
   private pruneExpired(): void {
@@ -202,8 +313,12 @@ export class SessionsService {
     }
   }
 
-  private ttlMs(): number {
+  private absoluteTtlMs(): number {
     return getEnv().REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
+  }
+
+  private idleTimeoutMs(): number {
+    return getEnv().SESSION_IDLE_TIMEOUT_MINUTES * 60 * 1000;
   }
 
   private hashToken(token: string): string {

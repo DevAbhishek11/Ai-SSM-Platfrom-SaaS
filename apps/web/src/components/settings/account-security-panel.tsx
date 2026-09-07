@@ -14,6 +14,8 @@ type ApiSession = {
   createdAt: string;
   lastUsedAt: string;
   expiresAt: string;
+  /** When the inactivity timer, rather than the absolute lifetime, ends it. */
+  idleExpiresAt?: string;
   current: boolean;
 };
 
@@ -106,21 +108,21 @@ export async function AccountSecurityPanel({ session }: { session: Session }) {
             No active sessions were returned by the API.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
-            <table className="w-full min-w-[42rem] text-left text-sm">
-              <thead className="bg-[var(--panel-soft)] text-xs uppercase tracking-wide text-[var(--muted)]">
+          <div className="scroll-thin overflow-x-auto rounded-[var(--radius-sm)] border border-[var(--border)]">
+            <table className="data-table min-w-[46rem]">
+              <thead>
                 <tr>
-                  <th className="px-3 py-2 font-medium">Client</th>
-                  <th className="px-3 py-2 font-medium">IP address</th>
-                  <th className="px-3 py-2 font-medium">Last used</th>
-                  <th className="px-3 py-2 font-medium">Expires</th>
-                  <th className="px-3 py-2 font-medium sr-only">Actions</th>
+                  <th>Client</th>
+                  <th>IP address</th>
+                  <th>Last used</th>
+                  <th>Signs out</th>
+                  <th className="sr-only">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {sessions.map((item) => (
-                  <tr key={item.id} className="border-t border-[var(--border)]">
-                    <td className="px-3 py-2.5">
+                  <tr key={item.id}>
+                    <td>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{describeClient(item.userAgent)}</span>
                         {item.current ? <span className="badge badge-success">This device</span> : null}
@@ -131,7 +133,12 @@ export async function AccountSecurityPanel({ session }: { session: Session }) {
                     </td>
                     <td className="text-[var(--muted)]">{item.ipAddress ?? "—"}</td>
                     <td className="text-[var(--muted)]">{formatRelativeTime(item.lastUsedAt)}</td>
-                    <td className="text-[var(--muted)]">{formatTime(item.expiresAt)}</td>
+                    <td className="text-[var(--muted)]">
+                      {formatTime(item.idleExpiresAt ?? item.expiresAt)}
+                      <span className="block text-xs">
+                        {item.idleExpiresAt ? "if left idle" : "absolute expiry"}
+                      </span>
+                    </td>
                     <td className="text-right">
                       <form action={revokeSession}>
                         <input type="hidden" name="sessionId" value={item.id} />

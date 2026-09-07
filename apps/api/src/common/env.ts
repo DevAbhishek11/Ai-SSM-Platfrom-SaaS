@@ -16,6 +16,21 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(16).default("local-development-refresh-secret-change-me"),
   ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().max(86_400).default(900),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().max(365).default(30),
+  /**
+   * Inactivity window. A session that has not been used within this many minutes is
+   * dead even though its absolute expiry is still in the future - the control that
+   * limits the blast radius of a stolen refresh token on a shared machine.
+   */
+  SESSION_IDLE_TIMEOUT_MINUTES: z.coerce.number().int().positive().max(43_200).default(720),
+  /** Concurrent live sessions per user; the oldest is evicted past this bound. */
+  SESSION_MAX_PER_USER: z.coerce.number().int().positive().max(100).default(10),
+  /** Consecutive failed sign-ins before an account is temporarily locked. */
+  AUTH_MAX_FAILED_LOGINS: z.coerce.number().int().positive().max(100).default(10),
+  AUTH_LOCKOUT_MINUTES: z.coerce.number().int().positive().max(1_440).default(15),
+  /** Hard ceiling on how long a single request may run before returning 504. */
+  REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  /** Maximum accepted request body size, passed straight to the body parser. */
+  REQUEST_BODY_LIMIT: z.string().default("1mb"),
   AUTH_REGISTRATION_ENABLED: z
     .enum(["true", "false"])
     .default("true")

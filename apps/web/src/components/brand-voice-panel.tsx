@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { demoWorkspace, type BrandVoice } from "@ssm/domain";
-import { clientApiBaseUrl } from "@/lib/api";
+import { apiPost } from "@/lib/client-api";
 
 type BrandEvaluation = {
   brandVoiceId: string;
@@ -38,20 +38,9 @@ export function BrandVoicePanel({ brandVoices }: { brandVoices: BrandVoice[] }) 
     setLoading("evaluate");
     setMessage(null);
     try {
-      const response = await fetch(
-        `${clientApiBaseUrl}/brand-voices/${selected.id}/evaluate`,
-        {
-          method: "POST",
-          headers: {
-            "content-type": "application/json"
-          },
-          body: JSON.stringify({ text: sample })
-        }
+      setEvaluation(
+        await apiPost<BrandEvaluation>(`/brand-voices/${selected.id}/evaluate`, { text: sample })
       );
-      if (!response.ok) {
-        throw new Error("Could not evaluate brand voice");
-      }
-      setEvaluation((await response.json()) as BrandEvaluation);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not evaluate brand voice");
     } finally {
@@ -63,12 +52,7 @@ export function BrandVoicePanel({ brandVoices }: { brandVoices: BrandVoice[] }) 
     setLoading("create");
     setMessage(null);
     try {
-      const response = await fetch(`${clientApiBaseUrl}/brand-voices`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
+      const voice = await apiPost<BrandVoice>("/brand-voices", {
           workspaceId: demoWorkspace.id,
           name: newName,
           tone: { primary: "warm", secondary: "direct" },
@@ -81,13 +65,7 @@ export function BrandVoicePanel({ brandVoices }: { brandVoices: BrandVoice[] }) 
           emojiUsage: "light",
           ctaPreferences: { examples: ["Map the next campaign milestone."] },
           examples: ["Practical systems help lean teams publish with confidence."]
-        })
       });
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(body?.message ?? "Could not create brand voice");
-      }
-      const voice = (await response.json()) as BrandVoice;
       setMessage(`Created ${voice.name} v${voice.version}. Refresh to see it in the local fixture list.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not create brand voice");

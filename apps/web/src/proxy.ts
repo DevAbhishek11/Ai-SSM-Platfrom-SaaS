@@ -1,7 +1,35 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { CSRF_COOKIE, generateCsrfToken } from "@/lib/csrf";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/session";
 
 const PUBLIC_PATHS = ["/login", "/register"];
+
+const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/"
+};
+
+/**
+ * Makes sure a CSRF token exists for any request that carries a session cookie.
+ * Cookies can be evicted independently, and a session created before this
+ * defence existed has none - without a top-up the first mutation would 403.
+ */
+const ensureCsrfToken = (request: NextRequest, response: NextResponse): NextResponse => {
+  if (request.cookies.has(CSRF_COOKIE)) {
+    return response;
+  }
+
+  response.cookies.set(CSRF_COOKIE, generateCsrfToken(), {
+    httpOnly: false,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30
+  });
+  return response;
+};
 
 const API_ORIGIN = (
   process.env.API_INTERNAL_URL ??
@@ -30,29 +58,22 @@ export async function proxy(request: NextRequest) {
   }
 
   if (accessToken) {
-    return NextResponse.next();
+    return ensureCsrfToken(request, NextResponse.next());
   }
 
   if (refreshToken) {
     const renewed = await renew(refreshToken);
     if (renewed) {
       const response = NextResponse.next();
-      const secure = process.env.NODE_ENV === "production";
       response.cookies.set(ACCESS_TOKEN_COOKIE, renewed.accessToken, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure,
-        path: "/",
+        ...SESSION_COOKIE_OPTIONS,
         maxAge: Math.max(renewed.expiresIn - 15, 60)
       });
       response.cookies.set(REFRESH_TOKEN_COOKIE, renewed.refreshToken, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure,
-        path: "/",
+        ...SESSION_COOKIE_OPTIONS,
         maxAge: 60 * 60 * 24 * 30
       });
-      return response;
+      return ensureCsrfToken(request, response);
     }
   }
 
@@ -68,6 +89,7 @@ export async function proxy(request: NextRequest) {
   const response = NextResponse.redirect(loginUrl);
   response.cookies.delete(ACCESS_TOKEN_COOKIE);
   response.cookies.delete(REFRESH_TOKEN_COOKIE);
+  response.cookies.delete(CSRF_COOKIE);
   return response;
 }
 
@@ -77,7 +99,9 @@ async function renew(refreshToken: string) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ refreshToken }),
-      cache: "no-store"
+      cache: "no-store",
+      // A slow API must not hold up navigation; a miss just means a login bounce.
+      signal: AbortSignal.timeout(10_000)
     });
 
     if (!response.ok) {

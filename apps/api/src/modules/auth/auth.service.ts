@@ -1,6 +1,9 @@
 import {
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
+  NotFoundException,
   Logger,
   UnauthorizedException
 } from "@nestjs/common";
@@ -10,7 +13,31 @@ import type { Principal } from "../../common/principal.js";
 import { getEnv } from "../../common/env.js";
 import { AuditService } from "../audit/audit.service.js";
 import { AccountsService, type Account, type Membership } from "./accounts.service.js";
-import { SessionsService } from "./sessions.service.js";
+import { LoginAttemptsService } from "./login-attempts.service.js";
+import { isRotationFailure, SessionsService, type SessionState } from "./sessions.service.js";
+
+/**
+ * Machine-readable reasons attached to 401s so the web tier can tell "your
+ * session ended" apart from "those credentials are wrong" without parsing prose.
+ */
+export const AUTH_ERROR_CODES = {
+  invalidCredentials: "invalid_credentials",
+  accountLocked: "account_locked",
+  sessionExpired: "session_expired",
+  sessionRevoked: "session_revoked",
+  sessionIdle: "session_idle",
+  invalidToken: "invalid_token",
+  registrationDisabled: "registration_disabled"
+} as const;
+
+export type AuthErrorCode = (typeof AUTH_ERROR_CODES)[keyof typeof AUTH_ERROR_CODES];
+
+/** 401 carrying a stable `code` alongside the human-readable message. */
+export class AuthFailureException extends UnauthorizedException {
+  constructor(message: string, readonly code: AuthErrorCode) {
+    super({ message, code, error: "Unauthorized", statusCode: 401 });
+  }
+}
 
 export type AuthEventContext = {
   ipAddress?: string;
@@ -40,6 +67,7 @@ export class AuthService {
   constructor(
     private readonly accountsService: AccountsService,
     private readonly sessionsService: SessionsService,
+    private readonly loginAttemptsService: LoginAttemptsService,
     private readonly auditService: AuditService
   ) {}
 
@@ -48,7 +76,12 @@ export class AuthService {
     context: AuthEventContext = {}
   ): Promise<AuthResult> {
     if (!getEnv().AUTH_REGISTRATION_ENABLED) {
-      throw new ForbiddenException("Self-service registration is disabled for this deployment");
+      throw new ForbiddenException({
+        message: "Self-service registration is disabled for this deployment",
+        code: AUTH_ERROR_CODES.registrationDisabled,
+        statusCode: 403,
+        error: "Forbidden"
+      });
     }
 
     const account = await this.accountsService.register(input);
@@ -74,28 +107,45 @@ export class AuthService {
     context: AuthEventContext = {},
     workspaceId?: string
   ): Promise<AuthResult> {
+    // Lockout is evaluated before any account lookup so a locked identity costs
+    // an attacker a request without costing us an Argon2 verification.
+    const lockout = this.loginAttemptsService.status(email);
+    if (lockout.locked) {
+      this.recordFailedLogin(email, "account_locked", context);
+      throw new HttpException(
+        {
+          message: `Too many failed sign-in attempts. Try again in ${Math.ceil(
+            lockout.retryAfterSeconds / 60
+          )} minute(s).`,
+          code: AUTH_ERROR_CODES.accountLocked,
+          retryAfterSeconds: lockout.retryAfterSeconds,
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          error: "Too Many Requests"
+        },
+        HttpStatus.TOO_MANY_REQUESTS
+      );
+    }
+
     const account = await this.accountsService.findByEmail(email);
 
     if (!account) {
       // Spend the same Argon2 budget as a real verification so response time
       // does not disclose whether the address exists.
       await this.accountsService.burnTiming(password);
-      this.recordFailedLogin(email, "unknown_email", context);
-      throw new UnauthorizedException("Invalid email or password");
+      this.failLogin(email, "unknown_email", context);
     }
 
     if (account.status !== "active") {
-      this.recordFailedLogin(email, `account_${account.status}`, context, account.id);
-      throw new UnauthorizedException("Invalid email or password");
+      this.failLogin(email, `account_${account.status}`, context, account.id);
     }
 
     if (!(await this.accountsService.verifyPassword(account, password))) {
-      this.recordFailedLogin(email, "bad_password", context, account.id);
-      throw new UnauthorizedException("Invalid email or password");
+      this.failLogin(email, "bad_password", context, account.id);
     }
 
     const membership = this.accountsService.membershipFor(account, workspaceId);
     this.accountsService.markLogin(account);
+    this.loginAttemptsService.recordSuccess(email);
 
     this.auditService.record({
       workspaceId: membership.workspaceId,
@@ -111,15 +161,34 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string, context: AuthEventContext = {}): Promise<AuthResult> {
+    if (typeof refreshToken !== "string" || refreshToken.length === 0) {
+      throw new AuthFailureException("Refresh token is required", AUTH_ERROR_CODES.invalidToken);
+    }
+
     const rotated = this.sessionsService.rotate(refreshToken, context);
-    if (!rotated) {
-      throw new UnauthorizedException("Invalid or expired refresh token");
+    if (isRotationFailure(rotated)) {
+      // The client always sees the same message; only the audit trail records why.
+      this.auditService.record({
+        workspaceId: "00000000-0000-4000-8000-000000000000",
+        action: "auth.refresh_rejected",
+        entityType: "session",
+        newValues: { reason: rotated.reason },
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent
+      });
+      throw new AuthFailureException(
+        "Invalid or expired refresh token",
+        rotated.reason === "idle" ? AUTH_ERROR_CODES.sessionIdle : AUTH_ERROR_CODES.sessionExpired
+      );
     }
 
     const account = await this.accountsService.findById(rotated.session.userId);
     if (!account || account.status !== "active") {
       this.sessionsService.revoke(rotated.session.id, "account_unavailable");
-      throw new UnauthorizedException("Invalid or expired refresh token");
+      throw new AuthFailureException(
+        "Invalid or expired refresh token",
+        AUTH_ERROR_CODES.sessionRevoked
+      );
     }
 
     const membership = this.accountsService.membershipFor(account, rotated.session.workspaceId);
@@ -149,7 +218,7 @@ export class AuthService {
   async me(principal: Principal) {
     const account = await this.accountsService.findById(principal.userId);
     if (!account) {
-      throw new UnauthorizedException("Account not found");
+      throw new AuthFailureException("Account not found", AUTH_ERROR_CODES.invalidToken);
     }
 
     const membership = this.accountsService.membershipFor(account, principal.workspaceId);
@@ -170,7 +239,7 @@ export class AuthService {
   ): Promise<AuthResult> {
     const account = await this.accountsService.findById(principal.userId);
     if (!account) {
-      throw new UnauthorizedException("Account not found");
+      throw new AuthFailureException("Account not found", AUTH_ERROR_CODES.invalidToken);
     }
 
     const membership = this.accountsService.membershipFor(account, workspaceId);
@@ -233,8 +302,10 @@ export class AuthService {
 
   revokeSession(principal: Principal, sessionId: string) {
     const session = this.sessionsService.findById(sessionId);
+    // Not found and not-yours are deliberately indistinguishable, otherwise this
+    // endpoint enumerates session ids belonging to other users.
     if (!session || session.userId !== principal.userId) {
-      throw new UnauthorizedException("Session not found");
+      throw new NotFoundException("Session not found");
     }
 
     this.sessionsService.revoke(sessionId, "revoked_by_user");
@@ -260,7 +331,10 @@ export class AuthService {
       });
       payload = verified.payload;
     } catch {
-      throw new UnauthorizedException("Invalid or expired access token");
+      throw new AuthFailureException(
+        "Invalid or expired access token",
+        AUTH_ERROR_CODES.invalidToken
+      );
     }
 
     if (
@@ -269,22 +343,30 @@ export class AuthService {
       typeof payload.role !== "string" ||
       typeof payload.workspaceId !== "string"
     ) {
-      throw new UnauthorizedException("Invalid token payload");
+      throw new AuthFailureException("Invalid token payload", AUTH_ERROR_CODES.invalidToken);
     }
 
     const role = payload.role as Role;
     const permissions = this.accountsService.permissionsFor(role);
     if (permissions.length === 0 && role !== "viewer") {
-      throw new UnauthorizedException("Invalid token role");
+      throw new AuthFailureException("Invalid token role", AUTH_ERROR_CODES.invalidToken);
     }
 
-    // A revoked session must not keep working until the access token expires.
+    // Access tokens are self-contained, so the session behind them has to be
+    // re-checked on every request: without this, logout, an admin revoke, or an
+    // idle timeout would not bite until the token expired on its own. Touching
+    // the session also slides its inactivity window forward.
     const sessionId = typeof payload.sid === "string" ? payload.sid : undefined;
     if (sessionId) {
-      const session = this.sessionsService.findById(sessionId);
-      if (session?.revokedAt) {
-        throw new UnauthorizedException("Session has been revoked");
+      const state = this.sessionsService.validate(sessionId);
+      if (state !== "active") {
+        this.sessionsService.touch(sessionId);
+        throw new AuthFailureException(
+          this.sessionStateMessage(state),
+          this.sessionStateCode(state)
+        );
       }
+      this.sessionsService.touch(sessionId);
     }
 
     return {
@@ -341,6 +423,54 @@ export class AuthService {
       role: membership.role,
       permissions: this.accountsService.permissionsFor(membership.role)
     };
+  }
+
+  /**
+   * Records the failure, increments the lockout counter, and throws the single
+   * generic 401 every failed sign-in produces. Declared `never` so callers can
+   * treat the account as non-null afterwards.
+   */
+  private failLogin(
+    email: string,
+    reason: string,
+    context: AuthEventContext,
+    userId?: string
+  ): never {
+    const state = this.loginAttemptsService.recordFailure(email);
+    this.recordFailedLogin(email, reason, context, userId);
+
+    if (state.locked) {
+      this.logger.warn(`Account locked after ${state.failedAttempts} failed sign-in attempts`);
+    }
+
+    throw new AuthFailureException(
+      "Invalid email or password",
+      AUTH_ERROR_CODES.invalidCredentials
+    );
+  }
+
+  private sessionStateMessage(state: SessionState): string {
+    switch (state) {
+      case "revoked":
+        return "Session has been revoked";
+      case "idle":
+        return "Session expired after a period of inactivity";
+      case "expired":
+        return "Session has expired";
+      default:
+        return "Session is no longer valid";
+    }
+  }
+
+  private sessionStateCode(state: SessionState): AuthErrorCode {
+    switch (state) {
+      case "revoked":
+        return AUTH_ERROR_CODES.sessionRevoked;
+      case "idle":
+        return AUTH_ERROR_CODES.sessionIdle;
+      default:
+        return AUTH_ERROR_CODES.sessionExpired;
+    }
   }
 
   private recordFailedLogin(

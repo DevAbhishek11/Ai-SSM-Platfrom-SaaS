@@ -665,6 +665,28 @@ td {
   animation: ssm-pulse-ring 2s ease-out infinite;
 }
 
+/* Loading placeholder used by the streaming fallbacks. */
+@keyframes ssm-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--panel-soft) 0%,
+    var(--border) 40%,
+    var(--panel-soft) 80%
+  );
+  background-size: 200% 100%;
+  animation: ssm-shimmer 1.4s linear infinite;
+  border: 1px solid var(--border);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

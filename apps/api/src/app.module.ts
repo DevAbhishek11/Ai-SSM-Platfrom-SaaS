@@ -1,12 +1,15 @@
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
 import { ThrottlerModule } from "@nestjs/throttler";
+import { AllExceptionsFilter } from "./common/all-exceptions.filter.js";
 import { AuthenticationGuard } from "./common/authentication.guard.js";
 import { getEnv } from "./common/env.js";
 import { AppThrottlerGuard } from "./common/throttler.guard.js";
 import { PermissionsGuard } from "./common/permissions.guard.js";
 import { RequestContextMiddleware } from "./common/request-context.middleware.js";
+import { RequestTimeoutInterceptor } from "./common/request-timeout.interceptor.js";
+import { buildValidationPipe } from "./common/validation.js";
 import { AiModule } from "./modules/ai/ai.module.js";
 import { AnalyticsModule } from "./modules/analytics/analytics.module.js";
 import { ApiKeyAuthGuard } from "./modules/api-keys/api-key-auth.guard.js";
@@ -78,6 +81,19 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
     SocialModule
   ],
   providers: [
+    // One error shape for the whole surface, and no stack traces on the wire.
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter
+    },
+    {
+      provide: APP_PIPE,
+      useFactory: buildValidationPipe
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestTimeoutInterceptor
+    },
     // Guard order matters: throttle first, then identify the caller (API key or
     // bearer token), then authorize the resolved principal.
     {

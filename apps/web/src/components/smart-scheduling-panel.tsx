@@ -12,7 +12,7 @@ import {
 import { CalendarClock, Sparkles } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
-import { clientApiBaseUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/client-api";
 
 type RecommendationResponse = {
   generated: ScheduleSlot[];
@@ -48,20 +48,7 @@ export function SmartSchedulingPanel({
   const selectedPost = useMemo(() => posts.find((post) => post.id === postId), [postId, posts]);
 
   async function postJson<T>(path: string, body: unknown): Promise<T> {
-    const response = await fetch(`${clientApiBaseUrl}${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorBody?.message ?? "Scheduling action failed");
-    }
-
-    return (await response.json()) as T;
+    return apiRequest<T>(path, { method: "POST", body });
   }
 
   async function createRule() {
