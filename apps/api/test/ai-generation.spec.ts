@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import "./env.js";
 import { Test } from "@nestjs/testing";
 import type { INestApplication } from "@nestjs/common";
 import { ValidationPipe } from "@nestjs/common";
@@ -47,6 +48,16 @@ const claudeFetch: FetchLike = async (url) => {
 describe("AI generation through the model router", () => {
   let app: INestApplication;
 
+  /**
+   * The API denies anonymous callers, so every request needs an identity. These
+   * helpers attach the test-only `x-user-role` header (enabled in `test/env.ts`).
+   * Individual tests override the header to assert role behaviour, and
+   * `auth.spec.ts` exercises the real bearer-token path end to end.
+   */
+  const server = () => app.getHttpServer();
+  const get = (url: string) => request(server()).get(url).set("x-user-role", "owner");
+  const post = (url: string) => request(server()).post(url).set("x-user-role", "owner");
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(AI_CONFIG)
@@ -66,7 +77,7 @@ describe("AI generation through the model router", () => {
   });
 
   it("reports the configured provider chain without exposing credentials", async () => {
-    const response = await request(app.getHttpServer()).get("/api/ai/providers").expect(200);
+    const response = await get("/api/ai/providers").expect(200);
 
     expect(JSON.stringify(response.body)).not.toContain("sk-ant-integration-test");
     expect(response.body).toMatchObject({
@@ -74,14 +85,13 @@ describe("AI generation through the model router", () => {
       activeProvider: "anthropic",
       fallbackProvider: "local"
     });
-    expect(response.body.providers.map((provider: { provider: string }) => provider.provider)).toContain(
-      "ollama"
-    );
+    expect(
+      response.body.providers.map((provider: { provider: string }) => provider.provider)
+    ).toContain("ollama");
   });
 
   it("generates variants through Claude, clamps limits, and repairs missing platforms", async () => {
-    const response = await request(app.getHttpServer())
-      .post("/api/ai/generate")
+    const response = await post("/api/ai/generate")
       .set("x-user-role", "creator")
       .send({
         workspaceId,
@@ -102,7 +112,9 @@ describe("AI generation through the model router", () => {
     });
     expect(response.body.estimatedTokens).toBe(530);
 
-    const platforms = response.body.variants.map((variant: { platform: string }) => variant.platform);
+    const platforms = response.body.variants.map(
+      (variant: { platform: string }) => variant.platform
+    );
     expect(platforms).toEqual(["linkedin", "x", "instagram"]);
 
     const xVariant = response.body.variants[1];
@@ -117,8 +129,7 @@ describe("AI generation through the model router", () => {
   });
 
   it("records the generation in the audit log and accepts feedback", async () => {
-    const generated = await request(app.getHttpServer())
-      .post("/api/ai/generate")
+    const generated = await post("/api/ai/generate")
       .set("x-user-role", "creator")
       .send({
         workspaceId,
@@ -127,11 +138,11 @@ describe("AI generation through the model router", () => {
       })
       .expect(201);
 
-    const generations = await request(app.getHttpServer())
-      .get(`/api/ai/generations?workspaceId=${workspaceId}`)
-      .expect(200);
+    const generations = await get(`/api/ai/generations?workspaceId=${workspaceId}`).expect(200);
 
-    const logEntry = generations.body.find((entry: { id: string }) => entry.id === generated.body.id);
+    const logEntry = generations.body.find(
+      (entry: { id: string }) => entry.id === generated.body.id
+    );
     expect(logEntry).toMatchObject({
       provider: "anthropic",
       model: "claude-3-5-sonnet-latest",
@@ -141,22 +152,19 @@ describe("AI generation through the model router", () => {
     expect(logEntry.cost).toBeGreaterThan(0);
     expect(logEntry.attempts[0]).toMatchObject({ provider: "anthropic", status: "succeeded" });
 
-    const feedback = await request(app.getHttpServer())
-      .post(`/api/ai/generations/${generated.body.id}/feedback`)
+    const feedback = await post(`/api/ai/generations/${generated.body.id}/feedback`)
       .send({ feedback: "thumbs_up" })
       .expect(201);
 
     expect(feedback.body.feedback).toBe("thumbs_up");
 
-    await request(app.getHttpServer())
-      .post(`/api/ai/generations/${generated.body.id}/feedback`)
+    await post(`/api/ai/generations/${generated.body.id}/feedback`)
       .send({ feedback: "not-a-value" })
       .expect(400);
   });
 
   it("still blocks unsafe generations produced by a remote provider", async () => {
-    const response = await request(app.getHttpServer())
-      .post("/api/ai/generate")
+    const response = await post("/api/ai/generate")
       .set("x-user-role", "creator")
       .send({
         workspaceId,
@@ -173,6 +181,10 @@ describe("AI generation through the model router", () => {
 
 describe("AI generation without any provider credentials", () => {
   let app: INestApplication;
+
+  const server = () => app.getHttpServer();
+  const get = (url: string) => request(server()).get(url).set("x-user-role", "owner");
+  const post = (url: string) => request(server()).post(url).set("x-user-role", "owner");
 
   beforeAll(async () => {
     const failingFetch: FetchLike = async () => {
@@ -197,8 +209,7 @@ describe("AI generation without any provider credentials", () => {
   });
 
   it("serves deterministic local variants so the product still works offline", async () => {
-    const response = await request(app.getHttpServer())
-      .post("/api/ai/generate")
+    const response = await post("/api/ai/generate")
       .set("x-user-role", "creator")
       .send({
         workspaceId,
@@ -216,7 +227,7 @@ describe("AI generation without any provider credentials", () => {
   });
 
   it("marks every remote provider as unconfigured", async () => {
-    const response = await request(app.getHttpServer()).get("/api/ai/providers").expect(200);
+    const response = await get("/api/ai/providers").expect(200);
 
     expect(response.body.activeProvider).toBe("local");
     const configured = response.body.providers

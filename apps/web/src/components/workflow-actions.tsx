@@ -4,10 +4,14 @@ import { useState } from "react";
 import type { Post } from "@ssm/domain";
 import { clientApiBaseUrl } from "@/lib/api";
 
+/**
+ * The API authorises each transition from the caller's real session role, so the
+ * UI only needs the endpoint names here.
+ */
 const actions = [
-  { label: "Approve", endpoint: "approve", role: "reviewer" },
-  { label: "Request changes", endpoint: "request-changes", role: "reviewer" },
-  { label: "Submit", endpoint: "submit", role: "creator" }
+  { label: "Approve", endpoint: "approve" },
+  { label: "Request changes", endpoint: "request-changes" },
+  { label: "Submit", endpoint: "submit" }
 ];
 
 export function WorkflowActions({ post }: { post: Post }) {
@@ -15,7 +19,7 @@ export function WorkflowActions({ post }: { post: Post }) {
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
-  async function runAction(endpoint: string, role: string) {
+  async function runAction(endpoint: string) {
     setLoading(endpoint);
     setResult(null);
     try {
@@ -24,8 +28,7 @@ export function WorkflowActions({ post }: { post: Post }) {
         {
           method: "POST",
           headers: {
-            "content-type": "application/json",
-            "x-user-role": role
+            "content-type": "application/json"
           },
           body: JSON.stringify({ comment: message })
         }
@@ -62,7 +65,7 @@ export function WorkflowActions({ post }: { post: Post }) {
           <button
             key={action.endpoint}
             type="button"
-            onClick={() => runAction(action.endpoint, action.role)}
+            onClick={() => runAction(action.endpoint)}
             disabled={loading !== null}
             className="rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >

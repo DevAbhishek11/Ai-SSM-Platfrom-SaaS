@@ -5,18 +5,15 @@ import {
   defaultAiProviderPriority,
   type AiRouterStatus
 } from "@ssm/domain";
-import { serverApiBaseUrl } from "./api";
+import { authorizedFetch } from "./session";
 
 /**
  * Fetches live model-router status from the API. Falls back to a "no credentials
  * configured" view so the dashboard renders before the API is running.
  */
 export async function getAiRouterStatus(): Promise<AiRouterStatus> {
-  const baseUrl = serverApiBaseUrl;
-
   try {
-    const response = await fetch(`${baseUrl}/ai/providers`, {
-      next: { revalidate: 30 },
+    const response = await authorizedFetch("/ai/providers", {
       headers: { accept: "application/json" }
     });
 

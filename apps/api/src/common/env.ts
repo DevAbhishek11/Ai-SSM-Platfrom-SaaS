@@ -13,6 +13,27 @@ const envSchema = z.object({
   JWT_ISSUER: z.string().min(1).default("ssm-local"),
   JWT_AUDIENCE: z.string().min(1).default("ssm-web"),
   JWT_ACCESS_SECRET: z.string().min(16).default("local-development-access-secret-change-me"),
+  JWT_REFRESH_SECRET: z.string().min(16).default("local-development-refresh-secret-change-me"),
+  ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().max(86_400).default(900),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().max(365).default(30),
+  AUTH_REGISTRATION_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
+  /**
+   * Test/CI escape hatch that lets `x-user-role` / `x-workspace-id` headers stand in for a
+   * signed session. Never honoured when NODE_ENV=production.
+   */
+  THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
+  THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
+  THROTTLE_DISABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+  AUTH_ALLOW_DEV_HEADERS: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   DATABASE_HEALTHCHECK: z.enum(["metadata", "strict"]).default("metadata"),
   DEMO_USER_PASSWORD: z.string().min(8).default("demo-password-change-me"),
   AI_PROVIDER: z.enum(aiProviderSelectionModes).default("auto"),

@@ -7,7 +7,7 @@ import {
   demoScheduleRules,
   demoScheduleSlots
 } from "@ssm/domain";
-import { AppShell } from "@/components/app-shell";
+import { AppShell } from "@/components/shell/app-shell";
 import { CampaignOperationsPanel } from "@/components/campaign-operations-panel";
 import { CalendarBoard } from "@/components/calendar-board";
 import { CampaignPortfolio } from "@/components/campaign-portfolio";
@@ -19,7 +19,11 @@ export default async function CalendarPage() {
   const overview = await getDashboardOverview();
 
   return (
-    <AppShell workspace={overview.workspace} activeItem="Calendar">
+    <AppShell
+      activePath="/calendar"
+      title="Content calendar"
+      description="Campaign portfolio, reusable templates, and smart scheduling recommendations."
+    >
       <div className="grid gap-5">
         <div className="grid gap-5 xl:grid-cols-[1.3fr_0.8fr]">
           <CalendarBoard posts={overview.posts} />

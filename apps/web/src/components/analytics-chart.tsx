@@ -20,9 +20,9 @@ export function AnalyticsChart({
         <h3 className="text-base font-semibold">Performance pulse</h3>
         <p className="text-sm text-[var(--muted)]">Recent reach and engagement by channel.</p>
       </div>
-      <div className="mt-4 h-72 min-h-72">
+      <div className="mt-4 h-72 min-h-72 w-full min-w-0">
         {mounted ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
             <AreaChart data={data} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
               <defs>
                 <linearGradient id="engagementFill" x1="0" x2="0" y1="0" y2="1">

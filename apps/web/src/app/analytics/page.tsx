@@ -9,7 +9,7 @@ import {
   demoSocialMentions
 } from "@ssm/domain";
 import { AnalyticsChart } from "@/components/analytics-chart";
-import { AppShell } from "@/components/app-shell";
+import { AppShell } from "@/components/shell/app-shell";
 import { MetricCard } from "@/components/metric-card";
 import { ReportingPanel } from "@/components/reporting-panel";
 import { SocialListeningPanel } from "@/components/social-listening-panel";
@@ -27,7 +27,11 @@ export default async function AnalyticsPage() {
   const engagementRate = overview.metrics.engagements / Math.max(overview.metrics.impressions, 1);
 
   return (
-    <AppShell workspace={overview.workspace} activeItem="Analytics">
+    <AppShell
+      activePath="/analytics"
+      title="Analytics"
+      description="Cross-channel performance, social listening, and executive reporting."
+    >
       <div className="grid gap-5">
         <section className="grid gap-4 md:grid-cols-3">
           <MetricCard

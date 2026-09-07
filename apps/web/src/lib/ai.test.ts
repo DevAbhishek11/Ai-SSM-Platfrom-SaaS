@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getAiRouterStatus, localRouterStatus } from "./ai";
+
+// The loader now runs as the signed-in user, so the cookie store is stubbed.
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: (name: string) => (name === "ssm_at" ? { name, value: "test-access-token" } : undefined)
+  })
+}));
+
+const { getAiRouterStatus, localRouterStatus } = await import("./ai");
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -35,6 +43,10 @@ describe("AI router status", () => {
 
     expect(status.activeProvider).toBe("anthropic");
     expect(status.priority).toEqual(["anthropic", "local"]);
+
+    // The caller's bearer token must be forwarded to the API.
+    const [, init] = vi.mocked(globalThis.fetch).mock.calls[0]!;
+    expect(new Headers(init?.headers).get("authorization")).toBe("Bearer test-access-token");
   });
 
   it("falls back to the local view when the API is unreachable", async () => {

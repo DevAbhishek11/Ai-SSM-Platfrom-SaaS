@@ -51,8 +51,7 @@ export function SmartSchedulingPanel({
     const response = await fetch(`${clientApiBaseUrl}${path}`, {
       method: "POST",
       headers: {
-        "content-type": "application/json",
-        "x-user-role": "owner"
+        "content-type": "application/json"
       },
       body: JSON.stringify(body)
     });

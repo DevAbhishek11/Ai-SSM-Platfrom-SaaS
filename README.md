@@ -48,8 +48,9 @@ Demo auth:
 - Email: `owner@acmegrowth.test`
 - Password: `demo-password-change-me`
 
-Implemented dashboard routes:
+Implemented routes:
 
+- `/login`, `/register` - authentication (public)
 - `/` - command dashboard
 - `/calendar` - calendar and campaign portfolio
 - `/publishing` - publishing queue, idempotency, and retry visibility
@@ -61,6 +62,29 @@ Implemented dashboard routes:
 - `/settings` - billing limits and webhook delivery status
 
 The AI Studio page shows a live "Model routing" panel with the active provider chain.
+
+Every dashboard route is behind the session guard, wrapped in an application shell with a
+collapsible permission-aware sidebar, workspace switcher, notification bell, `Cmd/Ctrl+K`
+command palette, and light/dark/system theming.
+
+## Authentication and sessions
+
+Real authentication is implemented end to end - no impersonation headers required.
+
+| Piece | Where | Notes |
+| ----- | ----- | ----- |
+| Credentials | `POST /api/auth/register`, `POST /api/auth/login` | Argon2id hashing, generic failure messages, per-IP rate limits |
+| Access token | HS256 JWT, 15 min | `{sub,email,name,role,workspaceId,sid}` |
+| Refresh token | `ssm_rt_<random>`, 30 days | SHA-256 at rest, rotated on every use, reuse kills the token family |
+| Browser storage | httpOnly `ssm_at` / `ssm_rt` cookies | Never readable from JavaScript; `secure` in production |
+| Route protection | `apps/web/src/proxy.ts` | Redirects anonymous visitors to `/login?next=...` and silently refreshes expiring sessions |
+| Browser to API | `apps/web/src/app/api/[...path]/route.ts` | Same-origin proxy that attaches the bearer token, refreshes once on 401, and replays the request |
+| Server components | `authorizedFetch()` in `apps/web/src/lib/session.ts` | RSC loaders run as the signed-in user |
+| Account management | `/settings` | Profile, password change (revokes all sessions), and active-session revocation |
+| Workspace switching | `POST /api/auth/switch-workspace` | Re-issues tokens scoped to another membership |
+
+`AUTH_ALLOW_DEV_HEADERS=false` is the default: the legacy `x-user-role` header is ignored
+unless it is explicitly enabled for local debugging.
 
 ## AI model routing
 
@@ -118,7 +142,11 @@ npm run dev:api
 
 Copy `.env.example` to `.env` and update values for your local services.
 
-The browser talks to the API through the same-origin `/api` path, which the Next.js
-dev/production server proxies to `API_PROXY_TARGET`. Server components use
-`API_INTERNAL_URL`. This keeps the dashboard working behind reverse proxies and in
-container/preview environments.
+The browser talks to the API through the same-origin `/api` path, which is served by an
+authenticated Next.js route handler that forwards to `API_PROXY_TARGET` with the caller's
+session token attached. Server components use `API_INTERNAL_URL`. This keeps the dashboard
+working behind reverse proxies and in container/preview environments, and means no bearer
+token is ever exposed to client JavaScript.
+
+Set `NEXT_PUBLIC_DISPLAY_TIMEZONE` to pin the time zone used for rendered timestamps; it
+keeps server-rendered and browser-rendered output identical.

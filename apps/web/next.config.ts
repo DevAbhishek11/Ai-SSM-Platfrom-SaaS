@@ -1,12 +1,12 @@
 import type { NextConfig } from "next";
 
 /**
- * Internal API origin used by the same-origin `/api` proxy. Browsers never talk
- * to the API host directly, so the dashboard works behind reverse proxies and
- * preview environments.
+ * Browsers never talk to the API host directly: every `/api/*` call is handled
+ * by the authenticated route handler at `src/app/api/[...path]/route.ts`, which
+ * attaches the session bearer token and transparently refreshes it. That keeps
+ * the dashboard working behind reverse proxies and preview environments without
+ * exposing tokens to client JavaScript.
  */
-const apiProxyTarget = (process.env.API_PROXY_TARGET ?? "http://localhost:4000").replace(/\/+$/, "");
-
 const allowedDevOrigins = (process.env.NEXT_ALLOWED_DEV_ORIGINS ?? "*.e2b.app,localhost,127.0.0.1")
   .split(",")
   .map((origin) => origin.trim())
@@ -19,14 +19,6 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   transpilePackages: ["@ssm/domain"],
   typedRoutes: true,
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${apiProxyTarget}/api/:path*`
-      }
-    ];
-  },
   async headers() {
     return [
       {

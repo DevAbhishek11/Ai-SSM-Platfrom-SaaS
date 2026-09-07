@@ -1,5 +1,5 @@
 import { demoPublishingJobs } from "@ssm/domain";
-import { AppShell } from "@/components/app-shell";
+import { AppShell } from "@/components/shell/app-shell";
 import { PublishingQueue } from "@/components/publishing-queue";
 import { getDashboardOverview } from "@/lib/dashboard";
 
@@ -7,7 +7,11 @@ export default async function PublishingPage() {
   const overview = await getDashboardOverview();
 
   return (
-    <AppShell workspace={overview.workspace} activeItem="Publishing">
+    <AppShell
+      activePath="/publishing"
+      title="Publishing queue"
+      description="Idempotent delivery, retry policy, and per-network connector health."
+    >
       <div className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
         <PublishingQueue jobs={demoPublishingJobs} accounts={overview.socialAccounts} />
         <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">

@@ -3,7 +3,7 @@ import { demoAnalytics, demoOnboardingSteps, demoPublishingJobs } from "@ssm/dom
 import { AccountHealth } from "@/components/account-health";
 import { AiStudioPanel } from "@/components/ai-studio-panel";
 import { AnalyticsChart } from "@/components/analytics-chart";
-import { AppShell } from "@/components/app-shell";
+import { AppShell } from "@/components/shell/app-shell";
 import { ApprovalQueue } from "@/components/approval-queue";
 import { CalendarBoard } from "@/components/calendar-board";
 import { MetricCard } from "@/components/metric-card";
@@ -23,7 +23,11 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <AppShell workspace={overview.workspace} activeItem="Dashboard">
+    <AppShell
+      activePath="/"
+      title="Command dashboard"
+      description="Workspace health, activation progress, live alerts, and the publishing pulse."
+    >
       <div className="grid gap-5">
         <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4">

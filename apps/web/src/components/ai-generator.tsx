@@ -27,8 +27,7 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
       const response = await fetch(`${clientApiBaseUrl}/ai/generate`, {
         method: "POST",
         headers: {
-          "content-type": "application/json",
-          "x-user-role": "creator"
+          "content-type": "application/json"
         },
         body: JSON.stringify({
           workspaceId: demoWorkspace.id,

@@ -42,8 +42,7 @@ export function NotificationPreferencesPanel({
         {
           method: "PATCH",
           headers: {
-            "content-type": "application/json",
-            "x-user-role": "owner"
+            "content-type": "application/json"
           },
           body: JSON.stringify({
             channelSettings,
@@ -74,8 +73,7 @@ export function NotificationPreferencesPanel({
         {
           method: "POST",
           headers: {
-            "content-type": "application/json",
-            "x-user-role": "owner"
+            "content-type": "application/json"
           },
           body: JSON.stringify({
             workspaceId,

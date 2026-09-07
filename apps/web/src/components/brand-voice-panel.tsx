@@ -43,8 +43,7 @@ export function BrandVoicePanel({ brandVoices }: { brandVoices: BrandVoice[] }) 
         {
           method: "POST",
           headers: {
-            "content-type": "application/json",
-            "x-user-role": "creator"
+            "content-type": "application/json"
           },
           body: JSON.stringify({ text: sample })
         }
@@ -67,8 +66,7 @@ export function BrandVoicePanel({ brandVoices }: { brandVoices: BrandVoice[] }) 
       const response = await fetch(`${clientApiBaseUrl}/brand-voices`, {
         method: "POST",
         headers: {
-          "content-type": "application/json",
-          "x-user-role": "admin"
+          "content-type": "application/json"
         },
         body: JSON.stringify({
           workspaceId: demoWorkspace.id,

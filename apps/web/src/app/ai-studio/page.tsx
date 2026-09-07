@@ -8,7 +8,7 @@ import { AiGenerator } from "@/components/ai-generator";
 import { AiProviderPanel } from "@/components/ai-provider-panel";
 import { AiSafetyPanel } from "@/components/ai-safety-panel";
 import { AiStudioPanel } from "@/components/ai-studio-panel";
-import { AppShell } from "@/components/app-shell";
+import { AppShell } from "@/components/shell/app-shell";
 import { BrandVoicePanel } from "@/components/brand-voice-panel";
 import { TrendList } from "@/components/trend-list";
 import { getAiRouterStatus } from "@/lib/ai";
@@ -18,7 +18,11 @@ export default async function AiStudioPage() {
   const [overview, routerStatus] = await Promise.all([getDashboardOverview(), getAiRouterStatus()]);
 
   return (
-    <AppShell workspace={overview.workspace} activeItem="AI Studio">
+    <AppShell
+      activePath="/ai-studio"
+      title="AI Studio"
+      description="Generate on-brand variants with multi-provider model routing and safety review."
+    >
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-5">
           <AiGenerator brandVoices={demoBrandVoices} />

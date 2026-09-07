@@ -39,8 +39,7 @@ export function LocalizationSettingsPanel({
     const response = await fetch(`${clientApiBaseUrl}${path}`, {
       method: "PATCH",
       headers: {
-        "content-type": "application/json",
-        "x-user-role": "owner"
+        "content-type": "application/json"
       },
       body: JSON.stringify(body)
     });
