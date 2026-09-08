@@ -55,13 +55,36 @@ Signals:
 
 - AI generation latency or error rate elevated.
 - Provider status incident.
+- `routing.fallbackUsed=true` or `attempts[].status=failed` rising in `GET /api/ai/generations`.
 
 Actions:
 
-1. Route requests to fallback provider or local deterministic templates.
-2. Disable high-cost retries.
-3. Mark generated content with provider metadata.
-4. Inform users when quality may be reduced.
+1. Check configuration and reachability: `GET /api/ai/providers?probe=true`.
+2. Confirm the cascade is working - the router automatically retries the next configured
+   provider and finally the deterministic local composer, so generation should never 5xx.
+3. Pin a healthy provider with `AI_PROVIDER=<ollama|anthropic|openai>` or reorder
+   `AI_PROVIDER_PRIORITY`, then restart the API.
+4. If all remote providers are degraded, set `AI_PROVIDER=local` to skip outbound calls
+   and stop burning provider quota/cost.
+5. Lower `AI_REQUEST_TIMEOUT_MS` while a provider is slow so users are not stuck waiting.
+6. Communicate reduced quality; generated content already carries provider metadata
+   (`provider`, `providerModel`, `routing.attempts`) for later audit.
+7. After recovery, restore `AI_PROVIDER=auto` and confirm `fallbackUsed=false` on new
+   generations.
+
+## AI Credential Rotation
+
+Signals:
+
+- Provider returns 401/403.
+- Scheduled key rotation.
+
+Actions:
+
+1. Update `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` (or `OLLAMA_BASE_URL`) in the secret store.
+2. Roll the API deployment; the router reads credentials at boot.
+3. Verify with `GET /api/ai/providers?probe=true` that `configured=true` and `reachable=yes`.
+4. Confirm no secret values appear in the response payload or logs.
 
 ## OAuth Token Expiration Wave
 

@@ -18,6 +18,22 @@
 - Configure and version brand voice profiles before allowing AI-generated publishing.
 - Configure AI safety policies with blocked terms, required disclosures, and maximum risk score.
 
+## AI Providers
+
+- Providers are enabled by credentials only. Set `OLLAMA_BASE_URL` for self-hosted models,
+  `ANTHROPIC_API_KEY` for Claude, and/or `OPENAI_API_KEY` for OpenAI.
+- With `AI_PROVIDER=auto` the router uses `AI_PROVIDER_PRIORITY` (default
+  `ollama,anthropic,openai`) and skips providers without credentials.
+- Set `AI_PROVIDER=local` for an air-gapped or cost-frozen workspace; generation continues
+  with the deterministic composer and makes no outbound calls.
+- Check AI Studio > Model routing, or `GET /api/ai/providers?probe=true`, to confirm which
+  provider is active and reachable. Credential values are never returned.
+- Tune `AI_REQUEST_TIMEOUT_MS`, `AI_MAX_OUTPUT_TOKENS`, and `AI_TEMPERATURE` per environment.
+- Review `GET /api/ai/generations` for per-generation provider, latency, token, cost,
+  fallback, and reviewer feedback data before renewing provider contracts.
+- Rotate provider keys in the secret store and restart the API; see the AI Credential
+  Rotation runbook.
+
 ## Governance
 
 - Require approvals for regulated industries.

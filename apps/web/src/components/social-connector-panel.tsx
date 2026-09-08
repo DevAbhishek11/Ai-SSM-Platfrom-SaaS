@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { platforms, type Platform, type SocialAccount, type SocialOAuthState } from "@ssm/domain";
 import { StatusBadge } from "./status-badge";
+import { apiRequest } from "@/lib/client-api";
 
 type OAuthAuthorizeResponse = SocialOAuthState & {
   expiresInSeconds: number;
@@ -43,21 +44,7 @@ export function SocialConnectorPanel({
   );
 
   async function requestJson<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-user-role": "owner"
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorBody?.message ?? "Connector action failed");
-    }
-
-    return (await response.json()) as T;
+    return apiRequest<T>(path, { method: "POST", body });
   }
 
   async function startOAuth() {
@@ -134,7 +121,7 @@ export function SocialConnectorPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Connector lifecycle</h3>
@@ -161,7 +148,7 @@ export function SocialConnectorPanel({
           </select>
         </label>
 
-        <div className="grid gap-2 rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+        <div className="grid gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
           <p className="text-sm font-medium">Requested scopes</p>
           <div className="flex flex-wrap gap-2">
             {scopeOptions.map((scope) => {
@@ -215,7 +202,7 @@ export function SocialConnectorPanel({
       </div>
 
       {oauthState ? (
-        <div className="mt-4 rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
+        <div className="mt-4 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-medium">OAuth state</span>
             <StatusBadge status={oauthState.status} />

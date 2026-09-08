@@ -1,15 +1,47 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post } from "@nestjs/common";
 import { ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { CurrentUser } from "../../common/current-user.decorator.js";
 import { RequirePermissions } from "../../common/permissions.decorator.js";
 import type { Principal } from "../../common/principal.js";
-import { SchedulePostDto, WorkflowCommentDto } from "./dto.js";
+import { AddPostCommentDto, BulkWorkflowDto, SchedulePostDto, WorkflowCommentDto } from "./dto.js";
 import { WorkflowService } from "./workflow.service.js";
 
 @ApiTags("workflow")
 @Controller("workflow/posts")
 export class WorkflowController {
   constructor(private readonly workflowService: WorkflowService) {}
+
+  @Post("bulk")
+  @HttpCode(200)
+  @RequirePermissions("posts.review")
+  @ApiOkResponse({
+    description: "Apply one workflow action to many posts; each id reports its own outcome"
+  })
+  bulk(@Body() input: BulkWorkflowDto, @CurrentUser() user: Principal) {
+    return this.workflowService.bulk(input.postIds, input.action, user, input.comment);
+  }
+
+  @Post(":postId/comments")
+  @RequirePermissions("posts.view")
+  @ApiOkResponse({ description: "Add a review comment without changing the post status" })
+  comment(
+    @Param("postId", new ParseUUIDPipe()) postId: string,
+    @Body() input: AddPostCommentDto,
+    @CurrentUser() user: Principal
+  ) {
+    return this.workflowService.comment(postId, input.body, user);
+  }
+
+  @Post("comments/:commentId/resolve")
+  @HttpCode(200)
+  @RequirePermissions("posts.view")
+  @ApiOkResponse({ description: "Mark a review comment as resolved" })
+  resolveComment(
+    @Param("commentId", new ParseUUIDPipe()) commentId: string,
+    @CurrentUser() user: Principal
+  ) {
+    return this.workflowService.resolveComment(commentId, user);
+  }
 
   @Get(":postId/timeline")
   @RequirePermissions("posts.view")

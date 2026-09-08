@@ -273,6 +273,48 @@ Notifications are created once and routed into delivery attempts per enabled cha
 
 Brand voice profiles store tone, style, vocabulary controls, emoji strategy, CTA preferences, examples, and versions per workspace. AI generation can reference a profile to shape deterministic variants and surface banned-term findings as safety flags. The brand voice API also evaluates arbitrary copy so reviewers can check fit before publishing.
 
+## AI Model Router
+
+AI generation never binds to a single vendor. The `ModelRouterService` builds an ordered
+candidate chain from the credentials present in the environment and degrades gracefully.
+
+| Order | Provider | Adapter | Enabled by | Default model |
+| ----- | -------- | ------- | ---------- | ------------- |
+| 1 | Ollama (self-hosted) | `POST {base}/api/chat` | `OLLAMA_BASE_URL` | `llama3.1` |
+| 2 | Anthropic Claude | `POST {base}/v1/messages` | `ANTHROPIC_API_KEY` | `claude-3-5-sonnet-latest` |
+| 3 | OpenAI | `POST {base}/chat/completions` | `OPENAI_API_KEY` | `gpt-4o-mini` |
+| Fallback | Local deterministic composer | in-process | always | `local-deterministic-v1` |
+
+Routing rules:
+
+- `AI_PROVIDER=auto` walks `AI_PROVIDER_PRIORITY` and skips unconfigured providers.
+- `AI_PROVIDER=<provider>` pins one provider and still falls back to the local composer.
+- Every attempt is time-boxed by `AI_REQUEST_TIMEOUT_MS` using `AbortController`.
+- Transport errors, non-2xx responses, empty completions, and unparsable output all count
+  as attempt failures and cascade to the next provider.
+- Provider responses are untrusted input: JSON is extracted from fences/prose, validated
+  with Zod, filtered to requested platforms, deduplicated, clamped to platform character
+  budgets, and repaired deterministically when a platform is missing.
+- The response carries `provider`, `providerModel`, and a `routing.attempts` trace; the
+  generation log stores latency, token usage, estimated cost, fallback usage, and feedback.
+- Credentials never leave the process: `GET /api/ai/providers` reports the credential
+  *source* (environment variable name) and configuration state, never the secret value.
+
+```mermaid
+flowchart LR
+  req[POST /api/ai/generate] --> router[Model Router]
+  router --> ollama[Ollama]
+  ollama -- failure/timeout --> claude[Anthropic Claude]
+  claude -- failure/timeout --> openai[OpenAI]
+  openai -- failure/timeout --> localc[Deterministic composer]
+  ollama --> parse[Validate + clamp + repair]
+  claude --> parse
+  openai --> parse
+  localc --> parse
+  parse --> safety[Safety + brand voice checks]
+  safety --> resp[Variants + routing trace]
+```
+
 ## AI Safety And Moderation
 
 AI generation routes every brief through the Safety module before returning variants. Safety policies define blocked terms, required disclosure guidance, industry context, and maximum risk score per workspace. Checks persist flags, recommendations, severity, and risk score. Blocked drafts create moderation queue items so reviewers can approve, reject, or resolve them with audit evidence.
@@ -286,7 +328,7 @@ sequenceDiagram
   participant Reviewer
 
   User->>AI: POST /api/ai/generate
-  AI->>Safety: Evaluate brief against active policy
+  AI->>Safety: Evaluate brief and generated variants against active policy
   Safety->>Audit: Record content safety check
   Safety-->>AI: Check, flags, recommendations, queue item
   AI-->>User: Variants with safety metadata
@@ -327,5 +369,5 @@ flowchart LR
 2. Social connector service.
 3. Media processing service.
 4. Analytics and listening ingestion/query service.
-5. AI model router service.
+5. AI model router service (multi-provider routing shipped; usage metering and per-tenant model policies pending).
 6. Billing and webhook service.

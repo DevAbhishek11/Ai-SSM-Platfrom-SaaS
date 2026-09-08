@@ -48,6 +48,7 @@ import type {
   WorkspaceInvitation,
   Workspace
 } from "./schemas.js";
+import type { Platform, PostStatus } from "./constants.js";
 
 const now = "2026-06-11T05:45:00.000Z";
 
@@ -809,7 +810,8 @@ export const demoContentTemplates: ContentTemplate[] = [
   }
 ];
 
-export const demoPosts: Post[] = [
+/** The two hero posts the walkthrough and screenshots refer to by id. */
+const demoFeaturedPosts: Post[] = [
   {
     id: "88888888-8888-4888-8888-888888888888",
     workspaceId: demoWorkspace.id,
@@ -857,6 +859,194 @@ export const demoPosts: Post[] = [
     updatedAt: now
   }
 ];
+
+/**
+ * Recent history, positioned relative to the current date rather than pinned to
+ * a literal.
+ *
+ * A demo workspace whose newest post is three months old makes the calendar,
+ * the content library and every report look broken -- reviewers assume the
+ * feature is empty rather than that the seed data has aged. Offsets keep the
+ * fixtures perpetually plausible; the ids and copy stay fixed so anything that
+ * references a specific post still resolves.
+ */
+const relativeDay = (daysAgo: number, hourUtc: number, minute = 0): string => {
+  const base = new Date();
+  base.setUTCDate(base.getUTCDate() - daysAgo);
+  base.setUTCHours(hourUtc, minute, 0, 0);
+  return base.toISOString();
+};
+
+type SeedPost = {
+  id: string;
+  status: PostStatus;
+  platform: Platform;
+  text: string;
+  hashtags: string[];
+  daysAgo: number;
+  hourUtc: number;
+};
+
+/**
+ * Published back-catalogue. The hours are spread deliberately across the
+ * working day and the week so the "best time to post" analysis has a real
+ * distribution to work with instead of a single bucket.
+ */
+const publishedSeeds: SeedPost[] = [
+  {
+    id: "b1000000-0000-4000-8000-000000000001",
+    status: "published",
+    platform: "instagram",
+    text: "Behind every calm launch day is a calendar nobody had to chase. Here is how our team plans a week of social in 40 minutes.",
+    hashtags: ["LaunchOps", "SocialMedia"],
+    daysAgo: 3,
+    hourUtc: 3
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000002",
+    status: "published",
+    platform: "linkedin",
+    text: "Approval queues are where good content goes to die. We rebuilt ours around one rule: every post shows who it is waiting on.",
+    hashtags: ["B2BMarketing", "Workflow"],
+    daysAgo: 5,
+    hourUtc: 8
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000003",
+    status: "published",
+    platform: "x",
+    text: "Shipping notes: per-channel character counts now bill links the way the network does, so you stop seeing phantom overruns.",
+    hashtags: ["BuildInPublic"],
+    daysAgo: 6,
+    hourUtc: 13
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000004",
+    status: "published",
+    platform: "instagram",
+    text: "Three carousel formats that consistently outperform static posts for product education. Save this one for your next launch.",
+    hashtags: ["ContentStrategy", "Carousel"],
+    daysAgo: 9,
+    hourUtc: 3
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000005",
+    status: "published",
+    platform: "linkedin",
+    text: "We audited 200 B2B launches. The teams that hit their date all did the same unglamorous thing: they locked copy a week early.",
+    hashtags: ["Launch", "GTM"],
+    daysAgo: 12,
+    hourUtc: 8
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000006",
+    status: "published",
+    platform: "x",
+    text: "Reminder that your scheduler should refuse to publish a post that would fail at the network. Ours now does.",
+    hashtags: ["SocialOps"],
+    daysAgo: 14,
+    hourUtc: 16
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000007",
+    status: "published",
+    platform: "instagram",
+    text: "A week in the life of a two-person social team, documented honestly, including the bit where the asset arrived late.",
+    hashtags: ["TeamCulture"],
+    daysAgo: 17,
+    hourUtc: 3
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000008",
+    status: "published",
+    platform: "linkedin",
+    text: "Reporting that nobody reads is a cost, not an asset. We cut our weekly deck to four numbers and the meeting got shorter.",
+    hashtags: ["Analytics", "Reporting"],
+    daysAgo: 20,
+    hourUtc: 8
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000009",
+    status: "published",
+    platform: "x",
+    text: "Hot take: most social tools are calendars with a login. The interesting work is everything that happens before the slot is filled.",
+    hashtags: ["SocialMedia"],
+    daysAgo: 23,
+    hourUtc: 13
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000010",
+    status: "published",
+    platform: "instagram",
+    text: "Customer spotlight: how Northwind cut approval time from six days to under one without adding headcount.",
+    hashtags: ["CaseStudy", "CustomerStory"],
+    daysAgo: 26,
+    hourUtc: 4
+  }
+];
+
+/** In-flight work, so the library and calendar are not all history. */
+const pipelineSeeds: SeedPost[] = [
+  {
+    id: "b2000000-0000-4000-8000-000000000001",
+    status: "draft",
+    platform: "linkedin",
+    text: "Draft: the quarterly retrospective post. Needs the final revenue number before this can go anywhere.",
+    hashtags: ["Retrospective"],
+    daysAgo: 1,
+    hourUtc: 9
+  },
+  {
+    id: "b2000000-0000-4000-8000-000000000002",
+    status: "approved",
+    platform: "x",
+    text: "Approved and waiting on a slot: our take on why scheduling and approvals belong in the same tool.",
+    hashtags: ["ProductThinking"],
+    daysAgo: 0,
+    hourUtc: 7
+  },
+  {
+    id: "b2000000-0000-4000-8000-000000000003",
+    status: "failed",
+    platform: "instagram",
+    text: "This one failed at the network: the account token expired mid-publish. Retry once the connection is refreshed.",
+    hashtags: ["Ops"],
+    daysAgo: 2,
+    hourUtc: 5
+  },
+  {
+    id: "b2000000-0000-4000-8000-000000000004",
+    status: "revisions_needed",
+    platform: "linkedin",
+    text: "Legal asked for a softer claim in paragraph two before this goes out. Otherwise ready.",
+    hashtags: ["Compliance"],
+    daysAgo: 1,
+    hourUtc: 11
+  }
+];
+
+const seedToPost = (seed: SeedPost): Post => {
+  const at = relativeDay(seed.daysAgo, seed.hourUtc);
+  return {
+    id: seed.id,
+    workspaceId: demoWorkspace.id,
+    campaignId: demoCampaigns[0]?.id,
+    authorId: "77777777-7777-4777-8777-777777777777",
+    status: seed.status,
+    content: [{ platform: seed.platform, text: seed.text, hashtags: seed.hashtags }],
+    mediaIds: [],
+    ...(seed.status === "published" ? { publishedAt: at } : {}),
+    ...(seed.status === "approved" || seed.status === "failed" ? { scheduledAt: at } : {}),
+    aiGenerated: seed.daysAgo % 2 === 0,
+    aiModelUsed: "model-router/default",
+    createdAt: at,
+    updatedAt: at
+  };
+};
+
+export const demoPostHistory: Post[] = [...publishedSeeds, ...pipelineSeeds].map(seedToPost);
+
+export const demoPosts: Post[] = [...demoFeaturedPosts, ...demoPostHistory];
 
 export const demoAnalytics: AnalyticsSnapshot[] = [
   {

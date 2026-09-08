@@ -6,7 +6,7 @@ export function MediaProcessingPipeline({ jobs }: { jobs: MediaProcessingJob[] }
   const ordered = [...jobs].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Processing pipeline</h3>
@@ -20,7 +20,7 @@ export function MediaProcessingPipeline({ jobs }: { jobs: MediaProcessingJob[] }
       </div>
       <div className="mt-4 grid gap-3">
         {ordered.map((job) => (
-          <article key={job.id} className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <article key={job.id} className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{job.fileName}</p>

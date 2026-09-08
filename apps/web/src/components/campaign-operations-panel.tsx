@@ -13,6 +13,7 @@ import {
 import { BarChart3, CheckCircle2, ClipboardList, DollarSign } from "lucide-react";
 import { formatCompactNumber, formatTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
+import { apiRequest } from "@/lib/client-api";
 
 export function CampaignOperationsPanel({
   campaigns,
@@ -65,21 +66,7 @@ export function CampaignOperationsPanel({
   const latestReport = campaignReports[0];
 
   async function requestJson<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-user-role": "owner"
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorBody?.message ?? "Campaign action failed");
-    }
-
-    return (await response.json()) as T;
+    return apiRequest<T>(path, { method: "POST", body });
   }
 
   async function completeMilestone(milestone: CampaignMilestone) {
@@ -193,7 +180,7 @@ export function CampaignOperationsPanel({
 
   if (!selectedCampaign) {
     return (
-      <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+      <section className="card p-4">
         <h3 className="text-base font-semibold">Campaign operations</h3>
         <p className="mt-2 text-sm text-[var(--muted)]">No campaigns are available.</p>
       </section>
@@ -201,7 +188,7 @@ export function CampaignOperationsPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Campaign operations</h3>
@@ -261,7 +248,7 @@ export function CampaignOperationsPanel({
 
         <div className="grid gap-3">
           <PanelHeader icon={ClipboardList} title="Tasks" />
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <div className="grid gap-2 sm:grid-cols-[1fr_130px_auto]">
               <input
                 value={taskTitle}
@@ -317,7 +304,7 @@ export function CampaignOperationsPanel({
       <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
         <div className="grid gap-3">
           <PanelHeader icon={DollarSign} title="Budget pacing" />
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <div className="grid gap-2 sm:grid-cols-[1fr_110px_110px_auto]">
               <input
                 value={budgetCategory}
@@ -412,7 +399,7 @@ export function CampaignOperationsPanel({
 
 function CampaignStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+    <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
       <p className="text-xs font-medium uppercase text-[var(--muted)]">{label}</p>
       <p className="mt-1 text-lg font-semibold">{value}</p>
     </div>

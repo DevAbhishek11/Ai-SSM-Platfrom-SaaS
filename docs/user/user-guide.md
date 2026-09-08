@@ -1,5 +1,23 @@
 # User Guide
 
+## Signing In
+
+1. Open the app; anonymous visitors are sent to `/login`.
+2. Sign in with your work email and password, or choose "Create an account" to start a new
+   workspace at `/register`.
+3. Sessions last 30 days and renew silently in the background; the app only asks you to sign
+   in again when the session is revoked or expires.
+4. Use the workspace switcher in the top bar to move between workspaces you belong to, and the
+   avatar menu to reach your profile, settings, or sign out.
+
+Demo workspace credentials for local runs: `owner@acmegrowth.test` / `demo-password-change-me`.
+
+## Getting Around
+
+- The sidebar only lists the areas your role has permission to open, and can be collapsed.
+- `Cmd/Ctrl+K` opens the command palette for keyboard navigation.
+- The bell shows unread notifications; the sun/moon button cycles light, dark, and system themes.
+
 ## Dashboard
 
 The dashboard summarizes active campaigns, scheduled posts, approval queue items, connected account health, recent analytics, trend opportunities, and live alerts.
@@ -12,9 +30,17 @@ It also includes the workspace onboarding checklist so owners can finish profile
 3. Choose platforms.
 4. Select a brand voice profile when required.
 5. Review AI-generated variants, brand fit, safety metadata, and moderation recommendations.
+   Each result shows which model produced it (for example `anthropic/claude-3-5-sonnet-latest`),
+   how long it took, and whether a fallback provider was used.
 6. Use AI safety review for blocked or risky drafts.
 7. Edit platform-specific copy.
 8. Submit for review or schedule.
+
+### Model routing
+
+The AI Studio "Model routing" panel shows the active provider chain. If your workspace has
+no AI provider credentials configured, generation still works using the built-in
+deterministic composer, and results are marked with the `local` provider.
 
 ## Approvals
 
@@ -41,4 +67,7 @@ The Analytics page includes report templates, scheduled stakeholder reports, on-
 The media page tracks reusable campaign assets, tags, and upload readiness. Settings groups billing usage, entitlement limits, team access, API keys, notification routing, webhook delivery status, and operational controls that admins use before launch.
 Media processing shows upload scan, format detection, optimization, thumbnail, AI tagging, storage, and CDN distribution progress.
 Settings also includes identity security controls for enterprise SSO, active sessions, trusted devices, and a Security audit panel for recent privileged actions and recovery events.
+Settings starts with "Your account": update your name, timezone, and language, change your
+password (which signs every device out), and review or revoke the sessions currently signed in
+to your account.
 Settings includes localization and regional controls for locale, timezone, date/time format, AI-assisted translation, data residency, applicable regulations, consent, retention, and cross-border transfer policy.

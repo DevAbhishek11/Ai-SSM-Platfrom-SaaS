@@ -461,3 +461,51 @@ export const supportedPlatformCapabilities: Record<
     maxCharacters: 300
   }
 };
+
+export const aiProviders = ["ollama", "anthropic", "openai", "local"] as const;
+export type AiProvider = (typeof aiProviders)[number];
+
+export const aiProviderSelectionModes = ["auto", "ollama", "anthropic", "openai", "local"] as const;
+export type AiProviderSelectionMode = (typeof aiProviderSelectionModes)[number];
+
+export const aiRoutingAttemptStatuses = ["succeeded", "failed", "skipped"] as const;
+export type AiRoutingAttemptStatus = (typeof aiRoutingAttemptStatuses)[number];
+
+export const aiGenerationFeedbackValues = ["thumbs_up", "thumbs_down", "edited"] as const;
+export type AiGenerationFeedback = (typeof aiGenerationFeedbackValues)[number];
+
+/**
+ * Default routing order used when `AI_PROVIDER=auto`.
+ * Self-hosted inference first (cheapest, privacy-first), then Claude, then OpenAI,
+ * with the deterministic local composer as the guaranteed final fallback.
+ */
+export const defaultAiProviderPriority: AiProvider[] = ["ollama", "anthropic", "openai"];
+
+export const aiProviderLabels: Record<AiProvider, string> = {
+  ollama: "Ollama (self-hosted)",
+  anthropic: "Anthropic Claude",
+  openai: "OpenAI",
+  local: "Local deterministic composer"
+};
+
+export const aiProviderCredentialKeys: Record<AiProvider, string> = {
+  ollama: "OLLAMA_BASE_URL",
+  anthropic: "ANTHROPIC_API_KEY",
+  openai: "OPENAI_API_KEY",
+  local: "none"
+};
+
+export const defaultAiProviderModels: Record<AiProvider, string> = {
+  ollama: "llama3.1",
+  anthropic: "claude-3-5-sonnet-latest",
+  openai: "gpt-4o-mini",
+  local: "local-deterministic-v1"
+};
+
+/** Rough blended USD cost per 1K tokens, used for cost attribution in generation logs. */
+export const aiProviderTokenCostPer1k: Record<AiProvider, number> = {
+  ollama: 0,
+  anthropic: 0.006,
+  openai: 0.0009,
+  local: 0
+};

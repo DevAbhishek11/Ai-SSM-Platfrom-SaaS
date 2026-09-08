@@ -12,6 +12,7 @@ import {
 import { CalendarClock, Sparkles } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
+import { apiRequest } from "@/lib/client-api";
 
 type RecommendationResponse = {
   generated: ScheduleSlot[];
@@ -47,21 +48,7 @@ export function SmartSchedulingPanel({
   const selectedPost = useMemo(() => posts.find((post) => post.id === postId), [postId, posts]);
 
   async function postJson<T>(path: string, body: unknown): Promise<T> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-user-role": "owner"
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorBody?.message ?? "Scheduling action failed");
-    }
-
-    return (await response.json()) as T;
+    return apiRequest<T>(path, { method: "POST", body });
   }
 
   async function createRule() {
@@ -134,7 +121,7 @@ export function SmartSchedulingPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Smart scheduling</h3>
@@ -220,7 +207,7 @@ export function SmartSchedulingPanel({
 
       <div className="mt-4 grid gap-3">
         {slotRows.slice(0, 5).map((slot) => (
-          <article key={slot.id} className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <article key={slot.id} className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">

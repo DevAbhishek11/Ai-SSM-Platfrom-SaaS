@@ -1,5 +1,7 @@
+import Link from "next/link";
+import { PlayCircle, RotateCcw } from "lucide-react";
 import { demoPublishingJobs } from "@ssm/domain";
-import { AppShell } from "@/components/app-shell";
+import { AppShell } from "@/components/shell/app-shell";
 import { PublishingQueue } from "@/components/publishing-queue";
 import { getDashboardOverview } from "@/lib/dashboard";
 
@@ -7,10 +9,26 @@ export default async function PublishingPage() {
   const overview = await getDashboardOverview();
 
   return (
-    <AppShell workspace={overview.workspace} activeItem="Publishing">
+    <AppShell
+      activePath="/publishing"
+      title="Publishing queue"
+      description="Idempotent delivery, retry policy, and per-network connector health."
+      actions={
+        <>
+          <Link href="/publishing" className="btn-secondary">
+            <RotateCcw size={15} aria-hidden="true" />
+            Retry failed
+          </Link>
+          <Link href="/publishing" className="btn-primary">
+            <PlayCircle size={15} aria-hidden="true" />
+            Process due jobs
+          </Link>
+        </>
+      }
+    >
       <div className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
         <PublishingQueue jobs={demoPublishingJobs} accounts={overview.socialAccounts} />
-        <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+        <section className="card p-4">
           <h3 className="text-base font-semibold">Retry policy</h3>
           <div className="mt-4 grid gap-3 text-sm">
             <p className="rounded-md bg-[var(--panel-soft)] p-3">

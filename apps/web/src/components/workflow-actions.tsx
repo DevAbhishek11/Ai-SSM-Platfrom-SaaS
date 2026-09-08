@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import type { Post } from "@ssm/domain";
+import { apiPost } from "@/lib/client-api";
 
+/**
+ * The API authorises each transition from the caller's real session role, so the
+ * UI only needs the endpoint names here.
+ */
 const actions = [
-  { label: "Approve", endpoint: "approve", role: "reviewer" },
-  { label: "Request changes", endpoint: "request-changes", role: "reviewer" },
-  { label: "Submit", endpoint: "submit", role: "creator" }
+  { label: "Approve", endpoint: "approve" },
+  { label: "Request changes", endpoint: "request-changes" },
+  { label: "Submit", endpoint: "submit" }
 ];
 
 export function WorkflowActions({ post }: { post: Post }) {
@@ -14,28 +19,13 @@ export function WorkflowActions({ post }: { post: Post }) {
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
-  async function runAction(endpoint: string, role: string) {
+  async function runAction(endpoint: string) {
     setLoading(endpoint);
     setResult(null);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}/workflow/posts/${post.id}/${endpoint}`,
-        {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "x-user-role": role
-          },
-          body: JSON.stringify({ comment: message })
-        }
-      );
-
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(body?.message ?? "Workflow action failed");
-      }
-
-      const body = (await response.json()) as { post: Post };
+      const body = await apiPost<{ post: Post }>(`/workflow/posts/${post.id}/${endpoint}`, {
+        comment: message
+      });
       setResult(`Post is now ${body.post.status.replace(/_/g, " ")}.`);
     } catch (error) {
       setResult(error instanceof Error ? error.message : "Workflow action failed");
@@ -45,7 +35,7 @@ export function WorkflowActions({ post }: { post: Post }) {
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <h3 className="text-base font-semibold">Reviewer actions</h3>
       <label className="mt-4 block text-sm font-medium" htmlFor="workflow-comment">
         Comment
@@ -61,7 +51,7 @@ export function WorkflowActions({ post }: { post: Post }) {
           <button
             key={action.endpoint}
             type="button"
-            onClick={() => runAction(action.endpoint, action.role)}
+            onClick={() => runAction(action.endpoint)}
             disabled={loading !== null}
             className="rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >

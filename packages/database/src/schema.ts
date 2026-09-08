@@ -52,6 +52,9 @@ import {
   roles,
   scheduleRuleStatuses,
   scheduleSlotStatuses,
+  aiGenerationFeedbackValues,
+  aiProviders,
+  aiRoutingAttemptStatuses,
   supportedLocales,
   timeFormatOptions,
   safetyPolicyStatuses,
@@ -66,6 +69,12 @@ import {
 } from "@ssm/domain";
 
 export const roleEnum = pgEnum("role", roles);
+export const aiProviderEnum = pgEnum("ai_provider", aiProviders);
+export const aiRoutingAttemptStatusEnum = pgEnum(
+  "ai_routing_attempt_status",
+  aiRoutingAttemptStatuses
+);
+export const aiGenerationFeedbackEnum = pgEnum("ai_generation_feedback", aiGenerationFeedbackValues);
 export const planEnum = pgEnum("plan", plans);
 export const platformEnum = pgEnum("platform", platforms);
 export const onboardingStepKeyEnum = pgEnum("onboarding_step_key", onboardingStepKeys);
@@ -1380,16 +1389,58 @@ export const aiGenerations = pgTable(
       .references(() => workspaces.id, { onDelete: "cascade" }),
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     modelUsed: text("model_used").notNull(),
+    provider: aiProviderEnum("provider").default("local").notNull(),
+    providerModel: text("provider_model").default("local-deterministic-v1").notNull(),
+    platforms: platformEnum("platforms").array().default([]).notNull(),
     prompt: text("prompt").notNull(),
     output: jsonb("output").$type<Record<string, unknown>>().notNull(),
     tokensUsed: integer("tokens_used").default(0).notNull(),
     cost: numeric("cost", { precision: 12, scale: 6 }).default("0").notNull(),
+    latencyMs: integer("latency_ms").default(0).notNull(),
+    fallbackUsed: boolean("fallback_used").default(false).notNull(),
+    blocked: boolean("blocked").default(false).notNull(),
+    routing: jsonb("routing").$type<Record<string, unknown>>().default({}).notNull(),
     qualityScore: integer("quality_score"),
-    userFeedback: text("user_feedback"),
+    userFeedback: aiGenerationFeedbackEnum("user_feedback"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
   },
   (table) => ({
     workspaceCreatedIdx: index("ai_generations_workspace_created_idx").on(
+      table.workspaceId,
+      table.createdAt
+    ),
+    workspaceProviderIdx: index("ai_generations_workspace_provider_idx").on(
+      table.workspaceId,
+      table.provider,
+      table.createdAt
+    )
+  })
+);
+
+export const aiProviderAttempts = pgTable(
+  "ai_provider_attempts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    generationId: uuid("generation_id")
+      .notNull()
+      .references(() => aiGenerations.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    provider: aiProviderEnum("provider").notNull(),
+    model: text("model").notNull(),
+    status: aiRoutingAttemptStatusEnum("status").notNull(),
+    latencyMs: integer("latency_ms").default(0).notNull(),
+    error: text("error"),
+    attemptOrder: integer("attempt_order").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    generationIdx: index("ai_provider_attempts_generation_idx").on(
+      table.generationId,
+      table.attemptOrder
+    ),
+    workspaceCreatedIdx: index("ai_provider_attempts_workspace_created_idx").on(
       table.workspaceId,
       table.createdAt
     )
@@ -1982,5 +2033,22 @@ export const scheduleSlotsRelations = relations(scheduleSlots, ({ one }) => ({
   reserver: one(users, {
     fields: [scheduleSlots.reservedBy],
     references: [users.id]
+  })
+}));
+
+export const aiGenerationsRelations = relations(aiGenerations, ({ one, many }) => ({
+  workspace: one(workspaces, { fields: [aiGenerations.workspaceId], references: [workspaces.id] }),
+  user: one(users, { fields: [aiGenerations.userId], references: [users.id] }),
+  attempts: many(aiProviderAttempts)
+}));
+
+export const aiProviderAttemptsRelations = relations(aiProviderAttempts, ({ one }) => ({
+  generation: one(aiGenerations, {
+    fields: [aiProviderAttempts.generationId],
+    references: [aiGenerations.id]
+  }),
+  workspace: one(workspaces, {
+    fields: [aiProviderAttempts.workspaceId],
+    references: [workspaces.id]
   })
 }));

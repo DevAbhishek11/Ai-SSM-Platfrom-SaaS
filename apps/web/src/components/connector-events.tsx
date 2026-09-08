@@ -6,7 +6,7 @@ export function ConnectorEvents({ events }: { events: SocialConnectorEvent[] }) 
   const ordered = [...events].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Connector events</h3>
@@ -20,7 +20,7 @@ export function ConnectorEvents({ events }: { events: SocialConnectorEvent[] }) 
       </div>
       <div className="mt-4 grid gap-3">
         {ordered.map((event) => (
-          <article key={event.id} className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <article key={event.id} className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{event.message}</p>

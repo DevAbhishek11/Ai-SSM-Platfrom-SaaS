@@ -1418,6 +1418,11 @@ paths:
     post:
       tags: [ai]
       summary: Generate platform-specific post variants
+      description: >-
+        Routes the request through the configured model chain (Ollama, Anthropic
+        Claude, OpenAI) based on which credentials are present, and falls back to
+        the deterministic local composer when no provider is configured or every
+        provider fails.
       requestBody:
         required: true
         content:
@@ -1426,7 +1431,66 @@ paths:
               $ref: "#/components/schemas/GenerateContent"
       responses:
         "201":
-          description: AI generation response with safety and quality metadata
+          description: AI generation response with routing, safety, and quality metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiGenerationResponse"
+  /ai/providers:
+    get:
+      tags: [ai]
+      summary: Inspect AI provider configuration and routing order
+      parameters:
+        - in: query
+          name: probe
+          description: Set to true to probe provider reachability (adds latency)
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Model router status (never includes credential values)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiRouterStatus"
+  /ai/generations:
+    get:
+      tags: [ai]
+      summary: List AI generation audit entries with provider routing metadata
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: AI generation log
+  /ai/generations/{id}/feedback:
+    post:
+      tags: [ai]
+      summary: Record thumbs up/down feedback for an AI generation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [feedback]
+              properties:
+                feedback:
+                  type: string
+                  enum: [thumbs_up, thumbs_down, edited]
+      responses:
+        "201":
+          description: Updated generation log entry
   /safety/policies:
     get:
       tags: [safety]
@@ -2638,6 +2702,148 @@ components:
         brandVoiceId:
           type: string
           format: uuid
+    AiRoutingAttempt:
+      type: object
+      required: [provider, model, status, latencyMs]
+      properties:
+        provider:
+          type: string
+          enum: [ollama, anthropic, openai, local]
+        model:
+          type: string
+        status:
+          type: string
+          enum: [succeeded, failed, skipped]
+        latencyMs:
+          type: integer
+          minimum: 0
+        error:
+          type: string
+    AiProviderStatus:
+      type: object
+      required: [provider, label, configured, credentialSource, model, priority, notes]
+      properties:
+        provider:
+          type: string
+          enum: [ollama, anthropic, openai, local]
+        label:
+          type: string
+        configured:
+          type: boolean
+        credentialSource:
+          type: string
+          description: Environment variable that activates the provider
+        credentialPresent:
+          type: boolean
+        model:
+          type: string
+        baseUrl:
+          type: string
+        priority:
+          type: integer
+        reachable:
+          type: string
+          enum: [yes, no, unknown]
+        notes:
+          type: string
+    AiRouterStatus:
+      type: object
+      required: [mode, priority, activeProvider, fallbackProvider, providers]
+      properties:
+        mode:
+          type: string
+          enum: [auto, ollama, anthropic, openai, local]
+        priority:
+          type: array
+          items:
+            type: string
+            enum: [ollama, anthropic, openai, local]
+        activeProvider:
+          type: string
+        fallbackProvider:
+          type: string
+        timeoutMs:
+          type: integer
+        maxOutputTokens:
+          type: integer
+        temperature:
+          type: number
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiProviderStatus"
+    AiGenerationResponse:
+      type: object
+      required: [id, modelUsed, provider, providerModel, routing, safety, variants, qualityScore, estimatedTokens]
+      properties:
+        id:
+          type: string
+          format: uuid
+        modelUsed:
+          type: string
+          example: anthropic/claude-3-5-sonnet-latest
+        provider:
+          type: string
+          enum: [ollama, anthropic, openai, local]
+        providerModel:
+          type: string
+        routing:
+          type: object
+          properties:
+            requestedMode:
+              type: string
+            selectedProvider:
+              type: string
+            selectedModel:
+              type: string
+            fallbackUsed:
+              type: boolean
+            latencyMs:
+              type: integer
+            attempts:
+              type: array
+              items:
+                $ref: "#/components/schemas/AiRoutingAttempt"
+        safety:
+          type: object
+          properties:
+            blocked:
+              type: boolean
+            riskScore:
+              type: number
+            flags:
+              type: array
+              items:
+                type: string
+            recommendations:
+              type: array
+              items:
+                type: string
+            checkId:
+              type: string
+              format: uuid
+            moderationItemId:
+              type: string
+              format: uuid
+        variants:
+          type: array
+          items:
+            type: object
+            properties:
+              platform:
+                type: string
+              text:
+                type: string
+              hashtags:
+                type: array
+                items:
+                  type: string
+              firstComment:
+                type: string
+        qualityScore:
+          type: number
+        estimatedTokens:
+          type: integer
     CreateSafetyPolicy:
       type: object
       required: [workspaceId, name]

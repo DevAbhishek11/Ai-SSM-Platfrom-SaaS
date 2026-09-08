@@ -1,6 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { ArrayMinSize, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
-import { platforms, type Platform } from "@ssm/domain";
+import {
+  aiGenerationFeedbackValues,
+  platforms,
+  type AiGenerationFeedback,
+  type Platform
+} from "@ssm/domain";
 
 export class GenerateContentDto {
   @ApiProperty()
@@ -32,4 +37,10 @@ export class GenerateContentDto {
   @IsOptional()
   @IsUUID()
   brandVoiceId?: string;
+}
+
+export class SubmitGenerationFeedbackDto {
+  @ApiProperty({ enum: aiGenerationFeedbackValues })
+  @IsIn(aiGenerationFeedbackValues)
+  feedback!: AiGenerationFeedback;
 }

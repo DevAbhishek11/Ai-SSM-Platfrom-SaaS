@@ -53,7 +53,7 @@ export function BillingPanel() {
   ];
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <h3 className="text-base font-semibold">Billing and limits</h3>
       <p className="mt-1 text-sm text-[var(--muted)]">
         Current demo workspace is mapped to Business with entitlement checks enabled.
@@ -64,7 +64,7 @@ export function BillingPanel() {
           const percent = numericLimit ? Math.min(Math.round((item.used / numericLimit) * 100), 100) : 100;
 
           return (
-            <div key={item.label} className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+            <div key={item.label} className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs uppercase text-[var(--muted)]">{item.label}</p>
                 <strong className="text-sm">
@@ -77,7 +77,7 @@ export function BillingPanel() {
             </div>
           );
         })}
-        <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3 sm:col-span-2">
+        <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3 sm:col-span-2">
           <p className="text-xs uppercase text-[var(--muted)]">Plan capabilities</p>
           <div className="mt-2 flex flex-wrap gap-2 text-xs">
             {Object.entries(business).map(([key, value]) => (

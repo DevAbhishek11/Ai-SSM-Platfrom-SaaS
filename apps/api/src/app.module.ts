@@ -1,9 +1,15 @@
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
 import { ThrottlerModule } from "@nestjs/throttler";
+import { AllExceptionsFilter } from "./common/all-exceptions.filter.js";
+import { AuthenticationGuard } from "./common/authentication.guard.js";
+import { getEnv } from "./common/env.js";
+import { AppThrottlerGuard } from "./common/throttler.guard.js";
 import { PermissionsGuard } from "./common/permissions.guard.js";
 import { RequestContextMiddleware } from "./common/request-context.middleware.js";
+import { RequestTimeoutInterceptor } from "./common/request-timeout.interceptor.js";
+import { buildValidationPipe } from "./common/validation.js";
 import { AiModule } from "./modules/ai/ai.module.js";
 import { AnalyticsModule } from "./modules/analytics/analytics.module.js";
 import { ApiKeyAuthGuard } from "./modules/api-keys/api-key-auth.guard.js";
@@ -25,6 +31,7 @@ import { MembersModule } from "./modules/members/members.module.js";
 import { NotificationsModule } from "./modules/notifications/notifications.module.js";
 import { OnboardingModule } from "./modules/onboarding/onboarding.module.js";
 import { PostsModule } from "./modules/posts/posts.module.js";
+import { SearchModule } from "./modules/search/search.module.js";
 import { PublishingModule } from "./modules/publishing/publishing.module.js";
 import { RepositoriesModule } from "./modules/repositories/repositories.module.js";
 import { ReportsModule } from "./modules/reports/reports.module.js";
@@ -40,8 +47,8 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
     ConfigModule.forRoot({ isGlobal: true, cache: true }),
     ThrottlerModule.forRoot([
       {
-        ttl: 60_000,
-        limit: 120
+        ttl: getEnv().THROTTLE_TTL_MS,
+        limit: getEnv().THROTTLE_LIMIT
       }
     ]),
     DatabaseModule,
@@ -54,6 +61,7 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
     MembersModule,
     ApiKeysModule,
     PostsModule,
+    SearchModule,
     ContentModule,
     CampaignsModule,
     MediaModule,
@@ -75,9 +83,32 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module.js";
     SocialModule
   ],
   providers: [
+    // One error shape for the whole surface, and no stack traces on the wire.
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter
+    },
+    {
+      provide: APP_PIPE,
+      useFactory: buildValidationPipe
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestTimeoutInterceptor
+    },
+    // Guard order matters: throttle first, then identify the caller (API key or
+    // bearer token), then authorize the resolved principal.
+    {
+      provide: APP_GUARD,
+      useClass: AppThrottlerGuard
+    },
     {
       provide: APP_GUARD,
       useClass: ApiKeyAuthGuard
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AuthenticationGuard
     },
     {
       provide: APP_GUARD,

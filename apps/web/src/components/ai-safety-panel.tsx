@@ -10,6 +10,7 @@ import {
 import { ShieldCheck, ShieldAlert } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
+import { apiRequest } from "@/lib/client-api";
 
 type SafetyEvaluationResponse = {
   check: ContentSafetyCheck;
@@ -39,21 +40,7 @@ export function AiSafetyPanel({
   const openItems = useMemo(() => queueRows.filter((item) => item.status === "open"), [queueRows]);
 
   async function requestJson<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-user-role": "owner"
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorBody?.message ?? "Safety action failed");
-    }
-
-    return (await response.json()) as T;
+    return apiRequest<T>(path, { method: "POST", body });
   }
 
   async function evaluate() {
@@ -99,7 +86,7 @@ export function AiSafetyPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">AI safety review</h3>
@@ -114,7 +101,7 @@ export function AiSafetyPanel({
       </div>
 
       {activePolicy ? (
-        <div className="mt-4 rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+        <div className="mt-4 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <p className="text-sm font-semibold">{activePolicy.name}</p>

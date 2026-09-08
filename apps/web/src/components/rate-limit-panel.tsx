@@ -11,7 +11,7 @@ export function RateLimitPanel({
   const ordered = [...buckets].sort((a, b) => a.resetAt.localeCompare(b.resetAt));
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Rate limits</h3>
@@ -29,7 +29,7 @@ export function RateLimitPanel({
           const percent = Math.round((bucket.remaining / bucket.limit) * 100);
 
           return (
-            <article key={bucket.id} className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+            <article key={bucket.id} className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold capitalize">

@@ -11,6 +11,7 @@ import {
 import { KeyRound, LogOut, MonitorSmartphone, ShieldCheck } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
+import { apiRequest } from "@/lib/client-api";
 
 export function IdentitySecurityPanel({
   workspaceId,
@@ -32,21 +33,7 @@ export function IdentitySecurityPanel({
   const [message, setMessage] = useState<string | null>(null);
 
   async function postJson<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-user-role": "owner"
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorBody?.message ?? "Identity action failed");
-    }
-
-    return (await response.json()) as T;
+    return apiRequest<T>(path, { method: "POST", body });
   }
 
   async function createSsoConnection() {
@@ -161,7 +148,7 @@ export function IdentitySecurityPanel({
   const trustedDevices = deviceRows.filter((device) => device.status === "trusted").length;
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Identity security</h3>

@@ -1,5 +1,20 @@
 import type { PostStatus } from "@ssm/domain";
 
+/**
+ * Badge tones resolve to CSS custom properties, so a status chip stays legible in
+ * both themes instead of being pinned to a light-mode palette.
+ */
+type BadgeTone = "neutral" | "success" | "warning" | "danger" | "info" | "accent";
+
+const toneClass: Record<BadgeTone, string> = {
+  neutral: "badge",
+  success: "badge badge-success",
+  warning: "badge badge-warning",
+  danger: "badge badge-danger",
+  info: "badge badge-info",
+  accent: "badge badge-accent"
+};
+
 const statusLabels: Record<string, string> = {
   draft: "Draft",
   in_review: "In review",
@@ -74,88 +89,84 @@ const statusLabels: Record<string, string> = {
   cdn_distributing: "CDN"
 };
 
-const toneClasses: Record<string, string> = {
-  draft: "bg-neutral-100 text-neutral-700 border-neutral-200",
-  in_review: "bg-amber-50 text-amber-800 border-amber-200",
-  revisions_needed: "bg-red-50 text-red-800 border-red-200",
-  approved: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  scheduled: "bg-teal-50 text-teal-800 border-teal-200",
-  publishing: "bg-sky-50 text-sky-800 border-sky-200",
-  published: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  failed: "bg-red-50 text-red-800 border-red-200",
-  archived: "bg-neutral-100 text-neutral-700 border-neutral-200",
-  disabled: "bg-neutral-100 text-neutral-700 border-neutral-200",
-  at_risk: "bg-amber-50 text-amber-800 border-amber-200",
-  completed: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  todo: "bg-neutral-100 text-neutral-700 border-neutral-200",
-  in_progress: "bg-sky-50 text-sky-800 border-sky-200",
-  blocked: "bg-red-50 text-red-800 border-red-200",
-  done: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  passed: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  flagged: "bg-amber-50 text-amber-800 border-amber-200",
-  rejected: "bg-red-50 text-red-800 border-red-200",
-  resolved: "bg-neutral-100 text-neutral-700 border-neutral-200",
-  low: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  medium: "bg-amber-50 text-amber-800 border-amber-200",
-  high: "bg-red-50 text-red-800 border-red-200",
-  connected: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  expired: "bg-amber-50 text-amber-800 border-amber-200",
-  revoked: "bg-red-50 text-red-800 border-red-200",
-  error: "bg-red-50 text-red-800 border-red-200",
-  pending: "bg-amber-50 text-amber-800 border-amber-200",
-  consumed: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  active: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  trusted: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  recommended: "bg-sky-50 text-sky-800 border-sky-200",
-  reserved: "bg-teal-50 text-teal-800 border-teal-200",
-  used: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  skipped: "bg-neutral-100 text-neutral-700 border-neutral-200",
-  paused: "bg-amber-50 text-amber-800 border-amber-200",
-  invited: "bg-amber-50 text-amber-800 border-amber-200",
-  suspended: "bg-red-50 text-red-800 border-red-200",
-  accepted: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  ltr: "bg-neutral-100 text-neutral-700 border-neutral-200",
-  rtl: "bg-indigo-50 text-indigo-800 border-indigo-200",
-  global: "bg-sky-50 text-sky-800 border-sky-200",
-  us: "bg-sky-50 text-sky-800 border-sky-200",
-  eu: "bg-indigo-50 text-indigo-800 border-indigo-200",
-  in: "bg-teal-50 text-teal-800 border-teal-200",
-  jp: "bg-amber-50 text-amber-800 border-amber-200",
-  warning: "bg-amber-50 text-amber-800 border-amber-200",
-  critical: "bg-red-50 text-red-800 border-red-200",
-  info: "bg-sky-50 text-sky-800 border-sky-200",
-  negative: "bg-red-50 text-red-800 border-red-200",
-  neutral: "bg-neutral-100 text-neutral-700 border-neutral-200",
-  positive: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  mixed: "bg-amber-50 text-amber-800 border-amber-200",
-  delivered: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  sent: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  suppressed: "bg-neutral-100 text-neutral-700 border-neutral-200",
-  generated: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  ready: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  shared: "bg-sky-50 text-sky-800 border-sky-200",
-  queued: "bg-teal-50 text-teal-800 border-teal-200",
-  processing: "bg-sky-50 text-sky-800 border-sky-200",
-  retrying: "bg-amber-50 text-amber-800 border-amber-200",
-  succeeded: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  canceled: "bg-neutral-100 text-neutral-700 border-neutral-200",
-  virus_scanning: "bg-sky-50 text-sky-800 border-sky-200",
-  format_detecting: "bg-sky-50 text-sky-800 border-sky-200",
-  optimizing: "bg-teal-50 text-teal-800 border-teal-200",
-  thumbnailing: "bg-teal-50 text-teal-800 border-teal-200",
-  ai_tagging: "bg-indigo-50 text-indigo-800 border-indigo-200",
-  storing: "bg-amber-50 text-amber-800 border-amber-200",
-  cdn_distributing: "bg-amber-50 text-amber-800 border-amber-200"
+const statusTones: Record<string, BadgeTone> = {
+  draft: "neutral",
+  in_review: "warning",
+  revisions_needed: "danger",
+  approved: "success",
+  scheduled: "accent",
+  publishing: "info",
+  published: "success",
+  failed: "danger",
+  archived: "neutral",
+  disabled: "neutral",
+  at_risk: "warning",
+  completed: "success",
+  todo: "neutral",
+  in_progress: "info",
+  blocked: "danger",
+  done: "success",
+  passed: "success",
+  flagged: "warning",
+  rejected: "danger",
+  resolved: "neutral",
+  low: "success",
+  medium: "warning",
+  high: "danger",
+  connected: "success",
+  expired: "warning",
+  revoked: "danger",
+  error: "danger",
+  pending: "warning",
+  consumed: "success",
+  active: "success",
+  trusted: "success",
+  recommended: "info",
+  reserved: "accent",
+  used: "success",
+  skipped: "neutral",
+  paused: "warning",
+  invited: "warning",
+  suspended: "danger",
+  accepted: "success",
+  ltr: "neutral",
+  rtl: "accent",
+  global: "info",
+  us: "info",
+  eu: "accent",
+  in: "accent",
+  jp: "warning",
+  warning: "warning",
+  critical: "danger",
+  info: "info",
+  negative: "danger",
+  neutral: "neutral",
+  positive: "success",
+  mixed: "warning",
+  delivered: "success",
+  sent: "success",
+  suppressed: "neutral",
+  generated: "success",
+  ready: "success",
+  shared: "info",
+  queued: "accent",
+  processing: "info",
+  retrying: "warning",
+  succeeded: "success",
+  canceled: "neutral",
+  virus_scanning: "info",
+  format_detecting: "info",
+  optimizing: "accent",
+  thumbnailing: "accent",
+  ai_tagging: "accent",
+  storing: "warning",
+  cdn_distributing: "warning"
 };
 
 export function StatusBadge({ status }: { status: PostStatus | string }) {
+  const tone = statusTones[status] ?? "neutral";
+
   return (
-    <span
-      className={`inline-flex items-center rounded-md border px-2 py-1 text-xs font-medium ${
-        toneClasses[status] ?? toneClasses.draft
-      }`}
-    >
-      {statusLabels[status] ?? status}
-    </span>
+    <span className={toneClass[tone]}>{statusLabels[status] ?? status.replace(/_/g, " ")}</span>
   );
 }

@@ -1,4 +1,6 @@
-import { AppShell } from "@/components/app-shell";
+import Link from "next/link";
+import { CheckCheck, MessageSquare } from "lucide-react";
+import { AppShell } from "@/components/shell/app-shell";
 import { ApprovalQueue } from "@/components/approval-queue";
 import { NotificationCenter } from "@/components/notification-center";
 import { WorkflowActions } from "@/components/workflow-actions";
@@ -12,7 +14,23 @@ export default async function ApprovalsPage() {
     overview.posts.find((post) => post.status === "in_review") ?? overview.posts[0] ?? null;
 
   return (
-    <AppShell workspace={overview.workspace} activeItem="Approvals">
+    <AppShell
+      activePath="/approvals"
+      title="Approvals"
+      description="Review queue, workflow timeline, and notification routing."
+      actions={
+        <>
+          <Link href="/calendar" className="btn-secondary">
+            <MessageSquare size={15} aria-hidden="true" />
+            Comment thread
+          </Link>
+          <Link href="/publishing" className="btn-primary">
+            <CheckCheck size={15} aria-hidden="true" />
+            Approve and schedule
+          </Link>
+        </>
+      }
+    >
       <div className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
         <div className="grid gap-5">
           <ApprovalQueue posts={overview.posts} />

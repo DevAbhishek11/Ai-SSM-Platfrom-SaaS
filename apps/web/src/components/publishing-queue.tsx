@@ -12,7 +12,7 @@ export function PublishingQueue({
   const ordered = [...jobs].sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Publishing queue</h3>
@@ -31,7 +31,7 @@ export function PublishingQueue({
           return (
             <article
               key={job.id}
-              className="grid gap-3 rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3 lg:grid-cols-[150px_1fr_auto]"
+              className="grid gap-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3 lg:grid-cols-[150px_1fr_auto]"
             >
               <time className="text-sm font-semibold text-[var(--accent)]">{formatTime(job.scheduledFor)}</time>
               <div className="min-w-0">

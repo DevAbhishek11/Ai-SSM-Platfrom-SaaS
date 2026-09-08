@@ -9,6 +9,8 @@ import {
   type BrandVoice,
   type Platform
 } from "@ssm/domain";
+import { friendlyMessage } from "@/lib/api-error";
+import { apiPost } from "@/lib/client-api";
 
 export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: BrandVoice[] }) {
   const [brief, setBrief] = useState(
@@ -18,18 +20,15 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
   const [brandVoiceId, setBrandVoiceId] = useState(brandVoices[0]?.id ?? "");
   const [result, setResult] = useState<AiGenerationResponse | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
 
   async function generate() {
     setStatus("loading");
     setResult(null);
+    setError(null);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}/ai/generate`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-user-role": "creator"
-        },
-        body: JSON.stringify({
+      setResult(
+        await apiPost<AiGenerationResponse>("/ai/generate", {
           workspaceId: demoWorkspace.id,
           brief,
           platforms: selectedPlatforms,
@@ -37,15 +36,10 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
           objective: "engagement",
           brandVoiceId: brandVoiceId || undefined
         })
-      });
-
-      if (!response.ok) {
-        throw new Error("Generation failed");
-      }
-
-      setResult((await response.json()) as AiGenerationResponse);
+      );
       setStatus("idle");
-    } catch {
+    } catch (caught) {
+      setError(friendlyMessage(caught));
       setStatus("error");
     }
   }
@@ -57,7 +51,7 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <h3 className="text-base font-semibold">Generate content variants</h3>
       <label className="mt-4 block text-sm font-medium" htmlFor="brief">
         Campaign brief
@@ -105,22 +99,42 @@ export function AiGenerator({ brandVoices = demoBrandVoices }: { brandVoices?: B
         type="button"
         onClick={generate}
         disabled={status === "loading" || selectedPlatforms.length === 0}
-        className="mt-4 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+        className="btn-primary mt-4"
       >
         {status === "loading" ? "Generating" : "Generate variants"}
       </button>
       {status === "error" ? (
-        <p className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-          Could not reach the API. Start `npm run dev:api` and try again.
+        <p
+          role="alert"
+          className="mt-3 rounded-[var(--radius-sm)] border border-[var(--danger-border)] bg-[var(--danger-soft)] p-3 text-sm text-[var(--danger)]"
+        >
+          {error ?? "Could not reach the API. Start `npm run dev:api` and try again."}
         </p>
       ) : null}
       {result ? (
         <div className="mt-4 grid gap-3">
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3 text-sm">
             <p className="font-semibold">Quality {result.qualityScore}/100</p>
             <p className="mt-1 text-[var(--muted)]">
               {result.modelUsed} / safety risk {Math.round(result.safety.riskScore * 100)}%
             </p>
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+              <span className="badge badge-accent">
+                {result.provider} / {result.providerModel}
+              </span>
+              <span className="text-[var(--muted)]">{result.routing.latencyMs}ms</span>
+              {result.routing.fallbackUsed ? (
+                <span className="badge badge-warning">fallback used</span>
+              ) : null}
+            </p>
+            {result.routing.attempts.length > 1 ? (
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Routing:{" "}
+                {result.routing.attempts
+                  .map((attempt) => `${attempt.provider}:${attempt.status}`)
+                  .join(" → ")}
+              </p>
+            ) : null}
             {result.safety.checkId ? (
               <p className="mt-1 text-[var(--muted)]">
                 Safety check {result.safety.checkId.slice(0, 8)}

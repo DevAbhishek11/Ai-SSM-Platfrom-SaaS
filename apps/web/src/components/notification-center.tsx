@@ -6,7 +6,7 @@ export function NotificationCenter({ notifications }: { notifications: Notificat
   const unread = notifications.filter((notification) => !notification.read).length;
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Notification center</h3>

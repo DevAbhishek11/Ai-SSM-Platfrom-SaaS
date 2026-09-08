@@ -13,6 +13,7 @@ import {
 import { BellRing, Pause, Play, RadioTower, ShieldAlert } from "lucide-react";
 import { formatCompactNumber, formatTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
+import { apiRequest } from "@/lib/client-api";
 
 type IngestMentionResponse = {
   mention: SocialMention;
@@ -56,21 +57,7 @@ export function SocialListeningPanel({
     monitorRows[0];
 
   async function requestJson<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-user-role": "owner"
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorBody?.message ?? "Listening action failed");
-    }
-
-    return (await response.json()) as T;
+    return apiRequest<T>(path, { method: "POST", body });
   }
 
   async function createMonitor() {
@@ -159,7 +146,7 @@ export function SocialListeningPanel({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-sm">
+    <section className="card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Social listening command center</h3>
@@ -182,7 +169,7 @@ export function SocialListeningPanel({
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.1fr]">
         <div className="grid gap-3">
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <div className="flex items-center gap-2">
               <RadioTower className="size-4 text-[var(--accent)]" />
               <p className="text-sm font-semibold">Create monitor</p>
@@ -278,7 +265,7 @@ export function SocialListeningPanel({
         </div>
 
         <div className="grid gap-3">
-          <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+          <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <label className="grid flex-1 gap-1 text-sm font-medium">
                 Ingest test mention
@@ -312,7 +299,7 @@ export function SocialListeningPanel({
                 <article key={alert.id} className="rounded-md border border-[var(--border)] p-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="flex gap-2">
-                      <ShieldAlert className="mt-0.5 size-4 text-red-700" />
+                      <ShieldAlert className="mt-0.5 size-4 text-[var(--danger)]" />
                       <div>
                         <p className="text-sm font-semibold">{alert.title}</p>
                         <p className="mt-1 text-xs text-[var(--muted)]">{alert.body}</p>
@@ -364,7 +351,7 @@ export function SocialListeningPanel({
 
 function ListeningStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] p-3">
+    <div className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--panel-soft)] p-3">
       <p className="text-xs font-medium uppercase text-[var(--muted)]">{label}</p>
       <p className="mt-1 text-lg font-semibold">{value}</p>
     </div>

@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { LifeBuoy } from "lucide-react";
 import {
   demoApiKeys,
   demoAuditLogs,
@@ -12,7 +14,8 @@ import {
   demoWebhookDeliveries,
   demoWorkspaceInvitations
 } from "@ssm/domain";
-import { AppShell } from "@/components/app-shell";
+import { AccountSecurityPanel } from "@/components/settings/account-security-panel";
+import { AppShell } from "@/components/shell/app-shell";
 import { AuditLogPanel } from "@/components/audit-log-panel";
 import { BillingPanel } from "@/components/billing-panel";
 import { IdentitySecurityPanel } from "@/components/identity-security-panel";
@@ -21,13 +24,25 @@ import { NotificationPreferencesPanel } from "@/components/notification-preferen
 import { TeamAccessPanel } from "@/components/team-access-panel";
 import { WebhookDeliveries } from "@/components/webhook-deliveries";
 import { getDashboardOverview } from "@/lib/dashboard";
+import { getSession } from "@/lib/session";
 
 export default async function SettingsPage() {
-  const overview = await getDashboardOverview();
+  const [overview, session] = await Promise.all([getDashboardOverview(), getSession()]);
 
   return (
-    <AppShell workspace={overview.workspace} activeItem="Settings">
+    <AppShell
+      activePath="/settings"
+      title="Settings"
+      description="Security, billing, team access, localization, and integrations."
+      actions={
+        <Link href="/settings" className="btn-secondary">
+          <LifeBuoy size={15} aria-hidden="true" />
+          Contact support
+        </Link>
+      }
+    >
       <div className="grid gap-5">
+        {session ? <AccountSecurityPanel session={session} /> : null}
         <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
           <BillingPanel />
           <WebhookDeliveries deliveries={demoWebhookDeliveries} />

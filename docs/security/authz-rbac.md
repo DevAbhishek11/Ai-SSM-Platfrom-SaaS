@@ -73,3 +73,55 @@ Supported flows:
 - Sign outbound webhooks with timestamped HMAC.
 - Record IP and user agent for security-relevant audit events.
 - Emit audit records for auth, identity, reports, workflow, connector, media, publishing, and webhook recovery actions.
+
+## Implemented Build: Session Authentication
+
+The current build implements the password + JWT portion of the design above.
+
+### API surface
+
+| Endpoint | Auth | Rate limit | Behaviour |
+| --- | --- | --- | --- |
+| `POST /auth/register` | public | 5/60s | Creates account + workspace, returns a session |
+| `POST /auth/login` | public | 10/60s | Generic `Invalid email or password` on any failure |
+| `POST /auth/refresh` | public | 30/60s | Rotates the refresh token; reuse revokes the whole family |
+| `POST /auth/logout` | public | global | Revokes the presented refresh token |
+| `GET /auth/me` | bearer | global | User, workspace, role, permissions, session id |
+| `GET /auth/sessions` | bearer | global | Active sessions with IP, user agent, and `current` flag |
+| `POST /auth/sessions/:id/revoke` | bearer | global | Owner-of-session check before revocation |
+| `PATCH /auth/password` | bearer | 5/60s | Re-verifies the current password, then revokes every session |
+| `PATCH /auth/profile` | bearer | global | Name, timezone, language |
+| `POST /auth/switch-workspace` | bearer | global | Re-issues tokens for another membership |
+
+### Token and cookie contract
+
+- Access token: HS256 JWT with `{sub,email,name,role,workspaceId,sid}`, 15 minute TTL
+  (`ACCESS_TOKEN_TTL_SECONDS`), verified against issuer and audience.
+- Refresh token: opaque `ssm_rt_<base64url>` stored only as a SHA-256 digest, 30 day TTL
+  (`REFRESH_TOKEN_TTL_DAYS`), rotated on every refresh, family revoked on replay.
+- Browser cookies `ssm_at` and `ssm_rt` are `httpOnly`, `sameSite=lax`, `path=/`, and
+  `secure` outside development, so client JavaScript can never read a usable credential.
+- Failed logins are audited against a placeholder workspace id with an email fingerprint
+  instead of the raw address.
+
+### Guard order
+
+`AppThrottlerGuard` -> `ApiKeyAuthGuard` -> `AuthenticationGuard` -> `PermissionsGuard`.
+
+- `@Public()` routes skip authentication; a malformed bearer token on a public route is
+  ignored rather than rejected.
+- `x-api-key` callers become `api_service_account` principals limited to their stored scopes.
+- `AUTH_ALLOW_DEV_HEADERS` (default `false`) gates the legacy `x-user-role` debug header.
+  With it disabled, an unknown or spoofed role header cannot authenticate anything.
+
+### Web session handling
+
+- `apps/web/src/proxy.ts` protects every non-public route, refreshes an expiring session in
+  place, and redirects to `/login?next=...&reason=session-expired` when the refresh fails.
+- `apps/web/src/app/api/[...path]/route.ts` is the only path from the browser to the API. It
+  injects the bearer token server-side, performs a single refresh-and-replay on 401, and
+  clears both cookies when the refresh token is dead.
+- Server components load data with `authorizedFetch()`, so RSC reads are scoped to the
+  signed-in principal rather than an anonymous service identity.
+- Settings exposes the user-facing half of this: profile, password rotation (which signs out
+  every device), and per-session revocation.

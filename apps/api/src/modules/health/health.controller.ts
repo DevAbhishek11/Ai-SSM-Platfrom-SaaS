@@ -1,5 +1,6 @@
 import { Controller, Get } from "@nestjs/common";
 import { ApiOkResponse, ApiTags } from "@nestjs/swagger";
+import { Public } from "../../common/public.decorator.js";
 import { DatabaseService } from "../database/database.service.js";
 
 @ApiTags("health")
@@ -7,6 +8,7 @@ import { DatabaseService } from "../database/database.service.js";
 export class HealthController {
   constructor(private readonly databaseService: DatabaseService) {}
 
+  @Public()
   @Get("health")
   @ApiOkResponse({ description: "Liveness probe" })
   health() {
@@ -17,6 +19,7 @@ export class HealthController {
     };
   }
 
+  @Public()
   @Get("ready")
   @ApiOkResponse({ description: "Readiness probe" })
   async ready() {
